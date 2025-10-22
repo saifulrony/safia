@@ -1,0 +1,120 @@
+/* ==========================================================================
+   EcoCommerce Pro - Elementor Compatibility Styles
+   ========================================================================== */
+
+/* Elementor Canvas Template */
+.elementor-page {
+    margin: 0;
+    padding: 0;
+}
+
+.elementor-page .site-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.elementor-page .content-area {
+    width: 100%;
+    float: none;
+}
+
+/* Elementor Section Compatibility */
+.elementor-section.elementor-section-boxed > .elementor-container {
+    max-width: 1200px;
+}
+
+.elementor-section.elementor-section-stretched {
+    width: 100vw;
+    left: 50%;
+    margin-left: -50vw;
+}
+
+/* Remove theme padding for Elementor pages */
+.elementor-default .site-main {
+    padding: 0;
+    margin: 0;
+}
+
+/* Elementor Widget Compatibility */
+.elementor-widget-container {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Elementor Buttons */
+.elementor-button-wrapper .elementor-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.elementor-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Elementor Headings Match Theme Style */
+.elementor-heading-title {
+    font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+/* Elementor WooCommerce Products */
+.elementor-widget-woocommerce-products .product {
+    margin-bottom: 30px;
+}
+
+/* Elementor Navigation Menu */
+.elementor-nav-menu--dropdown .elementor-nav-menu--dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Elementor */
+@media (max-width: 1024px) {
+    .elementor-section.elementor-section-boxed > .elementor-container {
+        max-width: 100%;
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .elementor-section {
+        padding: 40px 0;
+    }
+    
+    .elementor-column {
+        width: 100% !important;
+    }
+}
+
+/* Elementor Pop-up Compatibility */
+.elementor-popup-modal {
+    z-index: 9999;
+}
+
+/* Elementor Forms */
+.elementor-field-group input,
+.elementor-field-group textarea,
+.elementor-field-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+.elementor-field-group input:focus,
+.elementor-field-group textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Elementor Animations - Ensure smooth performance */
+[data-settings*="animation"] {
+    will-change: transform, opacity;
+}
+

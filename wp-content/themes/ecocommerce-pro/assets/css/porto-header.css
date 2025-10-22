@@ -1,0 +1,398 @@
+/**
+ * Porto-Style Header CSS
+ * Based on: https://www.portotheme.com/wordpress/porto/shop2/
+ */
+
+/* ==========================================================================
+   PORTO TOP BAR
+   ========================================================================== */
+
+.porto-top-bar {
+    background: #1d2127;
+    color: #ffffff;
+    font-size: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2e35;
+}
+
+.porto-top-bar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.topbar-left .promo-text {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.topbar-left strong {
+    color: #ff6f61;
+    font-weight: 700;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.topbar-menu {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.topbar-menu a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.topbar-menu a:hover {
+    color: #ff6f61;
+}
+
+.cart-link-top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================================================
+   PORTO MAIN HEADER
+   ========================================================================== */
+
+.porto-header {
+    background: #ffffff;
+    padding: 20px 0;
+    border-bottom: 1px solid #e7e7e7;
+}
+
+.porto-header-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr auto auto;
+    gap: 30px;
+    align-items: center;
+}
+
+/* Logo */
+.porto-logo .site-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.porto-logo .site-title a {
+    color: #0088cc;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.porto-logo .site-title a:hover {
+    color: #006aa8;
+}
+
+.custom-logo {
+    max-height: 40px;
+    width: auto;
+}
+
+/* Porto Search Bar */
+.porto-search-bar {
+    flex: 1;
+}
+
+.porto-search-form {
+    display: flex;
+    align-items: stretch;
+    border: 2px solid #0088cc;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.search-category {
+    padding: 12px 16px;
+    border: none;
+    background: #f7f7f7;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-right: 1px solid #e7e7e7;
+    min-width: 150px;
+}
+
+.search-category:focus {
+    outline: none;
+}
+
+.search-field {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    font-size: 14px;
+    color: #333;
+}
+
+.search-field:focus {
+    outline: none;
+}
+
+.search-field::placeholder {
+    color: #999;
+}
+
+.search-submit {
+    padding: 0 20px;
+    background: #0088cc;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-submit:hover {
+    background: #006aa8;
+}
+
+/* Call Us Section */
+.porto-call-us {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.call-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.call-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0088cc;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.call-number:hover {
+    color: #006aa8;
+}
+
+/* Cart Icon */
+.porto-cart-wrapper {
+    position: relative;
+}
+
+.porto-cart-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: #f7f7f7;
+    border-radius: 4px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.porto-cart-icon:hover {
+    background: #0088cc;
+    color: #ffffff;
+}
+
+.porto-cart-icon .cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff6f61;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+}
+
+/* ==========================================================================
+   PORTO NAVIGATION BAR
+   ========================================================================== */
+
+.porto-navigation-bar {
+    background: #0088cc;
+    color: #ffffff;
+}
+
+.nav-content {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.porto-mobile-toggle {
+    display: none;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+}
+
+.nav-menu li {
+    position: relative;
+}
+
+.nav-menu > li > a {
+    display: block;
+    padding: 16px 20px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-menu > li > a:hover {
+    background: rgba(255,255,255,0.1);
+    border-bottom-color: #ff6f61;
+}
+
+.nav-menu .current-menu-item > a,
+.nav-menu .current_page_item > a {
+    background: rgba(255,255,255,0.1);
+    border-bottom-color: #ff6f61;
+}
+
+/* Dropdown Menu */
+.nav-menu .sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 220px;
+    background: #ffffff;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 10px 0;
+    list-style: none;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.nav-menu li:hover > .sub-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nav-menu .sub-menu li a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    transition: all 0.3s;
+}
+
+.nav-menu .sub-menu li a:hover {
+    background: #f7f7f7;
+    color: #0088cc;
+    padding-left: 24px;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    .porto-header-layout {
+        grid-template-columns: 150px 1fr auto auto;
+        gap: 20px;
+    }
+    
+    .search-category {
+        min-width: 120px;
+        font-size: 12px;
+    }
+    
+    .call-number {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .porto-top-bar {
+        display: none;
+    }
+    
+    .porto-header {
+        padding: 15px 0;
+    }
+    
+    .porto-header-layout {
+        grid-template-columns: 1fr auto;
+        gap: 15px;
+    }
+    
+    .porto-search-bar,
+    .porto-call-us {
+        display: none;
+    }
+    
+    .porto-mobile-toggle {
+        display: block;
+        background: none;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+    }
+    
+    .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #0088cc;
+        flex-direction: column;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .nav-menu.mobile-active {
+        display: flex;
+    }
+    
+    .nav-menu > li > a {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+}
+

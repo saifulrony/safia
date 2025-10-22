@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoCommerce Pro - WordPress Theme Live Demo</title>
+    <link rel="stylesheet" href="wp-content/themes/ecocommerce-pro/style.css">
+    <link rel="stylesheet" href="wp-content/themes/ecocommerce-pro/assets/css/main.css">
+    <link rel="stylesheet" href="wp-content/themes/ecocommerce-pro/assets/css/woocommerce.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .setup-notice {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .setup-notice h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .setup-notice p {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .setup-steps {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .setup-steps h2 {
+            color: #0073aa;
+            margin-bottom: 1rem;
+        }
+        .setup-steps ol {
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        .setup-steps li {
+            margin-bottom: 0.5rem;
+        }
+        .theme-info {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #0073aa;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #005a87;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #28a745;
+        }
+        .btn-secondary:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-notice">
+        <h1>🎉 EcoCommerce Pro Theme</h1>
+        <p>Professional WordPress Ecommerce Theme</p>
+        <p>✅ Theme Installed Successfully!</p>
+    </div>
+
+    <div class="container">
+        <div class="setup-steps">
+            <h2>🚀 Next Steps to Complete WordPress Setup:</h2>
+            <ol>
+                <li><strong>Install MySQL:</strong> <code>sudo apt install mysql-server</code></li>
+                <li><strong>Start MySQL:</strong> <code>sudo systemctl start mysql</code></li>
+                <li><strong>Create Database:</strong> <code>sudo mysql -e "CREATE DATABASE wp_ecocommerce;"</code></li>
+                <li><strong>Update wp-config.php</strong> with your database details</li>
+                <li><strong>Visit:</strong> <a href="http://localhost:7000" style="color: #0073aa;">http://localhost:7000</a></li>
+                <li><strong>Complete WordPress Installation Wizard</strong></li>
+                <li><strong>Activate EcoCommerce Pro Theme</strong> in Appearance > Themes</li>
+            </ol>
+        </div>
+
+        <div class="theme-info">
+            <h2>🎨 Your Theme Features:</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛍️</div>
+                    <h3>WooCommerce Ready</h3>
+                    <p>Full ecommerce integration with custom styling</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive Design</h3>
+                    <p>Mobile-first responsive layout for all devices</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Performance Optimized</h3>
+                    <p>Lightweight, fast-loading theme</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Highly Customizable</h3>
+                    <p>WordPress Customizer integration</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure & Clean</h3>
+                    <p>Following WordPress best practices</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">♿</div>
+                    <h3>Accessibility Ready</h3>
+                    <p>WCAG 2.1 compliant design</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-steps">
+            <h2>📁 Theme Files Location:</h2>
+            <p><strong>Theme Directory:</strong> <code>/home/saiful/wordpress/wp-content/themes/ecocommerce-pro/</code></p>
+            <p><strong>WordPress Directory:</strong> <code>/home/saiful/wordpress/</code></p>
+            <p><strong>Current Server:</strong> <code>http://localhost:7000</code></p>
+        </div>
+
+        <div style="text-align: center; margin: 2rem 0;">
+            <a href="http://localhost:7000" class="btn">🚀 Go to WordPress Setup</a>
+            <a href="demo.html" class="btn btn-secondary">🎨 View Theme Demo</a>
+        </div>
+
+        <div class="theme-info">
+            <h2>📋 Quick Commands:</h2>
+            <div style="background: #2c3e50; color: white; padding: 1rem; border-radius: 8px; font-family: monospace;">
+                <p><strong>Install MySQL:</strong> sudo apt install mysql-server</p>
+                <p><strong>Start MySQL:</strong> sudo systemctl start mysql</p>
+                <p><strong>Create Database:</strong> sudo mysql -e "CREATE DATABASE wp_ecocommerce;"</p>
+                <p><strong>Start WordPress:</strong> cd /home/saiful/wordpress && php -S localhost:7000</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="site-info">
+                <p>&copy; 2024 EcoCommerce Pro Theme. Ready for ThemeForest submission!</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple demo functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎉 EcoCommerce Pro Theme Loaded Successfully!');
+            console.log('📍 WordPress Server: http://localhost:7000');
+            console.log('🎨 Theme Demo: http://localhost:7000/demo.html');
+        });
+    </script>
+</body>
+</html>

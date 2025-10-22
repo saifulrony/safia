@@ -1,0 +1,38 @@
+╔══════════════════════════════════════════════════════════╗
+║                                                          ║
+║         WORDPRESS DATABASE FIX - RUN THIS COMMAND        ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+
+The database user hasn't been created yet. 
+
+COPY AND RUN THIS COMMAND IN YOUR TERMINAL:
+───────────────────────────────────────────────────────────
+
+bash /home/saiful/wordpress/fix-database.sh
+
+───────────────────────────────────────────────────────────
+
+This will:
+✓ Create the database: wordpress_db
+✓ Create the user: wordpress_user
+✓ Set the password: wordpress_password_123
+✓ Grant all privileges
+✓ Test the connection
+
+After running it, refresh your browser at:
+→ http://localhost:7000
+
+───────────────────────────────────────────────────────────
+
+ALTERNATIVE - Run this single command:
+───────────────────────────────────────────────────────────
+
+sudo mysql -e "DROP USER IF EXISTS 'wordpress_user'@'localhost'; DROP DATABASE IF EXISTS wordpress_db; CREATE DATABASE wordpress_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'wordpress_user'@'localhost' IDENTIFIED BY 'wordpress_password_123'; GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost'; FLUSH PRIVILEGES;"
+
+───────────────────────────────────────────────────────────
+
+Then refresh: http://localhost:7000
+
+═══════════════════════════════════════════════════════════
+

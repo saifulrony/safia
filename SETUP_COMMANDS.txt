@@ -1,0 +1,44 @@
+=========================================
+COPY AND PASTE THESE COMMANDS
+=========================================
+
+Open a new terminal and run these 3 commands:
+
+-----------------------------------
+COMMAND 1: Start MySQL (if needed)
+-----------------------------------
+sudo systemctl start mysql
+
+-----------------------------------
+COMMAND 2: Create WordPress Database
+-----------------------------------
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS wordpress_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS 'wordpress_user'@'localhost' IDENTIFIED BY 'wordpress_password_123'; GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost'; FLUSH PRIVILEGES; SELECT 'Database created successfully!' AS Status;"
+
+-----------------------------------
+COMMAND 3: Install phpMyAdmin (Optional)
+-----------------------------------
+sudo apt install phpmyadmin -y && ln -s /usr/share/phpmyadmin /home/saiful/wordpress/phpmyadmin
+
+-----------------------------------
+COMMAND 4: Start WordPress
+-----------------------------------
+cd /home/saiful/wordpress && php -S localhost:7000
+
+=========================================
+AFTER RUNNING THESE:
+=========================================
+
+Visit: http://localhost:7000
+
+Database Info (for WordPress installation):
+  - Database Name: wordpress_db
+  - Username: wordpress_user
+  - Password: wordpress_password_123
+  - Database Host: localhost
+  - Table Prefix: wp_ (default)
+
+phpMyAdmin: http://localhost:7000/phpmyadmin
+  - Use same username/password as above
+
+=========================================
+

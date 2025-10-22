@@ -1,0 +1,39 @@
+╔════════════════════════════════════════════════════════════════╗
+║           🔗 WORDPRESS QUICK URL REFERENCE 🔗                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+📱 NETWORK ACCESS (From any device):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏠 Homepage:
+   http://192.168.10.203:7000/
+
+🛍️ Shop Page:
+   http://192.168.10.203:7000/shop/
+
+🔧 Admin Login:
+   http://192.168.10.203:7000/wp-admin/
+
+📦 All Products (Admin):
+   http://192.168.10.203:7000/wp-admin/edit.php?post_type=product
+
+➕ Add New Product:
+   http://192.168.10.203:7000/wp-admin/post-new.php?post_type=product
+
+🗄️ phpMyAdmin:
+   http://192.168.10.203:7000/phpmyadmin
+   Username: wordpress_user
+   Password: wordpress_password_123
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ IMPORTANT: Admin URLs must include /wp-admin/
+
+❌ WRONG:  http://192.168.10.203:7000/edit.php?post_type=product
+✅ CORRECT: http://192.168.10.203:7000/wp-admin/edit.php?post_type=product
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 TIP: Bookmark the admin URL and login once, then navigate
+        from the WordPress dashboard menu!
+

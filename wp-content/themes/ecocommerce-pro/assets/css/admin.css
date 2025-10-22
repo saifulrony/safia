@@ -1,0 +1,1622 @@
+/* ==========================================================================
+   EcoCommerce Pro - Modern Admin Panel Styles
+   Beautiful, Professional, Easy to Use
+   ========================================================================== */
+
+/* ==========================================================================
+   Base Admin Styles
+   ========================================================================== */
+
+.ecocommerce-pro-options {
+    background: #f8f9fa;
+    margin: -20px -20px -10px -10px;
+    padding: 0;
+}
+
+.ecocommerce-pro-options > h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin: 0;
+    padding: 30px 40px;
+    font-size: 28px;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ecocommerce-pro-options > h1::before {
+    content: "🎨 ";
+}
+
+/* ==========================================================================
+   Container Layout - Modern Grid
+   ========================================================================== */
+
+.ecocommerce-admin-container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 30px;
+    padding: 30px 40px;
+    max-width: 1400px;
+}
+
+.ecocommerce-admin-main {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.ecocommerce-admin-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ==========================================================================
+   Modern Card Design
+   ========================================================================== */
+
+.ecocommerce-card {
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.ecocommerce-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.ecocommerce-card h2 {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    margin: 0;
+    padding: 20px 30px;
+    border-bottom: 2px solid #e9ecef;
+    font-size: 20px;
+    color: #1f2937;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ecocommerce-card h2::before {
+    content: "⚙️";
+    font-size: 24px;
+}
+
+.ecocommerce-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    color: #374151;
+    font-weight: 600;
+}
+
+/* Card Content */
+.ecocommerce-card > .form-table,
+.ecocommerce-card > p,
+.ecocommerce-card > ul,
+.ecocommerce-card > ol,
+.ecocommerce-card > div:not(.demo-preview):not(.demo-info) {
+    padding: 30px;
+}
+
+/* ==========================================================================
+   Sidebar Cards - Info/Help Boxes
+   ========================================================================== */
+
+.ecocommerce-admin-sidebar .ecocommerce-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+}
+
+.ecocommerce-admin-sidebar .ecocommerce-card h3 {
+    color: #2563eb;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.ecocommerce-admin-sidebar .ecocommerce-card {
+    padding: 20px;
+}
+
+/* Quick Links */
+.ecocommerce-quick-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ecocommerce-quick-links li {
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.ecocommerce-quick-links a {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.ecocommerce-quick-links a::before {
+    content: "→";
+    margin-right: 10px;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.ecocommerce-quick-links a:hover {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.ecocommerce-quick-links a:hover::before {
+    color: white;
+}
+
+/* ==========================================================================
+   Form Fields - Modern Material Design
+   ========================================================================== */
+
+.form-table {
+    border: none;
+    background: transparent;
+}
+
+.form-table th {
+    width: 240px;
+    padding: 20px 20px 20px 30px;
+    font-weight: 600;
+    color: #374151;
+    vertical-align: top;
+    padding-top: 25px;
+}
+
+.form-table td {
+    padding: 20px 30px;
+}
+
+.form-table tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.2s;
+}
+
+.form-table tr:last-child {
+    border-bottom: none;
+}
+
+.form-table tr:hover {
+    background: #f9fafb;
+}
+
+/* Input Fields - Modern Style */
+.form-table input[type="text"],
+.form-table input[type="url"],
+.form-table input[type="email"],
+.form-table input[type="number"],
+.form-table textarea,
+.form-table select {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: white;
+}
+
+.form-table input[type="text"]:focus,
+.form-table input[type="url"]:focus,
+.form-table input[type="email"]:focus,
+.form-table input[type="number"]:focus,
+.form-table textarea:focus,
+.form-table select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-table textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-table textarea.code {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: #f8f9fa;
+}
+
+/* Checkboxes - Custom Modern Style */
+.form-table input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.form-table input[type="checkbox"]:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.form-table label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+/* Description Text */
+p.description {
+    margin-top: 8px;
+    color: #6b7280;
+    font-size: 13px;
+    font-style: normal;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   Upload Buttons & Media - Modern Design
+   ========================================================================== */
+
+.logo-upload,
+.favicon-upload,
+.hero-bg-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.upload-logo-button,
+.upload-favicon-button,
+.upload-hero-bg-button,
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.upload-logo-button:hover,
+.upload-favicon-button:hover,
+.upload-hero-bg-button:hover,
+.button:hover {
+    background: #1e40af;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    color: white;
+}
+
+.remove-logo-button,
+.remove-favicon-button,
+.remove-hero-bg-button {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+.remove-logo-button:hover,
+.remove-favicon-button:hover,
+.remove-hero-bg-button:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+.button-secondary {
+    background: white;
+    color: #374151;
+    border: 2px solid #e5e7eb;
+}
+
+.button-secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #1f2937;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Preview Boxes */
+.logo-preview,
+.favicon-preview,
+.hero-bg-preview {
+    margin-top: 15px;
+    padding: 20px;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.logo-preview:hover,
+.favicon-preview:hover,
+.hero-bg-preview:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.logo-preview img,
+.favicon-preview img,
+.hero-bg-preview img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+
+.logo-preview:empty::after,
+.favicon-preview:empty::after,
+.hero-bg-preview:empty::after {
+    content: "No image selected";
+    color: #9ca3af;
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Color Picker - Enhanced
+   ========================================================================== */
+
+.wp-picker-container {
+    display: inline-block;
+}
+
+.wp-color-result {
+    border-radius: 8px !important;
+    border: 2px solid #e5e7eb !important;
+    height: 40px !important;
+    width: 100px !important;
+    box-shadow: none !important;
+    transition: all 0.2s;
+}
+
+.wp-color-result:hover {
+    border-color: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2) !important;
+}
+
+.wp-color-result:after {
+    border-radius: 6px !important;
+}
+
+/* ==========================================================================
+   Color Presets - Beautiful Buttons
+   ========================================================================== */
+
+.preset-button {
+    position: relative;
+    padding: 12px 20px 12px 50px;
+    margin-bottom: 12px;
+    width: 100%;
+    text-align: left;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.preset-button:hover {
+    border-color: #2563eb;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.preset-button:before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #e5e7eb, 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.preset-button[data-preset="eco-green"]:before {
+    background: linear-gradient(135deg, #4CAF50, #8BC34A);
+}
+
+.preset-button[data-preset="ocean-blue"]:before {
+    background: linear-gradient(135deg, #2196F3, #03A9F4);
+}
+
+.preset-button[data-preset="sunset-orange"]:before {
+    background: linear-gradient(135deg, #FF9800, #FF5722);
+}
+
+.preset-button[data-preset="royal-purple"]:before {
+    background: linear-gradient(135deg, #9C27B0, #E91E63);
+}
+
+/* Reset Button - Danger Style */
+.reset-styles-button {
+    width: 100%;
+    background: white;
+    color: #ef4444;
+    border: 2px solid #ef4444;
+    padding: 12px 20px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.reset-styles-button:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   Submit Button - Call to Action Style
+   ========================================================================== */
+
+.submit {
+    margin: 30px 40px;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+}
+
+.submit .button-primary {
+    padding: 15px 40px;
+    height: auto;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.submit .button-primary:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+}
+
+.submit .button-primary::before {
+    content: "💾 ";
+}
+
+/* ==========================================================================
+   Notices & Alerts - Modern Design
+   ========================================================================== */
+
+.notice {
+    border-left-width: 4px;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin: 20px 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.notice.notice-success {
+    background: #d1fae5;
+    border-left-color: #10b981;
+    color: #065f46;
+}
+
+.notice.notice-error {
+    background: #fee2e2;
+    border-left-color: #ef4444;
+    color: #991b1b;
+}
+
+.notice.notice-info {
+    background: #dbeafe;
+    border-left-color: #2563eb;
+    color: #1e40af;
+}
+
+.notice.notice-warning {
+    background: #fef3c7;
+    border-left-color: #f59e0b;
+    color: #92400e;
+}
+
+/* ==========================================================================
+   Demo Import Page - Special Styling
+   ========================================================================== */
+
+.demo-import-card h2::before {
+    content: "🎨";
+}
+
+.demo-preview {
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.demo-preview img {
+    width: 100%;
+    height: auto;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.demo-info {
+    padding: 30px;
+}
+
+.demo-features {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.demo-features li {
+    padding: 15px 20px;
+    margin: 10px 0;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 10px;
+    border-left: 4px solid #2563eb;
+    font-size: 14px;
+    line-height: 1.6;
+    transition: all 0.2s;
+}
+
+.demo-features li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.demo-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 4px solid #f59e0b;
+}
+
+.demo-warning strong {
+    display: block;
+    margin-bottom: 10px;
+    color: #92400e;
+    font-size: 15px;
+}
+
+.demo-warning ul {
+    margin: 10px 0 0 20px;
+    color: #78350f;
+}
+
+/* Import Button - Hero Style */
+#import-demo-btn {
+    padding: 18px 40px !important;
+    font-size: 18px !important;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
+    transition: all 0.3s !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#import-demo-btn:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5) !important;
+}
+
+#import-demo-btn .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+/* Progress Bar */
+.progress-bar {
+    background: #f3f4f6;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 40px;
+    margin: 20px 0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #2563eb, #10b981);
+    height: 100%;
+    width: 0%;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+#import-status {
+    text-align: center;
+    font-weight: 600;
+    color: #374151;
+    font-size: 15px;
+}
+
+/* ==========================================================================
+   Page Builder Page - Table Styling
+   ========================================================================== */
+
+.widefat {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.widefat thead tr {
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+}
+
+.widefat thead th {
+    color: white;
+    font-weight: 700;
+    padding: 15px;
+    border: none;
+}
+
+.widefat tbody tr {
+    background: white;
+    transition: all 0.2s;
+}
+
+.widefat tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.widefat tbody tr:hover {
+    background: #eff6ff;
+    transform: scale(1.01);
+}
+
+.widefat td {
+    padding: 15px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.widefat tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Builder Features List */
+.builder-features {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+}
+
+.builder-features li {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 10px;
+    border-left: 4px solid #2563eb;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.builder-features li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    .ecocommerce-admin-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .ecocommerce-admin-sidebar {
+        order: -1;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ecocommerce-pro-options > h1 {
+        padding: 20px;
+        font-size: 22px;
+    }
+    
+    .ecocommerce-admin-container {
+        padding: 20px;
+        gap: 20px;
+    }
+    
+    .form-table th {
+        width: 100%;
+        display: block;
+        padding: 15px 20px 5px;
+    }
+    
+    .form-table td {
+        display: block;
+        padding: 5px 20px 15px;
+    }
+    
+    .form-table input[type="text"],
+    .form-table input[type="url"],
+    .form-table input[type="email"],
+    .form-table textarea,
+    .form-table select {
+        max-width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Icons & Visual Enhancements
+   ========================================================================== */
+
+/* Add icons to section headings */
+.ecocommerce-card h2[class*="color"]::before { content: "🎨"; }
+.ecocommerce-card h2[class*="typo"]::before { content: "✍️"; }
+.ecocommerce-card h2[class*="header"]::before { content: "📍"; }
+.ecocommerce-card h2[class*="footer"]::before { content: "🦶"; }
+.ecocommerce-card h2[class*="hero"]::before { content: "🎯"; }
+.ecocommerce-card h2[class*="social"]::before { content: "📱"; }
+.ecocommerce-card h2[class*="general"]::before { content: "⚙️"; }
+
+/* Sidebar heading icons */
+.ecocommerce-admin-sidebar h3::before {
+    content: "💡";
+    margin-right: 8px;
+}
+
+/* ==========================================================================
+   Animation Classes
+   ========================================================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ecocommerce-card {
+    animation: fadeIn 0.5s ease;
+}
+
+.ecocommerce-card:nth-child(1) { animation-delay: 0.1s; }
+.ecocommerce-card:nth-child(2) { animation-delay: 0.2s; }
+.ecocommerce-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.dashicons-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Tooltips
+   ========================================================================== */
+
+.ecocommerce-tooltip {
+    position: absolute;
+    background: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.2s;
+}
+
+.ecocommerce-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+}
+
+/* ==========================================================================
+   Success Messages & Highlights
+   ========================================================================== */
+
+.highlight-box {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.highlight-box h3 {
+    color: #065f46;
+    margin-top: 0;
+}
+
+/* ==========================================================================
+   Better Focus States - Accessibility
+   ========================================================================== */
+
+.button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 3px solid rgba(37, 99, 235, 0.3);
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Visual Radio Buttons - Layout Selection
+   ========================================================================== */
+
+.visual-radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.visual-radio-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    border: 3px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.visual-radio-option:hover {
+    border-color: #2563eb;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+    transform: translateY(-5px);
+}
+
+.visual-radio-option.selected {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
+}
+
+.visual-radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.visual-radio-image {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.visual-radio-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.visual-radio-image svg {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+}
+
+.visual-radio-label {
+    text-align: center;
+    width: 100%;
+}
+
+.visual-radio-label strong {
+    display: block;
+    font-size: 15px;
+    color: #1f2937;
+    margin-bottom: 5px;
+}
+
+.visual-radio-desc {
+    display: block;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.visual-radio-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.visual-radio-option.selected .visual-radio-check {
+    display: flex;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Icon Selector - Visual Icons
+   ========================================================================== */
+
+.icon-selector-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 15px 0;
+}
+
+.icon-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 15px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    min-width: 100px;
+    transition: all 0.2s;
+}
+
+.icon-option:hover {
+    border-color: #2563eb;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.icon-option.selected {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.icon-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.icon-option-icon {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.icon-option-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    text-align: center;
+}
+
+.icon-option.selected .icon-option-label {
+    color: #2563eb;
+}
+
+/* ==========================================================================
+   Toggle Switch - iOS Style
+   ========================================================================== */
+
+.toggle-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-label {
+    flex: 1;
+    cursor: pointer;
+}
+
+.toggle-label strong {
+    display: block;
+    font-size: 15px;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.toggle-description {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   Color Scheme Preview - Live Mockup
+   ========================================================================== */
+
+.color-scheme-preview {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+}
+
+.color-preview-mockup {
+    max-width: 400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.preview-header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+.preview-logo {
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.preview-menu {
+    display: flex;
+    gap: 8px;
+}
+
+.preview-menu span {
+    width: 30px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 2px;
+}
+
+.preview-content {
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.preview-button {
+    padding: 12px 24px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+}
+
+.preview-text {
+    line-height: 1.6;
+}
+
+.preview-link {
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Info Box Component
+   ========================================================================== */
+
+.info-box {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    align-items: flex-start;
+}
+
+.info-box-icon {
+    font-size: 32px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.info-box-content {
+    flex: 1;
+}
+
+.info-box-content h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.info-box-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   Feature Grid - Benefits Display
+   ========================================================================== */
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.feature-item {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+.feature-item:hover {
+    border-color: #2563eb;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
+.feature-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 10px;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.feature-content h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.feature-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   Stats Display
+   ========================================================================== */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 25px 15px;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s;
+}
+
+.stat-item:hover {
+    border-color: #2563eb;
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
+.stat-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 800;
+    color: #2563eb;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Section Dividers with Icons
+   ========================================================================== */
+
+.section-divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 30px 0 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.section-divider-icon {
+    font-size: 28px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 10px;
+}
+
+.section-divider-text h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #1f2937;
+}
+
+.section-divider-text p {
+    margin: 5px 0 0 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* ==========================================================================
+   Option Groups with Visual Headers
+   ========================================================================== */
+
+.option-group {
+    margin: 30px 0;
+}
+
+.option-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px 10px 0 0;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.option-group-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 8px;
+}
+
+.option-group-title {
+    flex: 1;
+}
+
+.option-group-title h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1f2937;
+}
+
+.option-group-title p {
+    margin: 3px 0 0 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.option-group-content {
+    background: white;
+    padding: 20px;
+    border-radius: 0 0 10px 10px;
+    border: 2px solid #e5e7eb;
+    border-top: none;
+}
+
+/* ==========================================================================
+   Live Preview Panel
+   ========================================================================== */
+
+.live-preview-panel {
+    position: sticky;
+    top: 32px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 2px solid #e5e7eb;
+}
+
+.live-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.live-preview-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #1f2937;
+}
+
+.preview-refresh-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.preview-refresh-btn:hover {
+    background: #e5e7eb;
+}
+
+.live-preview-content {
+    min-height: 300px;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ==========================================================================
+   Enhanced Help Text with Icons
+   ========================================================================== */
+
+p.description {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border-left: 3px solid #2563eb;
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+p.description::before {
+    content: "💡";
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   Option Cards - Alternative Layout
+   ========================================================================== */
+
+.option-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.option-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 25px;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.option-card:hover {
+    border-color: #2563eb;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+}
+
+.option-card-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 12px;
+    font-size: 30px;
+    margin-bottom: 15px;
+}
+
+.option-card h4 {
+    margin: 0 0 10px 0;
+    font-size: 17px;
+    color: #1f2937;
+}
+
+.option-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   Comparison Slider
+   ========================================================================== */
+
+.comparison-slider {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: #1f2937;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.comparison-before,
+.comparison-after {
+    position: relative;
+    overflow: hidden;
+}
+
+.comparison-before img,
+.comparison-after img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.comparison-label {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+    .ecocommerce-admin-sidebar,
+    .submit,
+    .notice {
+        display: none;
+    }
+}

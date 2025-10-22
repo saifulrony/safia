@@ -1,0 +1,55 @@
+# WordPress Core
+wp-admin/
+wp-includes/
+wp-activate.php
+wp-blog-header.php
+wp-comments-post.php
+wp-config-sample.php
+wp-cron.php
+wp-links-opml.php
+wp-load.php
+wp-login.php
+wp-mail.php
+wp-settings.php
+wp-signup.php
+wp-trackback.php
+xmlrpc.php
+readme.html
+license.txt
+
+# WordPress Config
+wp-config.php
+wp-config-simple.php
+wp-config-no-db.php
+
+# Uploads Directory
+wp-content/uploads/
+
+# Debug Logs
+wp-content/debug.log
+*.log
+
+# phpMyAdmin
+phpmyadmin/
+
+# Backup and Temporary Files
+*.sql
+*.tar.gz
+*.zip
+*.bak
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+.directory
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (if any)
+node_modules/
+

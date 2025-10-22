@@ -1,0 +1,625 @@
+/**
+ * EcoCommerce Pro - Header Templates CSS
+ * Different header designs
+ */
+
+/* ==========================================================================
+   DEFAULT HEADER - Logo left, menu center, icons right
+   ========================================================================== */
+
+.header-template-default .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+}
+
+.header-template-default .site-branding {
+    flex: 0 0 auto;
+}
+
+.header-template-default .main-navigation {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.header-template-default .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* ==========================================================================
+   CENTERED HEADER - Logo and menu centered
+   ========================================================================== */
+
+.header-template-centered .site-header {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.header-template-centered .site-branding {
+    margin: 0 auto 15px;
+}
+
+.header-template-centered .main-navigation {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.header-template-centered .header-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+/* ==========================================================================
+   MINIMAL HEADER - Clean and simple
+   ========================================================================== */
+
+.header-template-minimal .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.header-template-minimal .site-branding {
+    flex: 0 0 auto;
+}
+
+.header-template-minimal .main-navigation {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.header-template-minimal .header-actions {
+    display: none; /* Truly minimal */
+}
+
+.header-template-minimal .main-navigation ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.header-template-minimal .main-navigation a {
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   SPLIT HEADER - Menu left, logo center, icons right
+   ========================================================================== */
+
+.header-template-split .site-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 20px 0;
+    gap: 30px;
+}
+
+.header-template-split .main-navigation {
+    justify-self: start;
+}
+
+.header-template-split .site-branding {
+    justify-self: center;
+}
+
+.header-template-split .header-actions {
+    justify-self: end;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* ==========================================================================
+   STACKED HEADER - Logo on top, menu below
+   ========================================================================== */
+
+.header-template-stacked .site-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0 0;
+}
+
+.header-template-stacked .header-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.header-template-stacked .site-branding {
+    margin: 0 auto;
+}
+
+.header-template-stacked .header-actions {
+    position: absolute;
+    right: 0;
+    top: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.header-template-stacked .main-navigation {
+    width: 100%;
+    border-top: 2px solid #e5e7eb;
+    padding-top: 15px;
+}
+
+.header-template-stacked .main-navigation ul {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ==========================================================================
+   MODERN HEADER - Large logo, gradient background
+   ========================================================================== */
+
+.header-template-modern .site-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px 0;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.header-template-modern .site-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-template-modern .site-branding {
+    flex: 0 0 auto;
+}
+
+.header-template-modern .site-branding .site-title a,
+.header-template-modern .site-branding .site-description {
+    color: white;
+}
+
+.header-template-modern .main-navigation {
+    flex: 0 0 auto;
+}
+
+.header-template-modern .main-navigation a {
+    color: white;
+    font-weight: 600;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.header-template-modern .main-navigation a:hover {
+    opacity: 1;
+}
+
+.header-template-modern .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 15px;
+}
+
+.header-template-modern .header-actions a {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: background 0.3s ease;
+}
+
+.header-template-modern .header-actions a:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================================================
+   TRANSPARENT HEADER - Overlay on hero
+   ========================================================================== */
+
+.header-template-transparent .site-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%);
+    padding: 20px 0;
+}
+
+.header-template-transparent .site-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-template-transparent .site-branding .site-title a,
+.header-template-transparent .site-branding .site-description,
+.header-template-transparent .main-navigation a,
+.header-template-transparent .header-actions a {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header-template-transparent.scrolled {
+    position: fixed;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header-template-transparent.scrolled .site-branding .site-title a,
+.header-template-transparent.scrolled .site-branding .site-description,
+.header-template-transparent.scrolled .main-navigation a,
+.header-template-transparent.scrolled .header-actions a {
+    color: #1f2937;
+    text-shadow: none;
+}
+
+/* ==========================================================================
+   BOXED HEADER - Contained in boxed layout
+   ========================================================================== */
+
+.header-template-boxed {
+    padding: 20px 0;
+    background: #f9fafb;
+}
+
+.header-template-boxed .site-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    padding: 20px 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-template-boxed .site-branding {
+    flex: 0 0 auto;
+}
+
+.header-template-boxed .main-navigation {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.header-template-boxed .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 15px;
+}
+
+/* ==========================================================================
+   MEGA MENU HEADER - Full-width menu bar
+   ========================================================================== */
+
+.header-template-mega-menu .site-header {
+    display: flex;
+    flex-direction: column;
+}
+
+.header-template-mega-menu .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 15px;
+}
+
+.header-template-mega-menu .main-navigation {
+    width: 100%;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    margin-top: 15px;
+}
+
+.header-template-mega-menu .main-navigation ul {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin: 0;
+    padding: 15px 0;
+    list-style: none;
+}
+
+.header-template-mega-menu .main-navigation a {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   COMMON ELEMENTS - All headers
+   ========================================================================== */
+
+.site-header {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Sticky Header State */
+body.sticky-header .site-header.is-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease;
+}
+
+/* Keep top bar space */
+body.sticky-header .site-header.is-sticky + #content {
+    padding-top: 80px;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Site Branding */
+.site-branding {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.custom-logo {
+    max-height: 50px;
+    width: auto;
+    display: block;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.site-title a {
+    color: #1f2937;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.site-title a:hover {
+    color: #2563eb;
+}
+
+.site-description {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Main Navigation */
+.main-navigation ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.main-navigation a {
+    color: #1f2937;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: color 0.3s ease;
+    position: relative;
+    padding: 5px 0;
+}
+
+.main-navigation a:hover,
+.main-navigation a.current {
+    color: #2563eb;
+}
+
+.main-navigation a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #2563eb;
+    transition: width 0.3s ease;
+}
+
+.main-navigation a:hover::after,
+.main-navigation a.current::after {
+    width: 100%;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.header-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #1f2937;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.header-action-btn:hover {
+    background: #2563eb;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.header-action-btn .count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Top Bar */
+.header-top-bar {
+    background: #1f2937;
+    color: white;
+    padding: 10px 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+.header-top-bar a {
+    color: white;
+    text-decoration: underline;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #1f2937;
+    cursor: pointer;
+    padding: 5px;
+}
+
+/* ==========================================================================
+   RESPONSIVE - Mobile adjustments
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .main-navigation {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        background: white;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        padding: 80px 20px 20px;
+        overflow-y: auto;
+    }
+    
+    .main-navigation.active {
+        display: block;
+        animation: slideInLeft 0.3s ease;
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+    
+    .main-navigation ul {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .main-navigation li {
+        width: 100%;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .main-navigation a {
+        display: block;
+        padding: 15px 10px;
+    }
+    
+    /* Template-specific mobile adjustments */
+    .header-template-centered .site-header,
+    .header-template-split .site-header,
+    .header-template-stacked .site-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .header-template-stacked .main-navigation {
+        border-top: none;
+    }
+    
+    .header-template-mega-menu .main-navigation {
+        background: white;
+        border: none;
+    }
+    
+    .header-actions {
+        gap: 10px;
+    }
+    
+    .header-action-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .custom-logo {
+        max-height: 40px;
+    }
+    
+    .site-title {
+        font-size: 18px;
+    }
+    
+    .site-description {
+        display: none;
+    }
+}
+
