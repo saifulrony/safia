@@ -1,0 +1,91 @@
+/* Sidebar Toggle Button */
+.probuilder-sidebar-toggle {
+    background: #ffffff;
+    border: 1px solid #e6e9ec;
+    color: #71717a;
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.probuilder-sidebar-toggle:hover {
+    background: #92003b;
+    color: #ffffff;
+    border-color: #92003b;
+}
+
+.probuilder-sidebar-toggle .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Left Sidebar Toggle */
+#probuilder-left-sidebar-toggle {
+    margin-left: auto;
+}
+
+/* Right Sidebar Toggle */
+#probuilder-right-sidebar-toggle {
+    order: -1;
+}
+
+/* Collapsed States */
+.probuilder-sidebar.collapsed {
+    width: 50px !important;
+    min-width: 50px !important;
+    overflow: hidden;
+}
+
+.probuilder-sidebar.collapsed .probuilder-search-input,
+.probuilder-sidebar.collapsed .probuilder-sidebar-tabs,
+.probuilder-sidebar.collapsed .probuilder-sidebar-content {
+    display: none;
+}
+
+.probuilder-sidebar.collapsed .probuilder-sidebar-header {
+    padding: 18px 11px;
+    justify-content: center;
+}
+
+.probuilder-sidebar.collapsed .probuilder-sidebar-toggle .dashicons {
+    transform: rotate(180deg);
+}
+
+.probuilder-settings-panel.collapsed {
+    width: 50px !important;
+    min-width: 50px !important;
+    overflow: hidden;
+}
+
+.probuilder-settings-panel.collapsed .probuilder-settings-content,
+.probuilder-settings-panel.collapsed #probuilder-settings-title,
+.probuilder-settings-panel.collapsed .probuilder-settings-tabs {
+    display: none;
+}
+
+.probuilder-settings-panel.collapsed .probuilder-settings-header {
+    padding: 18px 11px;
+    justify-content: center;
+}
+
+.probuilder-settings-panel.collapsed .probuilder-sidebar-toggle .dashicons {
+    transform: rotate(180deg);
+}
+
+/* Smooth Transitions */
+.probuilder-sidebar,
+.probuilder-settings-panel {
+    transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+.probuilder-sidebar-toggle .dashicons {
+    transition: transform 0.3s ease;
+}
+

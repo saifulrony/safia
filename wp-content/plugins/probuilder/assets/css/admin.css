@@ -1,0 +1,81 @@
+/**
+ * ProBuilder Admin Styles
+ */
+
+/* Welcome Panel */
+.probuilder-admin-welcome {
+    margin-top: 20px;
+}
+
+.probuilder-welcome-panel {
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 40px;
+    text-align: center;
+}
+
+.probuilder-welcome-panel h2 {
+    margin: 0 0 15px 0;
+    font-size: 28px;
+}
+
+.probuilder-welcome-panel p {
+    font-size: 16px;
+    color: #646970;
+    margin-bottom: 30px;
+}
+
+.probuilder-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.probuilder-features .feature {
+    text-align: left;
+    font-size: 15px;
+    color: #1e1e1e;
+}
+
+.probuilder-features .dashicons {
+    color: #00a32a;
+    margin-right: 5px;
+}
+
+/* Settings Page */
+.form-table th {
+    padding: 20px 10px 20px 0;
+}
+
+.form-table td {
+    padding: 15px 10px;
+}
+
+.form-table label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Templates Page */
+.wp-list-table {
+    margin-top: 20px;
+}
+
+/* Buttons */
+.button-hero {
+    padding: 15px 30px !important;
+    font-size: 16px !important;
+    height: auto !important;
+}
+
+/* ProBuilder Row Action */
+.row-actions .probuilder {
+    color: #0073aa;
+}
+
+.row-actions .probuilder:hover {
+    color: #005a87;
+}
+

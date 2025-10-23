@@ -1,0 +1,1261 @@
+/**
+ * ProBuilder Editor - True Elementor-Style Interface
+ */
+
+/* Import Roboto Font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap');
+
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.probuilder-editor-body {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+    background: #e6e9ec;
+    font-size: 13px;
+    color: #495157;
+    line-height: 1.5;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Ensure admin bar is always on top */
+body.admin-bar #wpadminbar {
+    z-index: 99999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+/* If admin bar is visible */
+body.admin-bar.probuilder-editor-body {
+    padding-top: 32px !important;
+}
+
+/* If no admin bar */
+body:not(.admin-bar).probuilder-editor-body {
+    padding-top: 0 !important;
+}
+
+/* Editor Header - Elementor Style - Smaller and properly positioned */
+.probuilder-editor-header {
+    background: #ffffff !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-bottom: 1px solid #e6e9ec;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* When admin bar is present - header goes below it */
+body.admin-bar .probuilder-editor-header {
+    top: 32px !important;
+    z-index: 99998 !important; /* Just below admin bar */
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* If no admin bar - header at the top */
+body:not(.admin-bar) .probuilder-editor-header {
+    top: 0 !important;
+    z-index: 99998 !important;
+    margin-top: 0px !important;
+    padding-top: 0 !important;
+}
+
+.probuilder-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.probuilder-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #92003b;
+    letter-spacing: -0.5px;
+}
+
+.probuilder-logo .dashicons {
+    font-size: 28px;
+    background: linear-gradient(135deg, #92003b 0%, #d5006d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.probuilder-page-title {
+    color: #71717a;
+    font-size: 14px;
+    font-weight: 400;
+    padding-left: 20px;
+    border-left: 1px solid #e6e9ec;
+    margin-left: 20px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Responsive Controls */
+.probuilder-responsive-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid #e6e9ec;
+}
+
+.probuilder-device-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    color: #71717a;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+}
+
+.probuilder-device-btn:hover {
+    background: #f4f4f5;
+    color: #495157;
+}
+
+.probuilder-device-btn.active {
+    background: #92003b;
+    color: #ffffff;
+    border-color: #92003b;
+}
+
+.probuilder-header-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Buttons - Elementor Style */
+.probuilder-btn {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.probuilder-btn .dashicons {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+}
+
+.probuilder-btn-primary {
+    background: #92003b;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(147, 0, 60, 0.25);
+}
+
+.probuilder-btn-primary:hover {
+    background: #b30049;
+    box-shadow: 0 6px 16px rgba(147, 0, 60, 0.35);
+    transform: translateY(-1px);
+}
+
+.probuilder-btn-secondary {
+    background: #ffffff;
+    color: #71717a;
+    border: 1px solid #e6e9ec;
+}
+
+.probuilder-btn-secondary:hover {
+    background: #f4f4f5;
+    border-color: #d4d4d8;
+    color: #495157;
+    transform: translateY(-1px);
+}
+
+.probuilder-btn-link {
+    background: transparent;
+    color: #71717a;
+    text-decoration: none;
+    padding: 10px 18px;
+}
+
+.probuilder-btn-link:hover {
+    background: #f4f4f5;
+    color: #495157;
+}
+
+/* Main Editor Area */
+.probuilder-editor-main {
+    display: flex;
+    height: calc(100vh - 77px); /* 45px header + 32px admin bar */
+    position: relative;
+    margin-top: 77px; /* Push down: 32px admin bar + 45px header */
+    z-index: 1; /* Ensure it's above other content */
+}
+
+body:not(.admin-bar) .probuilder-editor-main {
+    height: calc(100vh - 45px);
+    margin-top: 45px; /* Push down: 45px header only */
+}
+
+/* Left Sidebar - Resizable */
+.probuilder-sidebar {
+    min-width: 200px;
+    max-width: 500px;
+    width: 280px; /* Default width */
+    background: #ffffff;
+    border-right: 1px solid #e6e9ec;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.04);
+    position: relative;
+}
+
+/* Resize handle for left sidebar */
+.probuilder-sidebar::after {
+    content: '⋮';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 15px;
+    height: 100%;
+    cursor: ew-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 16px;
+    z-index: 10;
+    transition: all 0.2s;
+    pointer-events: auto;
+}
+
+.probuilder-sidebar:hover::after {
+    color: #a1a1aa;
+    background: linear-gradient(90deg, transparent, rgba(146, 0, 59, 0.05));
+}
+
+.probuilder-sidebar.resizing::after {
+    background: linear-gradient(90deg, transparent, rgba(146, 0, 59, 0.15));
+    color: #92003b;
+}
+
+.probuilder-sidebar-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e6e9ec;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.probuilder-search-input {
+    width: 100%;
+    padding: 12px 18px 12px 45px;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+    background: #ffffff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%2371717a" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') no-repeat 15px center;
+    font-family: 'Roboto', sans-serif;
+}
+
+.probuilder-search-input:focus {
+    outline: none;
+    border-color: #92003b;
+    box-shadow: 0 0 0 3px rgba(147, 0, 60, 0.08);
+}
+
+.probuilder-search-input::placeholder {
+    color: #a1a1aa;
+}
+
+/* Sidebar Tabs */
+.probuilder-sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid #e6e9ec;
+    background: #ffffff;
+}
+
+.probuilder-tab-btn {
+    flex: 1;
+    padding: 16px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    color: #71717a;
+    font-family: 'Roboto', sans-serif;
+}
+
+.probuilder-tab-btn .dashicons {
+    font-size: 18px;
+}
+
+.probuilder-tab-btn:hover {
+    background: #fafafa;
+    color: #495157;
+}
+
+.probuilder-tab-btn.active {
+    border-bottom-color: #92003b;
+    color: #92003b;
+    background: #ffffff;
+}
+
+.probuilder-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fafafa;
+}
+
+.probuilder-sidebar-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.probuilder-sidebar-content::-webkit-scrollbar-track {
+    background: #f4f4f5;
+}
+
+.probuilder-sidebar-content::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 4px;
+}
+
+.probuilder-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+}
+
+.probuilder-tab-content {
+    display: none;
+}
+
+.probuilder-tab-content.active {
+    display: block;
+}
+
+/* Widget Categories */
+.probuilder-widget-category {
+    margin-bottom: 35px;
+}
+
+.probuilder-category-title {
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 18px;
+    color: #92003b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e6e9ec;
+}
+
+.probuilder-category-title .dashicons {
+    font-size: 16px;
+}
+
+/* Responsive widgets grid based on sidebar width */
+.probuilder-widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Default: 2 columns */
+    gap: 15px;
+}
+
+/* 1 column when sidebar is narrow */
+.probuilder-sidebar[data-width="narrow"] .probuilder-widgets-grid {
+    grid-template-columns: 1fr;
+}
+
+/* 2 columns when sidebar is medium (default) */
+.probuilder-sidebar[data-width="medium"] .probuilder-widgets-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 3 columns when sidebar is wide */
+.probuilder-sidebar[data-width="wide"] .probuilder-widgets-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Widget Cards - Responsive */
+.probuilder-widget {
+    background: #ffffff;
+    border: 1px solid #e6e9ec;
+    border-radius: 4px;
+    padding: 18px 12px;
+    text-align: center;
+    cursor: move;
+    transition: all 0.2s;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Narrow sidebar - bigger cards */
+.probuilder-sidebar[data-width="narrow"] .probuilder-widget {
+    padding: 20px 15px;
+}
+
+/* Wide sidebar - more compact */
+.probuilder-sidebar[data-width="wide"] .probuilder-widget {
+    padding: 15px 10px;
+}
+
+.probuilder-widget:hover {
+    background: #ffffff;
+    border-color: #92003b;
+    box-shadow: 0 4px 16px rgba(147, 0, 60, 0.15);
+    transform: translateY(-3px);
+}
+
+.probuilder-widget-icon {
+    font-size: 28px;
+    color: #92003b;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+
+/* Responsive icon sizes */
+.probuilder-sidebar[data-width="narrow"] .probuilder-widget-icon {
+    font-size: 36px;
+}
+
+.probuilder-sidebar[data-width="wide"] .probuilder-widget-icon {
+    font-size: 24px;
+}
+
+.probuilder-widget:hover .probuilder-widget-icon {
+    transform: scale(1.15);
+}
+
+.probuilder-widget-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: #27272a;
+    line-height: 1.4;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Responsive widget title */
+.probuilder-sidebar[data-width="narrow"] .probuilder-widget-title {
+    font-size: 12px;
+}
+
+.probuilder-sidebar[data-width="wide"] .probuilder-widget-title {
+    font-size: 9px;
+}
+
+/* Canvas Area - More space in middle */
+.probuilder-canvas {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+    background: #e6e9ec;
+    /* This takes all remaining space between sidebars */
+}
+
+.probuilder-canvas::-webkit-scrollbar {
+    width: 12px;
+}
+
+.probuilder-canvas::-webkit-scrollbar-track {
+    background: #d4d4d8;
+}
+
+.probuilder-canvas::-webkit-scrollbar-thumb {
+    background: #a1a1aa;
+    border-radius: 6px;
+}
+
+.probuilder-canvas::-webkit-scrollbar-thumb:hover {
+    background: #71717a;
+}
+
+.probuilder-canvas-inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    transition: max-width 0.3s ease;
+}
+
+.probuilder-preview-area {
+    background: #ffffff;
+    min-height: 800px;
+    border-radius: 5px;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    border: 1px solid #e6e9ec;
+}
+
+/* Device Modes */
+.probuilder-canvas-inner.device-mobile .probuilder-preview-area {
+    max-width: 375px;
+}
+
+.probuilder-canvas-inner.device-tablet .probuilder-preview-area {
+    max-width: 768px;
+}
+
+/* Add Element Section - Always visible */
+.probuilder-add-element-section {
+    text-align: center;
+    padding: 30px 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.probuilder-add-element-section:hover {
+    opacity: 1;
+}
+
+.probuilder-add-element-btn {
+    background: transparent;
+    border: 2px dashed #d4d4d8;
+    color: #71717a;
+    padding: 18px 35px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.probuilder-add-element-btn:hover {
+    background: #fef1f6;
+    border-color: #92003b;
+    color: #92003b;
+    transform: translateY(-2px);
+}
+
+.probuilder-add-element-btn .dashicons {
+    font-size: 20px;
+}
+
+/* Add element between elements */
+.probuilder-add-section-between {
+    text-align: center;
+    padding: 15px 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+    position: relative;
+}
+
+.probuilder-element:hover + .probuilder-add-section-between,
+.probuilder-add-section-between:hover {
+    opacity: 1;
+}
+
+.probuilder-add-section-between button {
+    background: #ffffff;
+    border: 1px solid #92003b;
+    color: #92003b;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+
+.probuilder-add-section-between button:hover {
+    background: #92003b;
+    color: #ffffff;
+}
+
+/* Empty State - only shown when truly empty */
+.probuilder-empty-state {
+    display: none;
+    text-align: center;
+    padding: 150px 50px;
+    color: #a1a1aa;
+}
+
+.probuilder-empty-state .dashicons {
+    font-size: 100px;
+    width: 100px;
+    height: 100px;
+    opacity: 0.15;
+    color: #92003b;
+    margin-bottom: 20px;
+}
+
+.probuilder-empty-state h3 {
+    font-size: 28px;
+    margin: 30px 0 15px;
+    color: #27272a;
+    font-weight: 600;
+}
+
+.probuilder-empty-state p {
+    font-size: 15px;
+    margin-bottom: 40px;
+    line-height: 1.7;
+    color: #71717a;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Elements - Elementor Style */
+.probuilder-element {
+    margin-bottom: 0;
+    border: 1px solid transparent;
+    border-radius: 0;
+    transition: all 0.15s;
+    position: relative;
+    background: #ffffff;
+}
+
+.probuilder-element:hover {
+    outline: 2px solid #92003b;
+    outline-offset: 0;
+    z-index: 10;
+}
+
+.probuilder-element.selected {
+    outline: 2px solid #92003b;
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px rgba(147, 0, 60, 0.08);
+    z-index: 10;
+}
+
+/* Element Controls Bar */
+.probuilder-element-controls {
+    display: none;
+    background: #92003b;
+    color: #ffffff;
+    padding: 6px 10px;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 11px;
+    gap: 8px;
+    position: absolute;
+    top: -33px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.12);
+    border-radius: 3px;
+    width: auto;
+    min-width: 200px;
+}
+
+.probuilder-element:hover .probuilder-element-controls {
+    display: flex;
+}
+
+.probuilder-element-drag {
+    cursor: move;
+    display: flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    margin-right: auto;
+}
+
+.probuilder-element-drag:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.probuilder-element-drag .dashicons {
+    font-size: 14px;
+}
+
+.probuilder-element-name {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 9px;
+    margin-left: 4px;
+}
+
+.probuilder-element-actions {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+}
+
+.probuilder-element-actions button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+}
+
+.probuilder-element-actions button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.probuilder-element-actions button .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.probuilder-element-preview {
+    padding: 25px;
+    background: #ffffff;
+    min-height: 70px;
+}
+
+.probuilder-element-placeholder {
+    background: #fef1f6;
+    border: 2px dashed #92003b;
+    height: 90px;
+    margin-bottom: 0;
+    border-radius: 0;
+}
+
+/* Container & Column Styles */
+.probuilder-container-columns {
+    width: 100%;
+}
+
+.probuilder-column {
+    min-height: 60px;
+    position: relative;
+}
+
+.probuilder-drop-zone {
+    transition: all 0.2s;
+}
+
+.probuilder-drop-zone:hover {
+    background: #fef1f6 !important;
+    border-color: #92003b !important;
+}
+
+.probuilder-drop-active {
+    background: #fef1f6 !important;
+    border: 2px solid #92003b !important;
+}
+
+/* Container in editor */
+.probuilder-element[data-widget="container"] .probuilder-element-preview {
+    padding: 15px;
+}
+
+/* Nested elements in container */
+.probuilder-element .probuilder-element {
+    margin-bottom: 10px;
+}
+
+.probuilder-element .probuilder-element:last-child {
+    margin-bottom: 0;
+}
+
+/* Settings Panel - Resizable */
+.probuilder-settings-panel {
+    min-width: 250px;
+    max-width: 500px;
+    width: 340px; /* Default width */
+    background: #ffffff;
+    border-left: 1px solid #e6e9ec;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: -3px 0 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Resize handle for right sidebar */
+.probuilder-settings-panel::before {
+    content: '⋮';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 15px;
+    height: 100%;
+    cursor: ew-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 16px;
+    z-index: 10;
+    transition: all 0.2s;
+    pointer-events: auto;
+}
+
+.probuilder-settings-panel:hover::before {
+    color: #a1a1aa;
+    background: linear-gradient(270deg, transparent, rgba(146, 0, 59, 0.05));
+}
+
+.probuilder-settings-panel.resizing::before {
+    background: linear-gradient(270deg, transparent, rgba(146, 0, 59, 0.15));
+    color: #92003b;
+}
+
+.probuilder-settings-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #e6e9ec;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafafa;
+    gap: 10px;
+}
+
+.probuilder-settings-header h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #27272a;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.probuilder-close-settings {
+    display: none !important; /* Hidden - panel always visible */
+}
+
+/* Settings Tabs */
+.probuilder-settings-tabs {
+    display: flex;
+    border-bottom: 1px solid #e6e9ec;
+    background: #ffffff;
+}
+
+.probuilder-settings-tab {
+    flex: 1;
+    padding: 16px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    color: #71717a;
+}
+
+.probuilder-settings-tab .dashicons {
+    font-size: 20px;
+}
+
+.probuilder-settings-tab:hover {
+    background: #fafafa;
+    color: #495157;
+}
+
+.probuilder-settings-tab.active {
+    border-bottom-color: #92003b;
+    color: #92003b;
+    background: #ffffff;
+}
+
+.probuilder-settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 18px;
+    background: #fafafa;
+}
+
+/* Default message when no element selected */
+.probuilder-settings-placeholder {
+    padding: 50px 25px;
+    text-align: center;
+    color: #71717a;
+}
+
+.probuilder-settings-placeholder .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    opacity: 0.15;
+    color: #92003b;
+    margin: 0 auto 20px;
+    display: block;
+}
+
+.probuilder-settings-placeholder h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #27272a;
+    margin: 0 0 10px 0;
+}
+
+.probuilder-settings-placeholder p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #71717a;
+}
+
+/* Responsive placeholder for narrow panel */
+.probuilder-settings-panel[data-width="narrow"] .probuilder-settings-placeholder {
+    padding: 30px 15px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-settings-placeholder .dashicons {
+    font-size: 50px;
+    width: 50px;
+    height: 50px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-settings-placeholder h4 {
+    font-size: 14px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-settings-placeholder p {
+    font-size: 11px;
+}
+
+.probuilder-settings-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.probuilder-settings-content::-webkit-scrollbar-track {
+    background: #f4f4f5;
+}
+
+.probuilder-settings-content::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 4px;
+}
+
+.probuilder-settings-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+}
+
+/* Form Controls - Responsive to panel width */
+.probuilder-control {
+    margin-bottom: 20px;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #e6e9ec;
+}
+
+/* Compact controls when panel is narrow */
+.probuilder-settings-panel[data-width="narrow"] .probuilder-control {
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-control label {
+    font-size: 9px;
+    margin-bottom: 8px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-input,
+.probuilder-settings-panel[data-width="narrow"] .probuilder-textarea,
+.probuilder-settings-panel[data-width="narrow"] .probuilder-select {
+    padding: 8px 10px;
+    font-size: 11px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-slider-value {
+    font-size: 10px;
+    padding: 3px 6px;
+}
+
+/* Wide controls when panel is wide */
+.probuilder-settings-panel[data-width="wide"] .probuilder-control {
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.probuilder-settings-panel[data-width="wide"] .probuilder-control label {
+    font-size: 12px;
+    margin-bottom: 14px;
+}
+
+.probuilder-settings-panel[data-width="wide"] .probuilder-input,
+.probuilder-settings-panel[data-width="wide"] .probuilder-textarea,
+.probuilder-settings-panel[data-width="wide"] .probuilder-select {
+    padding: 12px 16px;
+    font-size: 14px;
+}
+
+.probuilder-control label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #27272a;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.probuilder-input,
+.probuilder-textarea,
+.probuilder-select {
+    width: 100%;
+    padding: 11px 15px;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+    background: #ffffff;
+    color: #27272a;
+    font-family: 'Roboto', sans-serif;
+}
+
+.probuilder-input:focus,
+.probuilder-textarea:focus,
+.probuilder-select:focus {
+    outline: none;
+    border-color: #92003b;
+    box-shadow: 0 0 0 3px rgba(147, 0, 60, 0.08);
+}
+
+.probuilder-textarea {
+    resize: vertical;
+    min-height: 110px;
+    line-height: 1.6;
+}
+
+.probuilder-color {
+    width: 100%;
+    height: 48px;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px;
+    background: #ffffff;
+}
+
+/* Slider - Elementor Style */
+.probuilder-slider {
+    width: calc(100% - 60px);
+    margin-right: 15px;
+    height: 5px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #e6e9ec;
+    border-radius: 3px;
+    outline: none;
+}
+
+.probuilder-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #92003b;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(147, 0, 60, 0.3);
+    transition: all 0.2s;
+}
+
+.probuilder-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(147, 0, 60, 0.4);
+}
+
+.probuilder-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #92003b;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 3px 8px rgba(147, 0, 60, 0.3);
+}
+
+.probuilder-slider-value {
+    display: inline-block;
+    width: 50px;
+    text-align: center;
+    font-size: 12px;
+    color: #27272a;
+    background: #f4f4f5;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    border: 1px solid #e6e9ec;
+}
+
+/* Control Section Headers */
+.probuilder-control-section h4 {
+    margin: 35px 0 18px;
+    font-size: 11px;
+    color: #92003b;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e6e9ec;
+}
+
+/* Loading Overlay */
+.probuilder-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(3px);
+}
+
+.probuilder-spinner {
+    border: 4px solid rgba(255, 255, 255, 0.15);
+    border-top: 4px solid #92003b;
+    border-right: 4px solid #92003b;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.probuilder-loading p {
+    color: #ffffff;
+    margin-top: 30px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Success Notice */
+.probuilder-notice {
+    padding: 16px 25px;
+    margin: 18px 25px;
+    border-left: 4px solid;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    font-size: 13px;
+    animation: slideDown 0.3s ease;
+    font-weight: 500;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.probuilder-notice-success {
+    border-left-color: #22c55e;
+    color: #16a34a;
+    background: #f0fdf4;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .probuilder-sidebar {
+        width: 240px;
+    }
+    
+    .probuilder-settings-panel {
+        width: 300px;
+        right: -300px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .probuilder-canvas {
+        padding: 20px;
+    }
+    
+    .probuilder-sidebar {
+        width: 220px;
+    }
+    
+    .probuilder-settings-panel {
+        width: 280px;
+        right: -280px;
+    }
+}
+
+/* Additional Elementor-like touches */
+.probuilder-widget:active {
+    transform: scale(0.98);
+}
+
+.probuilder-element:hover .probuilder-element-controls {
+    animation: slideDown 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    background: #fafafa;
+}
+
+.probuilder-btn:active {
+    transform: scale(0.97) !important;
+}
