@@ -1,0 +1,86 @@
+/* Container Column Selector - On Canvas */
+.probuilder-container-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(146, 0, 59, 0.95);
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: none;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.probuilder-element[data-widget="container"]:hover .probuilder-container-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.probuilder-container-controls-label {
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.probuilder-column-selector {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.probuilder-column-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.probuilder-column-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.1);
+}
+
+.probuilder-column-btn.active {
+    background: #ffffff;
+    color: #92003b;
+    border-color: #ffffff;
+}
+
+/* Compact responsive settings */
+.probuilder-settings-panel[data-width="narrow"] .probuilder-control {
+    margin-bottom: 12px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-control-label {
+    font-size: 10px;
+    margin-bottom: 5px;
+}
+
+.probuilder-settings-panel[data-width="narrow"] .probuilder-input,
+.probuilder-settings-panel[data-width="narrow"] .probuilder-textarea,
+.probuilder-settings-panel[data-width="narrow"] .probuilder-select {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.probuilder-settings-panel[data-width="wide"] .probuilder-control {
+    margin-bottom: 18px;
+}
+
+.probuilder-settings-panel[data-width="wide"] .probuilder-control-label {
+    font-size: 12px;
+}
+

@@ -50,6 +50,52 @@
             console.log('ProBuilder initialized successfully!');
             console.log('- Widgets:', this.widgets.length);
             console.log('- Elements:', this.elements.length);
+            
+            // Make globally accessible for templates
+            window.ProBuilderApp = this;
+        },
+        
+        /**
+         * Import template data
+         */
+        importTemplate: function(templateData) {
+            console.log('Importing template:', templateData);
+            
+            if (!templateData || !Array.isArray(templateData)) {
+                alert('Invalid template data');
+                return;
+            }
+            
+            // Add template elements to current design
+            templateData.forEach(elementData => {
+                // Generate new IDs to avoid conflicts
+                const newElement = this.cloneElementData(elementData);
+                this.elements.push(newElement);
+                this.renderElement(newElement);
+            });
+            
+            this.updateEmptyState();
+            this.makeContainersDroppable();
+            
+            alert('Template imported successfully!');
+        },
+        
+        /**
+         * Clone element data with new IDs
+         */
+        cloneElementData: function(elementData) {
+            const newElement = {
+                id: 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                widgetType: elementData.widgetType,
+                settings: JSON.parse(JSON.stringify(elementData.settings || {})),
+                children: []
+            };
+            
+            if (elementData.children && elementData.children.length > 0) {
+                newElement.children = elementData.children.map(child => this.cloneElementData(child));
+            }
+            
+            return newElement;
         },
         
         /**
@@ -457,8 +503,21 @@
                 const preview = this.generatePreview(element);
                 console.log('Preview generated for:', element.id);
                 
+                // Add column selector for containers
+                const columnSelector = element.widgetType === 'container' ? `
+                    <div class="probuilder-container-controls">
+                        <span class="probuilder-container-controls-label">Columns:</span>
+                        <div class="probuilder-column-selector">
+                            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(num => 
+                                `<button class="probuilder-column-btn ${(element.settings.columns || '1') == num ? 'active' : ''}" data-columns="${num}">${num}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : '';
+                
                 const $element = $(`
                     <div class="probuilder-element" data-id="${element.id}" data-widget="${element.widgetType}">
+                        ${columnSelector}
                         <div class="probuilder-element-controls">
                             <span class="probuilder-element-drag">
                                 <i class="dashicons dashicons-move"></i>
@@ -505,10 +564,30 @@
                 
                 // Click to select
                 $element.on('click', function(e) {
-                    if (!$(e.target).closest('.probuilder-element-actions').length) {
+                    if (!$(e.target).closest('.probuilder-element-actions').length && 
+                        !$(e.target).closest('.probuilder-column-btn').length) {
                         self.selectElement(element);
                     }
                 });
+                
+                // Container column selector
+                if (element.widgetType === 'container') {
+                    $element.find('.probuilder-column-btn').on('click', function(e) {
+                        e.stopPropagation();
+                        const columns = $(this).data('columns');
+                        console.log('Changing container columns to:', columns);
+                        
+                        // Update element settings
+                        element.settings.columns = columns.toString();
+                        
+                        // Update active state
+                        $(this).siblings().removeClass('active');
+                        $(this).addClass('active');
+                        
+                        // Re-render the container
+                        self.updateElementPreview(element);
+                    });
+                }
                 
                 if (insertBefore) {
                     $(insertBefore).before($element);

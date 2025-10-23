@@ -160,7 +160,11 @@
                 
                 <!-- Templates Tab -->
                 <div class="probuilder-tab-content" data-tab="templates">
-                    <div class="probuilder-templates-list" id="probuilder-templates-list"></div>
+                    <div class="probuilder-templates-loading" style="text-align: center; padding: 60px 20px; color: #a1a1aa;">
+                        <i class="dashicons dashicons-admin-page" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h3 style="font-size: 16px; color: #71717a; margin: 0 0 10px 0;">Loading Templates...</h3>
+                        <p style="font-size: 13px; margin: 0;">Please wait while we load the template library</p>
+                    </div>
                 </div>
                 
             </div>

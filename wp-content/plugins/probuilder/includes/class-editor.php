@@ -142,6 +142,8 @@ class ProBuilder_Editor {
         // Enqueue our styles - Force reload
         wp_enqueue_style('probuilder-editor', PROBUILDER_URL . 'assets/css/editor.css', [], time());
         wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], time());
+        wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], time());
+        wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], time());
         wp_enqueue_style('probuilder-icons', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', [], '6.4.0');
         
         // Enqueue scripts - Force reload
@@ -152,11 +154,12 @@ class ProBuilder_Editor {
         wp_enqueue_script('jquery-ui-droppable');
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], time(), true);
+        wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], time(), true);
         
         // Localize script with all data
         wp_localize_script('probuilder-editor-js', 'ProBuilderEditor', [
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('probuilder_editor'),
+            'nonce' => wp_create_nonce('probuilder-editor'),
             'post_id' => $post_id,
             'widgets' => ProBuilder_Widgets_Manager::instance()->get_widgets_config(),
             'templates' => ProBuilder_Templates::instance()->get_templates_list(),

@@ -63,6 +63,7 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-frontend.php';
         require_once PROBUILDER_PATH . 'includes/class-ajax.php';
         require_once PROBUILDER_PATH . 'includes/class-templates.php';
+        require_once PROBUILDER_PATH . 'includes/class-templates-library.php';
         
         // Layout Widgets
         require_once PROBUILDER_PATH . 'widgets/container.php';

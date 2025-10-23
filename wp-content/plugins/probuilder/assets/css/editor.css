@@ -982,19 +982,19 @@ body:not(.admin-bar) .probuilder-editor-main {
     background: #a1a1aa;
 }
 
-/* Form Controls - Responsive to panel width */
+/* Form Controls - Responsive to panel width - More Compact */
 .probuilder-control {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     background: #ffffff;
-    padding: 15px;
-    border-radius: 4px;
+    padding: 12px;
+    border-radius: 3px;
     border: 1px solid #e6e9ec;
 }
 
 /* Compact controls when panel is narrow */
 .probuilder-settings-panel[data-width="narrow"] .probuilder-control {
-    padding: 10px;
-    margin-bottom: 12px;
+    padding: 8px;
+    margin-bottom: 10px;
 }
 
 .probuilder-settings-panel[data-width="narrow"] .probuilder-control label {
@@ -1016,8 +1016,8 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 /* Wide controls when panel is wide */
 .probuilder-settings-panel[data-width="wide"] .probuilder-control {
-    padding: 20px;
-    margin-bottom: 25px;
+    padding: 15px;
+    margin-bottom: 18px;
 }
 
 .probuilder-settings-panel[data-width="wide"] .probuilder-control label {
