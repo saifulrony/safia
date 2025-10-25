@@ -30,6 +30,7 @@ class ProBuilder_Widgets_Manager {
         $widget_classes = [
             // Layout
             'ProBuilder_Widget_Container',
+            'ProBuilder_Widget_Flexbox',
             
             // Basic
             'ProBuilder_Widget_Heading',
@@ -71,6 +72,11 @@ class ProBuilder_Widgets_Manager {
             'ProBuilder_Widget_Logo_Grid',
             'ProBuilder_Widget_Video',
             'ProBuilder_Widget_Map',
+            'ProBuilder_Widget_HTML_Code',
+            'ProBuilder_Widget_Shortcode',
+            'ProBuilder_Widget_WP_Header',
+            'ProBuilder_Widget_WP_Sidebar',
+            'ProBuilder_Widget_WP_Footer',
         ];
         
         foreach ($widget_classes as $class) {
@@ -108,13 +114,27 @@ class ProBuilder_Widgets_Manager {
         $config = [];
         
         foreach ($this->widgets as $widget) {
+            $controls = $widget->get_controls();
+            
+            // Debug: Log control tabs for heading widget
+            if ($widget->get_name() === 'heading') {
+                error_log("========== HEADING WIDGET DEBUG ==========");
+                error_log("Total controls: " . count($controls));
+                foreach ($controls as $key => $control) {
+                    $tab = isset($control['tab']) ? $control['tab'] : 'NO TAB';
+                    $type = isset($control['type']) ? $control['type'] : 'NO TYPE';
+                    error_log("  Control: $key | Tab: $tab | Type: $type");
+                }
+                error_log("==========================================");
+            }
+            
             $config[] = [
                 'name' => $widget->get_name(),
                 'title' => $widget->get_title(),
                 'icon' => $widget->get_icon(),
                 'category' => $widget->get_category(),
                 'keywords' => $widget->get_keywords(),
-                'controls' => $widget->get_controls(),
+                'controls' => $controls,
             ];
         }
         

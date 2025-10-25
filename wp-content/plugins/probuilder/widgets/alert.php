@@ -20,6 +20,7 @@ class ProBuilder_Widget_Alert extends ProBuilder_Base_Widget {
     protected function register_controls() {
         $this->start_controls_section('section_alert', [
             'label' => __('Alert', 'probuilder'),
+            'tab' => 'content'
         ]);
         
         $this->add_control('alert_type', [
@@ -46,10 +47,73 @@ class ProBuilder_Widget_Alert extends ProBuilder_Base_Widget {
             'default' => __('This is an alert message.', 'probuilder'),
         ]);
         
+        $this->add_control('show_icon', [
+            'label' => __('Show Icon', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+        ]);
+        
         $this->add_control('dismissible', [
             'label' => __('Dismissible', 'probuilder'),
             'type' => 'switcher',
             'default' => 'yes',
+        ]);
+        
+        $this->end_controls_section();
+        
+        $this->start_controls_section('section_style', [
+            'label' => __('Style', 'probuilder'),
+            'tab' => 'style'
+        ]);
+        
+        $this->add_control('accent_color', [
+            'label' => __('Accent Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#92003b',
+        ]);
+        
+        $this->add_control('quote_color', [
+            'label' => __('Text Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#333333',
+        ]);
+        
+        $this->add_control('quote_size', [
+            'label' => __('Title Font Size', 'probuilder'),
+            'type' => 'slider',
+            'default' => 18,
+            'range' => [
+                'px' => [
+                    'min' => 14,
+                    'max' => 32,
+                    'step' => 1
+                ]
+            ]
+        ]);
+        
+        $this->add_control('background_color', [
+            'label' => __('Background Color', 'probuilder'),
+            'type' => 'color',
+            'default' => 'transparent',
+        ]);
+        
+        $this->end_controls_section();
+        
+        $this->start_controls_section('section_advanced', [
+            'label' => __('Advanced', 'probuilder'),
+            'tab' => 'advanced'
+        ]);
+        
+        $this->add_control('padding', [
+            'label' => __('Padding', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 20, 'right' => 30, 'bottom' => 20, 'left' => 30]
+        ]);
+        
+        $this->add_control('margin', [
+            'label' => __('Margin', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 20, 'right' => 0, 'bottom' => 20, 'left' => 0]
         ]);
         
         $this->end_controls_section();

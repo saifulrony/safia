@@ -80,6 +80,7 @@
             
             const categories = {
                 'all': 'All Templates',
+                'pages': '🌟 Full Pages',
                 'hero': 'Hero Sections',
                 'features': 'Features',
                 'pricing': 'Pricing Tables',

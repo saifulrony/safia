@@ -18,8 +18,10 @@ class ProBuilder_Widget_Pricing_Table extends ProBuilder_Base_Widget {
     }
     
     protected function register_controls() {
+        // Content Section
         $this->start_controls_section('section_pricing', [
             'label' => __('Pricing', 'probuilder'),
+            'tab' => 'content',
         ]);
         
         $this->add_control('title', [
@@ -82,6 +84,50 @@ class ProBuilder_Widget_Pricing_Table extends ProBuilder_Base_Widget {
         ]);
         
         $this->end_controls_section();
+        
+        // Style Section
+        $this->start_controls_section('section_style', [
+            'label' => __('Style', 'probuilder'),
+            'tab' => 'style',
+        ]);
+        
+        $this->add_control('border_color', [
+            'label' => __('Border Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#e5e5e5',
+        ]);
+        
+        $this->add_control('title_color', [
+            'label' => __('Title Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#333333',
+        ]);
+        
+        $this->add_control('price_color', [
+            'label' => __('Price Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#333333',
+        ]);
+        
+        $this->add_control('button_bg_color', [
+            'label' => __('Button Background', 'probuilder'),
+            'type' => 'color',
+            'default' => '#333333',
+        ]);
+        
+        $this->add_control('button_text_color', [
+            'label' => __('Button Text Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#ffffff',
+        ]);
+        
+        $this->add_control('featured_color', [
+            'label' => __('Featured Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#0073aa',
+        ]);
+        
+        $this->end_controls_section();
     }
     
     protected function render() {
@@ -94,35 +140,53 @@ class ProBuilder_Widget_Pricing_Table extends ProBuilder_Base_Widget {
         $button_link = $this->get_settings('button_link', '#');
         $featured = $this->get_settings('featured', 'no');
         
-        $box_style = 'border: 2px solid ' . ($featured === 'yes' ? '#0073aa' : '#e5e5e5') . '; ';
-        $box_style .= 'padding: 40px 30px; text-align: center; background: #ffffff; position: relative;';
+        // Style settings
+        $border_color = $this->get_settings('border_color', '#e5e5e5');
+        $title_color = $this->get_settings('title_color', '#333333');
+        $price_color = $this->get_settings('price_color', '#333333');
+        $button_bg_color = $this->get_settings('button_bg_color', '#333333');
+        $button_text_color = $this->get_settings('button_text_color', '#ffffff');
+        $featured_color = $this->get_settings('featured_color', '#0073aa');
+        
+        // Apply featured color if featured is enabled
+        $active_border_color = ($featured === 'yes') ? $featured_color : $border_color;
+        $active_button_bg = ($featured === 'yes') ? $featured_color : $button_bg_color;
+        
+        $box_style = 'border: 2px solid ' . esc_attr($active_border_color) . '; ';
+        $box_style .= 'padding: 40px 30px; text-align: center; background: #ffffff; position: relative; border-radius: 8px;';
         
         echo '<div class="probuilder-pricing-table" style="' . $box_style . '">';
         
         if ($featured === 'yes') {
-            echo '<div class="probuilder-pricing-badge" style="position: absolute; top: 20px; right: 20px; background: #0073aa; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">POPULAR</div>';
+            echo '<div class="probuilder-pricing-badge" style="position: absolute; top: 20px; right: 20px; background: ' . esc_attr($featured_color) . '; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">POPULAR</div>';
         }
         
         // Title
-        echo '<h3 style="font-size: 24px; margin: 0 0 20px 0;">' . esc_html($title) . '</h3>';
+        echo '<h3 style="font-size: 24px; margin: 0 0 20px 0; font-weight: 600; color: ' . esc_attr($title_color) . ';">' . esc_html($title) . '</h3>';
         
         // Price
-        echo '<div class="probuilder-pricing-price" style="margin-bottom: 30px;">';
-        echo '<span style="font-size: 24px; vertical-align: top;">' . esc_html($currency) . '</span>';
+        echo '<div class="probuilder-pricing-price" style="margin-bottom: 30px; color: ' . esc_attr($price_color) . ';">';
+        echo '<span style="font-size: 24px; vertical-align: top; font-weight: 600;">' . esc_html($currency) . '</span>';
         echo '<span style="font-size: 60px; font-weight: bold; line-height: 1;">' . esc_html($price) . '</span>';
         echo '<div style="color: #666; font-size: 14px; margin-top: 5px;">' . esc_html($period) . '</div>';
         echo '</div>';
         
         // Features
-        echo '<ul class="probuilder-pricing-features" style="list-style: none; margin: 0 0 30px 0; padding: 0;">';
+        echo '<ul class="probuilder-pricing-features" style="list-style: none; margin: 0 0 30px 0; padding: 0; text-align: left;">';
         foreach ($features as $feature) {
-            echo '<li style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">' . esc_html($feature['text']) . '</li>';
+            if (!empty($feature['text'])) {
+                echo '<li style="padding: 10px 0; padding-left: 25px; border-bottom: 1px solid #f0f0f0; color: #555; position: relative;">';
+                echo '<span class="dashicons dashicons-yes" style="position: absolute; left: 0; top: 10px; color: ' . esc_attr($featured === 'yes' ? $featured_color : '#0073aa') . '; font-size: 18px;"></span>';
+                echo esc_html($feature['text']);
+                echo '</li>';
+            }
         }
         echo '</ul>';
         
         // Button
-        $button_style = 'background: ' . ($featured === 'yes' ? '#0073aa' : '#333333') . '; ';
-        $button_style .= 'color: white; padding: 15px 40px; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold;';
+        $button_style = 'background: ' . esc_attr($active_button_bg) . '; ';
+        $button_style .= 'color: ' . esc_attr($button_text_color) . '; ';
+        $button_style .= 'padding: 15px 40px; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; transition: all 0.3s;';
         
         echo '<a href="' . esc_url($button_link) . '" class="probuilder-pricing-button" style="' . $button_style . '">' . esc_html($button_text) . '</a>';
         

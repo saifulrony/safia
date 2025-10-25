@@ -1,0 +1,218 @@
+═══════════════════════════════════════════════════════════
+         MAP WIDGET - SETTINGS NOW WORKING! 🗺️✅
+═══════════════════════════════════════════════════════════
+
+✅ ISSUE FIXED:
+
+PROBLEM:
+- Map was not showing the location you type in sidebar
+- Settings were not being read correctly
+- Map always showed default location (Times Square)
+
+SOLUTION:
+- Fixed settings retrieval method
+- Now properly reads your custom location
+- Map updates with your coordinates
+
+═══════════════════════════════════════════════════════════
+
+🔧 WHAT WAS CHANGED:
+
+Changed from:
+  $settings = $this->get_settings();
+  $address = $settings['address'] ?? 'default';
+
+To:
+  $address = $this->get_settings('address', 'default');
+
+This ensures your settings are properly read!
+
+═══════════════════════════════════════════════════════════
+
+📍 HOW TO USE THE MAP WIDGET:
+
+1. ADD THE WIDGET
+   - Drag "Google Map" widget to your page
+
+2. CLICK "EDIT" BUTTON
+   - Right sidebar will open with settings
+
+3. ENTER YOUR LOCATION
+   
+   Option A: Use Address (Simple)
+   --------------------------------
+   - Enter address in "Address" field
+   - Example: "1600 Amphitheatre Parkway, Mountain View, CA"
+   - Note: Map uses coordinates, so also add lat/long
+   
+   Option B: Use Coordinates (Accurate)
+   ------------------------------------
+   - Find your location on Google Maps
+   - Right-click on the exact spot
+   - Click the coordinates (numbers like 37.4220, -122.0841)
+   - Copy them
+   - Paste Latitude in "Latitude" field
+   - Paste Longitude in "Longitude" field
+
+4. ADJUST MAP SETTINGS
+   - Zoom Level: 1-20 (higher = closer)
+   - Height: 200-800px
+   - Border Radius: 0-50px
+
+5. SAVE OR PREVIEW
+   - Click outside or press Enter
+   - Map will update with your location!
+
+═══════════════════════════════════════════════════════════
+
+🌍 HOW TO FIND COORDINATES (EASY!):
+
+Step 1: Go to Google Maps
+  → https://www.google.com/maps
+
+Step 2: Search for your location
+  → Type address, business name, etc.
+  → Or zoom to the location manually
+
+Step 3: Right-click on the exact spot
+  → A menu will appear
+
+Step 4: Click the coordinates at the top
+  → They look like: 40.7580, -73.9855
+  → They will be copied automatically
+
+Step 5: Paste into ProBuilder
+  → First number = Latitude
+  → Second number = Longitude
+  → Example: 40.7580, -73.9855
+    - Latitude: 40.7580
+    - Longitude: -73.9855
+
+═══════════════════════════════════════════════════════════
+
+📋 EXAMPLE LOCATIONS:
+
+Times Square, New York
+  Latitude: 40.7580
+  Longitude: -73.9855
+
+Eiffel Tower, Paris
+  Latitude: 48.8584
+  Longitude: 2.2945
+
+Big Ben, London
+  Latitude: 51.5007
+  Longitude: -0.1246
+
+Sydney Opera House, Australia
+  Latitude: -33.8568
+  Longitude: 151.2153
+
+Burj Khalifa, Dubai
+  Latitude: 25.1972
+  Longitude: 55.2744
+
+Tokyo Tower, Japan
+  Latitude: 35.6586
+  Longitude: 139.7454
+
+═══════════════════════════════════════════════════════════
+
+⚙️ ALL MAP SETTINGS:
+
+LOCATION TAB:
+✓ Address - Display text (e.g., "123 Main St")
+✓ Latitude - North/South coordinate (required)
+✓ Longitude - East/West coordinate (required)
+
+MAP SETTINGS TAB:
+✓ Zoom Level - 1 (world) to 20 (building)
+  - 1-5: Continent/Country
+  - 6-10: City/Region
+  - 11-15: District/Neighborhood
+  - 16-20: Street/Building
+✓ Map Type - Roadmap, Satellite, Hybrid, Terrain
+✓ Show Marker - Toggle pin on/off
+✓ Marker Title - Text for the pin
+
+STYLE TAB:
+✓ Height - 200px to 800px
+✓ Border Radius - 0px (square) to 50px (rounded)
+
+ADVANCED TAB:
+✓ Margin - Top, Right, Bottom, Left
+✓ Entrance Animation - None, Fade In, etc.
+
+═══════════════════════════════════════════════════════════
+
+🎯 COMMON ZOOM LEVELS:
+
+Zoom 1-3:   World view
+Zoom 4-6:   Continent view
+Zoom 7-9:   Country view
+Zoom 10-12: City view (DEFAULT)
+Zoom 13-15: Neighborhood view
+Zoom 16-18: Street view
+Zoom 19-20: Building view
+
+Recommended: 12-15 for most uses
+
+═══════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT TIPS:
+
+1. COORDINATES ARE REQUIRED
+   - Address alone won't work
+   - You MUST enter Latitude and Longitude
+   - These are the actual numbers that position the map
+
+2. CLEAR BROWSER CACHE
+   Press: Ctrl + Shift + R (Windows/Linux)
+   Or: Cmd + Shift + R (Mac)
+
+3. PREVIEW VS FRONTEND
+   - Editor: Shows map preview
+   - Frontend: Shows interactive map
+   - Both use your coordinates
+
+4. NEGATIVE NUMBERS ARE OK
+   - Latitude: -90 to +90
+     - Positive = North
+     - Negative = South
+   - Longitude: -180 to +180
+     - Positive = East
+     - Negative = West
+
+═══════════════════════════════════════════════════════════
+
+🔍 TROUBLESHOOTING:
+
+Map Not Updating?
+→ Make sure you entered BOTH Latitude AND Longitude
+→ Try clicking outside the input field
+→ Save the page and refresh
+
+Map Shows Wrong Location?
+→ Double-check your coordinates
+→ Make sure Latitude is first, Longitude is second
+→ No letters or symbols, just numbers and minus sign
+
+Map Too Zoomed In/Out?
+→ Adjust Zoom Level (1-20)
+→ Try 12 as a good starting point
+
+═══════════════════════════════════════════════════════════
+
+✅ STATUS: WORKING!
+
+Settings now properly update the map!
+Your custom location will display!
+
+Try it now:
+1. Clear browser cache
+2. Edit Map widget
+3. Enter your coordinates
+4. Watch the map update!
+
+═══════════════════════════════════════════════════════════
+

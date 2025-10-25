@@ -34,7 +34,7 @@ body.admin-bar #wpadminbar {
 
 /* If admin bar is visible */
 body.admin-bar.probuilder-editor-body {
-    padding-top: 32px !important;
+    padding-top: 0 !important;
 }
 
 /* If no admin bar */
@@ -61,7 +61,7 @@ body:not(.admin-bar).probuilder-editor-body {
 
 /* When admin bar is present - header goes below it */
 body.admin-bar .probuilder-editor-header {
-    top: 32px !important;
+    top: 60px !important;
     z-index: 99998 !important; /* Just below admin bar */
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -214,9 +214,9 @@ body:not(.admin-bar) .probuilder-editor-header {
 /* Main Editor Area */
 .probuilder-editor-main {
     display: flex;
-    height: calc(100vh - 77px); /* 45px header + 32px admin bar */
+    height: calc(100vh - 105px); /* 45px header + 60px offset */
     position: relative;
-    margin-top: 77px; /* Push down: 32px admin bar + 45px header */
+    margin-top: 105px; /* Push down: 60px offset + 45px header */
     z-index: 1; /* Ensure it's above other content */
 }
 
@@ -491,6 +491,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     overflow-y: auto;
     padding: 40px;
     background: #e6e9ec;
+    position: relative;
     /* This takes all remaining space between sidebars */
 }
 
@@ -512,9 +513,26 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-canvas-inner {
-    max-width: 1140px;
+    max-width: 100%;
     margin: 0 auto;
-    transition: max-width 0.3s ease;
+    transition: max-width 0.3s ease, margin 0.3s ease;
+    background: #ffffff;
+    min-height: 100%;
+}
+
+/* Responsive Canvas Widths */
+.probuilder-canvas[data-device="desktop"] .probuilder-canvas-inner {
+    max-width: 100%;
+}
+
+.probuilder-canvas[data-device="tablet"] .probuilder-canvas-inner {
+    max-width: 768px;
+    box-shadow: 0 0 0 1px #92003b, 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.probuilder-canvas[data-device="mobile"] .probuilder-canvas-inner {
+    max-width: 375px;
+    box-shadow: 0 0 0 1px #92003b, 0 10px 40px rgba(0,0,0,0.1);
 }
 
 .probuilder-preview-area {
@@ -612,35 +630,51 @@ body:not(.admin-bar) .probuilder-editor-main {
 /* Empty State - only shown when truly empty */
 .probuilder-empty-state {
     display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
-    padding: 150px 50px;
+    width: 100%;
+    max-width: 600px;
     color: #a1a1aa;
 }
 
 .probuilder-empty-state .dashicons {
-    font-size: 100px;
-    width: 100px;
-    height: 100px;
-    opacity: 0.15;
+    font-size: 120px;
+    width: 120px;
+    height: 120px;
+    opacity: 0.2;
     color: #92003b;
-    margin-bottom: 20px;
+    margin: 0 auto 30px;
+    display: block;
 }
 
 .probuilder-empty-state h3 {
-    font-size: 28px;
-    margin: 30px 0 15px;
-    color: #27272a;
-    font-weight: 600;
+    font-size: 32px;
+    margin: 0 0 20px;
+    color: #1e293b;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 .probuilder-empty-state p {
-    font-size: 15px;
-    margin-bottom: 40px;
-    line-height: 1.7;
-    color: #71717a;
-    max-width: 550px;
-    margin-left: auto;
-    margin-right: auto;
+    font-size: 16px;
+    margin: 0 0 40px;
+    line-height: 1.6;
+    color: #64748b;
+    padding: 0 20px;
+}
+
+.probuilder-empty-state .probuilder-btn {
+    font-size: 16px;
+    padding: 14px 32px;
+    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.2);
+}
+
+.probuilder-empty-state .probuilder-btn:hover {
+    box-shadow: 0 6px 20px rgba(146, 0, 59, 0.3);
+    transform: translateY(-2px);
 }
 
 /* Elements - Elementor Style */
@@ -651,12 +685,35 @@ body:not(.admin-bar) .probuilder-editor-main {
     transition: all 0.15s;
     position: relative;
     background: #ffffff;
+    cursor: move;
+    cursor: grab;
 }
 
 .probuilder-element:hover {
     outline: 2px solid #92003b;
     outline-offset: 0;
     z-index: 10;
+}
+
+.probuilder-element:hover::before {
+    content: "⋮⋮ Drag to reorder";
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(146, 0, 59, 0.9);
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 1000;
+    pointer-events: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.probuilder-element:active {
+    cursor: grabbing;
 }
 
 .probuilder-element.selected {
@@ -693,20 +750,63 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 .probuilder-element-drag {
     cursor: move;
+    cursor: grab;
     display: flex;
     align-items: center;
-    padding: 2px 6px;
+    padding: 4px 8px;
     border-radius: 3px;
     transition: all 0.2s;
     margin-right: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .probuilder-element-drag:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.probuilder-element-drag:active {
+    cursor: grabbing;
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .probuilder-element-drag .dashicons {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+/* Dragging state */
+.ui-sortable-helper,
+.dragging-element {
+    cursor: grabbing !important;
+    opacity: 0.8 !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+    transform: rotate(2deg) !important;
+    z-index: 10000 !important;
+}
+
+.ui-sortable-placeholder,
+.probuilder-element-placeholder {
+    border: 2px dashed #92003b !important;
+    background: rgba(146, 0, 59, 0.05) !important;
+    visibility: visible !important;
+    min-height: 80px !important;
+    margin-bottom: 20px !important;
+    border-radius: 4px !important;
+    position: relative !important;
+}
+
+.probuilder-element-placeholder::before {
+    content: "Drop here";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #92003b;
     font-size: 14px;
+    font-weight: 600;
+    opacity: 0.5;
 }
 
 .probuilder-element-name {
@@ -751,7 +851,7 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-element-preview {
-    padding: 25px;
+    padding: 0;
     background: #ffffff;
     min-height: 70px;
 }
@@ -790,7 +890,206 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 /* Container in editor */
 .probuilder-element[data-widget="container"] .probuilder-element-preview {
-    padding: 15px;
+    padding: 0;
+}
+
+/* Carousel in editor - no padding */
+.probuilder-element[data-widget="carousel"] .probuilder-element-preview {
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+/* Accordion Preview Styling */
+.probuilder-element[data-widget="accordion"] .probuilder-element-preview {
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+.probuilder-accordion-preview {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-item {
+    margin-bottom: 10px;
+    border: 1px solid #e6e9ec;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.probuilder-accordion-preview .probuilder-accordion-header {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    color: #333333;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    user-select: none;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-header:hover {
+    background: #e9ecef;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-icon {
+    font-size: 18px;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-content {
+    background: #ffffff;
+    color: #666666;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border-top: none;
+    line-height: 1.6;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-content p {
+    margin: 0 0 10px 0;
+}
+
+.probuilder-accordion-preview .probuilder-accordion-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Nested elements in containers */
+.probuilder-nested-element {
+    transition: all 0.2s;
+    position: relative;
+    z-index: 1;
+    min-height: 40px;
+}
+
+.probuilder-nested-element:hover {
+    outline: 2px solid #92003b;
+    outline-offset: -2px;
+    z-index: 10;
+}
+
+.probuilder-nested-element:hover .probuilder-nested-controls {
+    display: flex !important;
+}
+
+.probuilder-nested-controls {
+    z-index: 100 !important;
+}
+
+.probuilder-nested-controls button {
+    transition: all 0.2s;
+}
+
+.probuilder-nested-controls button:hover {
+    transform: scale(1.1) !important;
+    opacity: 0.9;
+}
+
+/* Nested preview - show actual element content */
+.probuilder-nested-preview {
+    position: relative;
+}
+
+/* Container columns */
+.probuilder-column {
+    position: relative;
+    z-index: 1;
+    border: 1px dashed transparent;
+    transition: border-color 0.2s;
+}
+
+.probuilder-column:hover {
+    border-color: #e6e9ec;
+}
+
+/* Nested placeholder */
+.probuilder-nested-placeholder {
+    background: #fef1f6;
+    border: 2px dashed #92003b;
+    height: 60px;
+    margin: 5px;
+    border-radius: 3px;
+}
+
+/* Drop zones in empty columns */
+.probuilder-drop-zone:hover {
+    border-color: #92003b !important;
+    background: #fef1f6 !important;
+}
+
+.probuilder-drop-zone:hover i {
+    opacity: 0.6 !important;
+}
+
+.probuilder-drop-zone:hover span {
+    opacity: 1 !important;
+    color: #92003b;
+}
+
+/* Drop hover state during drag */
+.probuilder-drop-hover {
+    background: #fef1f6 !important;
+    border: 2px dashed #92003b !important;
+}
+
+/* Nested element being dragged */
+.ui-draggable-dragging {
+    opacity: 0.8 !important;
+}
+
+/* Prevent text selection during drag */
+.probuilder-nested-element * {
+    user-select: none;
+}
+
+/* Repeater control */
+.probuilder-repeater-placeholder {
+    background: #fef1f6;
+    border: 2px dashed #92003b;
+    height: 60px;
+    border-radius: 4px;
+}
+
+.probuilder-repeater-handle:hover {
+    color: #92003b !important;
+}
+
+.probuilder-repeater-toggle:hover i {
+    color: #92003b !important;
+}
+
+.probuilder-repeater-delete:hover i {
+    color: #dc2626 !important;
+}
+
+.probuilder-repeater-add:hover {
+    background: #7a0031 !important;
+}
+
+/* Tab empty zone */
+.probuilder-tab-empty-zone:hover {
+    background: #fef1f6 !important;
+    border-radius: 4px;
+}
+
+.probuilder-tab-empty-zone:hover i {
+    opacity: 0.6 !important;
+    color: #92003b !important;
+}
+
+.probuilder-tab-empty-zone:hover span {
+    opacity: 1 !important;
+    color: #92003b !important;
 }
 
 /* Nested elements in container */
@@ -800,6 +1099,24 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 .probuilder-element .probuilder-element:last-child {
     margin-bottom: 0;
+}
+
+/* Carousel Preview */
+.probuilder-carousel-preview {
+    user-select: none;
+}
+
+.probuilder-carousel-slide img {
+    pointer-events: none;
+}
+
+.probuilder-carousel-prev:hover,
+.probuilder-carousel-next:hover {
+    transform: translateY(-50%) scale(1.1) !important;
+}
+
+.probuilder-carousel-dot:hover {
+    transform: scale(1.2);
 }
 
 /* Settings Panel - Resizable */
@@ -1214,6 +1531,240 @@ body:not(.admin-bar) .probuilder-editor-main {
     background: #f0fdf4;
 }
 
+/* ==================================================================
+   WIDGET PREVIEW STYLES
+   ================================================================== */
+
+/* Image Box Widget */
+.probuilder-element[data-widget="image-box"] .probuilder-element-preview {
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+.probuilder-image-box-preview {
+    transition: all 0.3s ease;
+}
+
+.probuilder-image-box-preview:hover {
+    transform: translateY(-2px);
+}
+
+/* Icon List Widget */
+.probuilder-element[data-widget="icon-list"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-icon-list-preview li {
+    transition: all 0.3s ease;
+}
+
+.probuilder-icon-list-preview li:hover {
+    transform: translateX(5px);
+}
+
+/* Feature List Widget */
+.probuilder-element[data-widget="feature-list"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-feature-list-preview .feature-item {
+    transition: all 0.3s ease;
+}
+
+/* Star Rating Widget */
+.probuilder-element[data-widget="star-rating"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-star-rating-preview .fa-star,
+.probuilder-star-rating-preview .fa-star-half-stroke {
+    transition: all 0.2s ease;
+}
+
+/* Flip Box Widget */
+.probuilder-element[data-widget="flip-box"] .probuilder-element-preview {
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+.probuilder-flip-box-preview {
+    user-select: none;
+}
+
+.probuilder-flip-box-preview .flip-box-front,
+.probuilder-flip-box-preview .flip-box-back {
+    transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.probuilder-flip-box-preview .flip-box-front img,
+.probuilder-flip-box-preview .flip-box-back img {
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Gallery Widget */
+.probuilder-element[data-widget="gallery"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-gallery-preview {
+    user-select: none;
+}
+
+.probuilder-gallery-preview img {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.probuilder-gallery-preview img:hover {
+    transform: scale(1.05);
+}
+
+/* Logo Grid Widget */
+.probuilder-element[data-widget="logo-grid"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-logo-grid-preview .logo-item img {
+    transition: all 0.3s ease;
+}
+
+/* Toggle Widget */
+.probuilder-element[data-widget="toggle"] .probuilder-element-preview {
+    padding: 0 !important;
+}
+
+.probuilder-toggle-preview .toggle-title:hover {
+    opacity: 0.9;
+}
+
+/* ==================================================================
+   ENTRANCE ANIMATIONS
+   ================================================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes rotateIn {
+    from {
+        opacity: 0;
+        transform: rotate(-200deg) scale(0);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+    }
+}
+
+@keyframes flipInX {
+    from {
+        opacity: 0;
+        transform: perspective(400px) rotateX(90deg);
+    }
+    to {
+        opacity: 1;
+        transform: perspective(400px) rotateX(0deg);
+    }
+}
+
 /* Responsive */
 @media (max-width: 1400px) {
     .probuilder-sidebar {
@@ -1258,4 +1809,21 @@ select:focus {
 
 .probuilder-btn:active {
     transform: scale(0.97) !important;
+}
+
+/* Widget Picker Modal - NO ANIMATIONS */
+.probuilder-widget-picker-overlay {
+    animation: none !important;
+}
+
+.probuilder-widget-picker-modal {
+    animation: none !important;
+}
+
+.probuilder-widget-picker-card {
+    animation: none !important;
+}
+
+.probuilder-widget-picker-card i {
+    animation: none !important;
 }

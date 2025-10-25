@@ -18,18 +18,20 @@ class ProBuilder_Widget_Social_Icons extends ProBuilder_Base_Widget {
     }
     
     protected function register_controls() {
+        // Content Section
         $this->start_controls_section('section_social', [
             'label' => __('Social Icons', 'probuilder'),
+            'tab' => 'content',
         ]);
         
         $this->add_control('social_items', [
             'label' => __('Social Links', 'probuilder'),
             'type' => 'repeater',
             'default' => [
-                ['platform' => 'facebook', 'url' => '#', 'icon' => 'fab fa-facebook-f'],
-                ['platform' => 'twitter', 'url' => '#', 'icon' => 'fab fa-twitter'],
-                ['platform' => 'instagram', 'url' => '#', 'icon' => 'fab fa-instagram'],
-                ['platform' => 'linkedin', 'url' => '#', 'icon' => 'fab fa-linkedin-in'],
+                ['platform' => 'facebook', 'url' => '#', 'icon' => 'fab fa-facebook-f', 'color' => '#3b5998'],
+                ['platform' => 'twitter', 'url' => '#', 'icon' => 'fab fa-twitter', 'color' => '#1da1f2'],
+                ['platform' => 'instagram', 'url' => '#', 'icon' => 'fab fa-instagram', 'color' => '#E4405F'],
+                ['platform' => 'linkedin', 'url' => '#', 'icon' => 'fab fa-linkedin-in', 'color' => '#0077b5'],
             ],
             'fields' => [
                 [
@@ -50,17 +52,48 @@ class ProBuilder_Widget_Social_Icons extends ProBuilder_Base_Widget {
                     'type' => 'icon',
                     'default' => 'fab fa-facebook-f',
                 ],
+                [
+                    'name' => 'color',
+                    'label' => __('Custom Color', 'probuilder'),
+                    'type' => 'color',
+                    'default' => '#3b5998',
+                ],
             ],
         ]);
         
         $this->end_controls_section();
         
+        // Style Section
         $this->start_controls_section('section_style', [
             'label' => __('Style', 'probuilder'),
+            'tab' => 'style',
+        ]);
+        
+        $this->add_control('icon_style', [
+            'label' => __('Icon Style', 'probuilder'),
+            'type' => 'select',
+            'default' => 'circle',
+            'options' => [
+                'circle' => __('Circle', 'probuilder'),
+                'square' => __('Square', 'probuilder'),
+                'rounded' => __('Rounded Square', 'probuilder'),
+                'minimal' => __('Minimal (No Background)', 'probuilder'),
+            ],
+        ]);
+        
+        $this->add_control('color_style', [
+            'label' => __('Color Style', 'probuilder'),
+            'type' => 'select',
+            'default' => 'brand',
+            'options' => [
+                'brand' => __('Brand Colors', 'probuilder'),
+                'custom' => __('Custom Color', 'probuilder'),
+                'monochrome' => __('Monochrome', 'probuilder'),
+            ],
         ]);
         
         $this->add_control('icon_size', [
-            'label' => __('Icon Size', 'probuilder'),
+            'label' => __('Icon Size (px)', 'probuilder'),
             'type' => 'slider',
             'default' => 20,
             'range' => [
@@ -68,8 +101,17 @@ class ProBuilder_Widget_Social_Icons extends ProBuilder_Base_Widget {
             ],
         ]);
         
+        $this->add_control('icon_box_size', [
+            'label' => __('Box Size (px)', 'probuilder'),
+            'type' => 'slider',
+            'default' => 45,
+            'range' => [
+                'px' => ['min' => 30, 'max' => 100],
+            ],
+        ]);
+        
         $this->add_control('icon_spacing', [
-            'label' => __('Icon Spacing', 'probuilder'),
+            'label' => __('Icon Spacing (px)', 'probuilder'),
             'type' => 'slider',
             'default' => 10,
             'range' => [
@@ -87,6 +129,18 @@ class ProBuilder_Widget_Social_Icons extends ProBuilder_Base_Widget {
             'label' => __('Background Color', 'probuilder'),
             'type' => 'color',
             'default' => '#333333',
+        ]);
+        
+        $this->add_control('icon_hover_color', [
+            'label' => __('Hover Icon Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#ffffff',
+        ]);
+        
+        $this->add_control('icon_hover_bg_color', [
+            'label' => __('Hover Background Color', 'probuilder'),
+            'type' => 'color',
+            'default' => '#92003b',
         ]);
         
         $this->add_control('align', [

@@ -40,6 +40,26 @@
     color: #ffffff;
 }
 
+/* Full Pages category special styling */
+.probuilder-template-filter[data-category="pages"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    font-weight: 600;
+    border: 2px solid transparent;
+}
+
+.probuilder-template-filter[data-category="pages"]:hover {
+    background: linear-gradient(135deg, #7689f1 0%, #8558b3 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.probuilder-template-filter[data-category="pages"].active {
+    background: linear-gradient(135deg, #5569d9 0%, #653a93 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    border: 2px solid #ffffff;
+}
+
 /* Template Actions */
 .probuilder-template-actions {
     margin-bottom: 25px;

@@ -42,6 +42,44 @@ class ProBuilder_Templates_Library {
      */
     public function get_prebuilt_templates() {
         return [
+            // E-COMMERCE FULL PAGE TEMPLATES
+            [
+                'id' => 'ecommerce-shop',
+                'name' => '🛒 E-Commerce Shop Page',
+                'category' => 'pages',
+                'thumbnail' => 'data:image/svg+xml;base64,' . base64_encode($this->get_ecommerce_thumbnail()),
+                'data' => $this->get_ecommerce_shop_page()
+            ],
+            [
+                'id' => 'ecommerce-product',
+                'name' => '📦 Product Detail Page',
+                'category' => 'pages',
+                'thumbnail' => 'data:image/svg+xml;base64,' . base64_encode($this->get_product_thumbnail()),
+                'data' => $this->get_ecommerce_product_page()
+            ],
+            [
+                'id' => 'ecommerce-homepage',
+                'name' => '🏪 E-Commerce Homepage',
+                'category' => 'pages',
+                'thumbnail' => 'data:image/svg+xml;base64,' . base64_encode($this->get_homepage_thumbnail()),
+                'data' => $this->get_ecommerce_homepage()
+            ],
+            [
+                'id' => 'fashion-store',
+                'name' => '👗 Fashion Store Homepage',
+                'category' => 'pages',
+                'thumbnail' => 'data:image/svg+xml;base64,' . base64_encode($this->get_fashion_thumbnail()),
+                'data' => $this->get_fashion_store_page()
+            ],
+            [
+                'id' => 'electronics-store',
+                'name' => '💻 Electronics Store',
+                'category' => 'pages',
+                'thumbnail' => 'data:image/svg+xml;base64,' . base64_encode($this->get_electronics_thumbnail()),
+                'data' => $this->get_electronics_store_page()
+            ],
+            
+            // SECTION TEMPLATES
             [
                 'id' => 'hero-1',
                 'name' => 'Hero Section - Modern',
@@ -525,6 +563,1386 @@ class ProBuilder_Templates_Library {
     
     private function get_newsletter_thumbnail() {
         return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="200" fill="#fff"/><rect x="30" y="60" width="240" height="80" rx="8" fill="#f8f9fa" stroke="#92003b" stroke-width="2"/><rect x="45" y="80" width="130" height="8" fill="#333" opacity="0.3"/><rect x="45" y="95" width="150" height="25" rx="3" fill="#fff" stroke="#d4d4d8"/><rect x="205" y="95" width="60" height="25" rx="3" fill="#92003b"/></svg>';
+    }
+    
+    private function get_full_page_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pageGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#92003b;stop-opacity:1" /><stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /></linearGradient></defs><rect width="300" height="200" fill="url(#pageGrad)"/><rect x="10" y="10" width="280" height="180" rx="5" fill="#fff" opacity="0.1"/><rect x="20" y="20" width="260" height="30" fill="#fff" opacity="0.3"/><rect x="20" y="60" width="85" height="60" rx="3" fill="#fff" opacity="0.2"/><rect x="108" y="60" width="85" height="60" rx="3" fill="#fff" opacity="0.2"/><rect x="196" y="60" width="85" height="60" rx="3" fill="#fff" opacity="0.2"/><rect x="20" y="130" width="260" height="40" rx="3" fill="#fff" opacity="0.2"/><text x="150" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">COMPLETE PAGE</text></svg>';
+    }
+    
+    /**
+     * E-Commerce Full Page Template Methods
+     */
+    
+    private function get_ecommerce_shop_page() {
+        return $this->build_ecommerce_shop_page();
+    }
+    
+    private function get_ecommerce_product_page() {
+        return $this->build_ecommerce_product_page();
+    }
+    
+    private function get_ecommerce_homepage() {
+        return $this->build_ecommerce_homepage();
+    }
+    
+    private function get_fashion_store_page() {
+        return $this->build_fashion_store_page();
+    }
+    
+    private function get_electronics_store_page() {
+        return $this->build_electronics_store_page();
+    }
+    
+    private function build_business_page() {
+        $elements = [];
+        
+        // Hero Section
+        $elements[] = [
+            'id' => 'bus-hero-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '2',
+                'background_type' => 'gradient',
+                'background_gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'padding' => ['top' => '80', 'right' => '40', 'bottom' => '80', 'left' => '40']
+            ],
+            'children' => [
+                [
+                    'id' => 'bus-hero-heading-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => [
+                        'title' => 'Grow Your Business With Us',
+                        'html_tag' => 'h1',
+                        'color' => '#ffffff',
+                        'font_size' => '48',
+                        'font_weight' => '700'
+                    ]
+                ],
+                [
+                    'id' => 'bus-hero-image-' . uniqid(),
+                    'widgetType' => 'image',
+                    'settings' => [
+                        'image' => ['url' => 'https://via.placeholder.com/600x400/667eea/ffffff?text=Business+Hero'],
+                        'align' => 'center'
+                    ]
+                ]
+            ]
+        ];
+        
+        // Features
+        $elements[] = [
+            'id' => 'bus-features-title-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => [
+                'title' => 'Our Core Features',
+                'html_tag' => 'h2',
+                'color' => '#1e293b',
+                'font_size' => '36',
+                'align' => 'center',
+                'margin' => ['top' => '60', 'bottom' => '40']
+            ]
+        ];
+        
+        $elements[] = [
+            'id' => 'bus-features-grid-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'background_color' => '#ffffff',
+                'column_gap' => '30',
+                'padding' => ['top' => '20', 'right' => '40', 'bottom' => '60', 'left' => '40']
+            ],
+            'children' => [
+                [
+                    'id' => 'bus-icon-1-' . uniqid(),
+                    'widgetType' => 'icon-box',
+                    'settings' => [
+                        'icon' => 'fa fa-rocket',
+                        'title' => 'Fast Performance',
+                        'description' => 'Lightning-fast loading for better UX'
+                    ]
+                ],
+                [
+                    'id' => 'bus-icon-2-' . uniqid(),
+                    'widgetType' => 'icon-box',
+                    'settings' => [
+                        'icon' => 'fa fa-shield',
+                        'title' => 'Secure & Reliable',
+                        'description' => 'Enterprise-grade security'
+                    ]
+                ],
+                [
+                    'id' => 'bus-icon-3-' . uniqid(),
+                    'widgetType' => 'icon-box',
+                    'settings' => [
+                        'icon' => 'fa fa-headset',
+                        'title' => '24/7 Support',
+                        'description' => 'Always here to help you'
+                    ]
+                ]
+            ]
+        ];
+        
+        // CTA
+        $elements[] = [
+            'id' => 'bus-cta-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '1',
+                'background_type' => 'gradient',
+                'background_gradient' => 'linear-gradient(to right, #fa709a 0%, #fee140 100%)',
+                'padding' => ['top' => '80', 'right' => '40', 'bottom' => '80', 'left' => '40']
+            ],
+            'children' => [
+                [
+                    'id' => 'bus-cta-heading-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => [
+                        'title' => 'Ready to Get Started?',
+                        'html_tag' => 'h2',
+                        'color' => '#ffffff',
+                        'font_size' => '42',
+                        'align' => 'center'
+                    ]
+                ],
+                [
+                    'id' => 'bus-cta-btn-' . uniqid(),
+                    'widgetType' => 'button',
+                    'settings' => [
+                        'text' => 'Start Free Trial',
+                        'bg_color' => '#ffffff',
+                        'text_color' => '#fa709a',
+                        'align' => 'center'
+                    ]
+                ]
+            ]
+        ];
+        
+        return $elements;
+    }
+    
+    private function build_agency_page() {
+        return [
+            [
+                'id' => 'agn-hero-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '1',
+                    'background_type' => 'gradient',
+                    'background_gradient' => 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
+                    'padding' => ['top' => '100', 'right' => '40', 'bottom' => '100', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'agn-title-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Creative Digital Agency',
+                            'html_tag' => 'h1',
+                            'color' => '#ffffff',
+                            'font_size' => '56',
+                            'align' => 'center'
+                        ]
+                    ],
+                    [
+                        'id' => 'agn-subtitle-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'We craft digital experiences that matter',
+                            'html_tag' => 'h3',
+                            'color' => '#ffffff',
+                            'font_size' => '24',
+                            'align' => 'center',
+                            'font_weight' => '300'
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'agn-services-title-' . uniqid(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'title' => 'What We Do',
+                    'html_tag' => 'h2',
+                    'color' => '#1e293b',
+                    'font_size' => '40',
+                    'align' => 'center',
+                    'margin' => ['top' => '60', 'bottom' => '40']
+                ]
+            ],
+            
+            [
+                'id' => 'agn-services-grid-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '4',
+                    'background_color' => '#ffffff',
+                    'column_gap' => '25',
+                    'padding' => ['top' => '20', 'right' => '40', 'bottom' => '80', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'agn-service-1-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-paint-brush',
+                            'title' => 'Design',
+                            'description' => 'Beautiful designs'
+                        ]
+                    ],
+                    [
+                        'id' => 'agn-service-2-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-code',
+                            'title' => 'Development',
+                            'description' => 'Clean code'
+                        ]
+                    ],
+                    [
+                        'id' => 'agn-service-3-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-bullhorn',
+                            'title' => 'Marketing',
+                            'description' => 'Smart strategies'
+                        ]
+                    ],
+                    [
+                        'id' => 'agn-service-4-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-chart-line',
+                            'title' => 'Analytics',
+                            'description' => 'Track growth'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+    
+    private function build_portfolio_page() {
+        return [
+            [
+                'id' => 'port-hero-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '1',
+                    'background_color' => '#0f172a',
+                    'padding' => ['top' => '120', 'right' => '40', 'bottom' => '120', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'port-title-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Portfolio Showcase',
+                            'html_tag' => 'h1',
+                            'color' => '#ffffff',
+                            'font_size' => '64',
+                            'align' => 'center'
+                        ]
+                    ],
+                    [
+                        'id' => 'port-subtitle-' . uniqid(),
+                        'widgetType' => 'text',
+                        'settings' => [
+                            'text' => 'Selected works from 2020-2025',
+                            'text_color' => '#94a3b8',
+                            'font_size' => '20',
+                            'align' => 'center'
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'port-grid-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '3',
+                    'background_color' => '#ffffff',
+                    'column_gap' => '30',
+                    'padding' => ['top' => '80', 'right' => '40', 'bottom' => '80', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'port-img-1-' . uniqid(),
+                        'widgetType' => 'image',
+                        'settings' => [
+                            'image' => ['url' => 'https://via.placeholder.com/600x400/92003b/ffffff?text=Project+1']
+                        ]
+                    ],
+                    [
+                        'id' => 'port-img-2-' . uniqid(),
+                        'widgetType' => 'image',
+                        'settings' => [
+                            'image' => ['url' => 'https://via.placeholder.com/600x400/667eea/ffffff?text=Project+2']
+                        ]
+                    ],
+                    [
+                        'id' => 'port-img-3-' . uniqid(),
+                        'widgetType' => 'image',
+                        'settings' => [
+                            'image' => ['url' => 'https://via.placeholder.com/600x400/4facfe/ffffff?text=Project+3']
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'port-cta-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '1',
+                    'background_color' => '#92003b',
+                    'padding' => ['top' => '80', 'right' => '40', 'bottom' => '80', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'port-cta-heading-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Let\'s Create Something Amazing',
+                            'html_tag' => 'h2',
+                            'color' => '#ffffff',
+                            'font_size' => '40',
+                            'align' => 'center'
+                        ]
+                    ],
+                    [
+                        'id' => 'port-cta-btn-' . uniqid(),
+                        'widgetType' => 'button',
+                        'settings' => [
+                            'text' => 'Get in Touch',
+                            'bg_color' => '#ffffff',
+                            'text_color' => '#92003b',
+                            'align' => 'center'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+    
+    private function build_product_page() {
+        return [
+            [
+                'id' => 'prod-hero-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '2',
+                    'background_color' => '#f8f9fa',
+                    'padding' => ['top' => '80', 'right' => '60', 'bottom' => '80', 'left' => '60']
+                ],
+                'children' => [
+                    [
+                        'id' => 'prod-img-' . uniqid(),
+                        'widgetType' => 'image',
+                        'settings' => [
+                            'image' => ['url' => 'https://via.placeholder.com/800x600/92003b/ffffff?text=Product']
+                        ]
+                    ],
+                    [
+                        'id' => 'prod-title-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Amazing Product',
+                            'html_tag' => 'h1',
+                            'color' => '#1e293b',
+                            'font_size' => '48'
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'prod-features-title-' . uniqid(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'title' => 'Key Features',
+                    'html_tag' => 'h2',
+                    'color' => '#1e293b',
+                    'font_size' => '36',
+                    'align' => 'center',
+                    'margin' => ['top' => '60', 'bottom' => '40']
+                ]
+            ],
+            
+            [
+                'id' => 'prod-features-grid-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '3',
+                    'column_gap' => '30',
+                    'padding' => ['top' => '20', 'right' => '40', 'bottom' => '80', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'prod-feat-1-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-bolt',
+                            'title' => 'Lightning Fast',
+                            'description' => 'Optimized for speed'
+                        ]
+                    ],
+                    [
+                        'id' => 'prod-feat-2-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-mobile',
+                            'title' => 'Mobile Ready',
+                            'description' => 'Works on all devices'
+                        ]
+                    ],
+                    [
+                        'id' => 'prod-feat-3-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-lock',
+                            'title' => 'Secure',
+                            'description' => 'Built with security'
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'prod-cta-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '1',
+                    'background_type' => 'gradient',
+                    'background_gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'padding' => ['top' => '80', 'right' => '40', 'bottom' => '80', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'prod-cta-heading-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Get Yours Today',
+                            'html_tag' => 'h2',
+                            'color' => '#ffffff',
+                            'font_size' => '42',
+                            'align' => 'center'
+                        ]
+                    ],
+                    [
+                        'id' => 'prod-cta-btn-' . uniqid(),
+                        'widgetType' => 'button',
+                        'settings' => [
+                            'text' => 'Order Now - $99.99',
+                            'bg_color' => '#ffffff',
+                            'text_color' => '#667eea',
+                            'align' => 'center'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+    
+    private function build_services_page() {
+        return [
+            [
+                'id' => 'serv-hero-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '1',
+                    'background_type' => 'gradient',
+                    'background_gradient' => 'linear-gradient(to bottom, #667eea 0%, #764ba2 100%)',
+                    'padding' => ['top' => '100', 'right' => '40', 'bottom' => '100', 'left' => '40']
+                ],
+                'children' => [
+                    [
+                        'id' => 'serv-title-' . uniqid(),
+                        'widgetType' => 'heading',
+                        'settings' => [
+                            'title' => 'Our Services',
+                            'html_tag' => 'h1',
+                            'color' => '#ffffff',
+                            'font_size' => '56',
+                            'align' => 'center'
+                        ]
+                    ]
+                ]
+            ],
+            
+            [
+                'id' => 'serv-grid-' . uniqid(),
+                'widgetType' => 'container',
+                'settings' => [
+                    'columns' => '2',
+                    'background_color' => '#ffffff',
+                    'column_gap' => '40',
+                    'padding' => ['top' => '80', 'right' => '60', 'bottom' => '80', 'left' => '60']
+                ],
+                'children' => [
+                    [
+                        'id' => 'serv-1-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-laptop-code',
+                            'title' => 'Web Development',
+                            'description' => 'Custom websites and applications'
+                        ]
+                    ],
+                    [
+                        'id' => 'serv-2-' . uniqid(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fa fa-mobile-alt',
+                            'title' => 'Mobile Apps',
+                            'description' => 'iOS and Android development'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+    
+    /**
+     * E-Commerce Template Thumbnails
+     */
+    
+    private function get_ecommerce_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect fill="#f8f9fa" width="300" height="200"/><rect x="0" y="0" width="300" height="50" fill="#1a1a1a"/><text x="20" y="32" font-size="14" fill="#fff" font-weight="bold">SHOP</text><rect x="220" y="15" width="70" height="20" rx="3" fill="#92003b"/><rect x="10" y="60" width="85" height="120" rx="4" fill="#fff"/><rect x="10" y="145" width="85" height="25" fill="#e5e7eb"/><rect x="107" y="60" width="85" height="120" rx="4" fill="#fff"/><rect x="107" y="145" width="85" height="25" fill="#e5e7eb"/><rect x="204" y="60" width="85" height="120" rx="4" fill="#fff"/><rect x="204" y="145" width="85" height="25" fill="#e5e7eb"/></svg>';
+    }
+    
+    private function get_product_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect fill="#ffffff" width="300" height="200"/><rect x="10" y="10" width="130" height="180" rx="8" fill="#f3f4f6"/><rect x="150" y="10" width="140" height="30" fill="#1f2937"/><rect x="150" y="50" width="100" height="15" fill="#e5e7eb"/><rect x="150" y="75" width="120" height="20" fill="#fbbf24"/><rect x="150" y="110" width="140" height="40" rx="4" fill="#92003b"/><rect x="150" y="160" width="70" height="25" fill="#10b981"/></svg>';
+    }
+    
+    private function get_homepage_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="heroGrad"><stop offset="0%" stop-color="#92003b"/><stop offset="100%" stop-color="#667eea"/></linearGradient></defs><rect fill="#fff" width="300" height="200"/><rect y="0" width="300" height="80" fill="url(#heroGrad)"/><text x="150" y="45" text-anchor="middle" font-size="16" fill="#fff" font-weight="bold">MEGA SALE</text><rect x="10" y="90" width="85" height="100" rx="4" fill="#f3f4f6"/><rect x="107" y="90" width="85" height="100" rx="4" fill="#f3f4f6"/><rect x="204" y="90" width="85" height="100" rx="4" fill="#f3f4f6"/></svg>';
+    }
+    
+    private function get_fashion_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect fill="#fef2f2" width="300" height="200"/><rect x="10" y="10" width="130" height="180" rx="8" fill="#fff"/><circle cx="75" cy="100" r="40" fill="#fca5a5"/><rect x="150" y="20" width="140" height="50" fill="#1f2937"/><rect x="150" y="80" width="80" height="100" rx="4" fill="#fff"/><rect x="238" y="80" width="52" height="100" rx="4" fill="#fff"/></svg>';
+    }
+    
+    private function get_electronics_thumbnail() {
+        return '<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect fill="#eff6ff" width="300" height="200"/><rect x="0" y="0" width="300" height="40" fill="#1e40af"/><text x="20" y="25" font-size="12" fill="#fff" font-weight="bold">TECH STORE</text><rect x="10" y="50" width="135" height="140" rx="8" fill="#dbeafe"/><rect x="20" y="60" width="115" height="80" rx="4" fill="#3b82f6"/><rect x="155" y="50" width="135" height="140" rx="8" fill="#dbeafe"/><rect x="165" y="60" width="115" height="80" rx="4" fill="#3b82f6"/></svg>';
+    }
+    
+    /**
+     * Build E-Commerce Shop Page
+     */
+    private function build_ecommerce_shop_page() {
+        $elements = [];
+        
+        // Header with navigation
+        $elements[] = [
+            'id' => 'header-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'background_color' => '#1a1a1a',
+                'padding' => ['top' => 20, 'right' => 40, 'bottom' => 20, 'left' => 40],
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'logo-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => [
+                        'title' => 'ELITE SHOP',
+                        'html_tag' => 'h2',
+                        'color' => '#ffffff',
+                        'font_size' => 24,
+                        'font_weight' => '700',
+                        'margin' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]
+                    ]
+                ],
+                [
+                    'id' => 'nav-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => [
+                        'content' => 'Home | Shop | About | Contact',
+                        'color' => '#ffffff',
+                        'align' => 'center',
+                        'font_size' => 14
+                    ]
+                ],
+                [
+                    'id' => 'cart-' . uniqid(),
+                    'widgetType' => 'button',
+                    'settings' => [
+                        'text' => '🛒 Cart (0)',
+                        'bg_color' => '#92003b',
+                        'text_color' => '#ffffff',
+                        'align' => 'right',
+                        'size' => 'small'
+                    ]
+                ]
+            ]
+        ];
+        
+        // Hero Banner
+        $elements[] = [
+            'id' => 'hero-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '2',
+                'background_type' => 'gradient',
+                'background_gradient' => 'linear-gradient(135deg, #92003b 0%, #667eea 100%)',
+                'padding' => ['top' => 80, 'right' => 40, 'bottom' => 80, 'left' => 40],
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 40, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'hero-content-' . uniqid(),
+                    'widgetType' => 'container',
+                    'settings' => ['columns' => '1'],
+                    'children' => [
+                        [
+                            'id' => 'hero-title-' . uniqid(),
+                            'widgetType' => 'heading',
+                            'settings' => [
+                                'title' => 'Summer Collection 2025',
+                                'html_tag' => 'h1',
+                                'color' => '#ffffff',
+                                'font_size' => 48,
+                                'font_weight' => '700',
+                                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 20, 'left' => 0]
+                            ]
+                        ],
+                        [
+                            'id' => 'hero-text-' . uniqid(),
+                            'widgetType' => 'text',
+                            'settings' => [
+                                'content' => 'Discover our latest arrivals with up to 50% off. Limited time offer on premium fashion and accessories.',
+                                'color' => '#ffffff',
+                                'font_size' => 18,
+                                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 30, 'left' => 0]
+                            ]
+                        ],
+                        [
+                            'id' => 'hero-btn-' . uniqid(),
+                            'widgetType' => 'button',
+                            'settings' => [
+                                'text' => 'Shop Now →',
+                                'bg_color' => '#ffffff',
+                                'text_color' => '#92003b',
+                                'size' => 'large',
+                                'align' => 'left'
+                            ]
+                        ]
+                    ]
+                ],
+                [
+                    'id' => 'hero-image-' . uniqid(),
+                    'widgetType' => 'image',
+                    'settings' => [
+                        'url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
+                        'align' => 'center'
+                    ]
+                ]
+            ]
+        ];
+        
+        // Featured Products Section
+        $elements[] = [
+            'id' => 'featured-title-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => [
+                'title' => 'Featured Products',
+                'html_tag' => 'h2',
+                'color' => '#1a1a1a',
+                'font_size' => 36,
+                'align' => 'center',
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 40, 'left' => 0]
+            ]
+        ];
+        
+        // Product Grid
+        $elements[] = [
+            'id' => 'products-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '4',
+                'column_gap' => 30,
+                'padding' => ['top' => 0, 'right' => 40, 'bottom' => 60, 'left' => 40],
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 40, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'product1-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://via.placeholder.com/400x400/FF6B6B/ffffff?text=Watch',
+                        'title' => 'Premium Watch',
+                        'description' => '$299.00',
+                        'button_text' => 'Add to Cart',
+                        'show_button' => 'yes',
+                        'text_align' => 'center'
+                    ]
+                ],
+                [
+                    'id' => 'product2-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://via.placeholder.com/400x400/4ECDC4/ffffff?text=Sunglasses',
+                        'title' => 'Designer Sunglasses',
+                        'description' => '$149.00',
+                        'button_text' => 'Add to Cart',
+                        'show_button' => 'yes',
+                        'text_align' => 'center'
+                    ]
+                ],
+                [
+                    'id' => 'product3-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://via.placeholder.com/400x400/45B7D1/ffffff?text=Sneakers',
+                        'title' => 'Leather Sneakers',
+                        'description' => '$189.00',
+                        'button_text' => 'Add to Cart',
+                        'show_button' => 'yes',
+                        'text_align' => 'center'
+                    ]
+                ],
+                [
+                    'id' => 'product4-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://via.placeholder.com/400x400/96CEB4/ffffff?text=Backpack',
+                        'title' => 'Designer Backpack',
+                        'description' => '$129.00',
+                        'button_text' => 'Add to Cart',
+                        'show_button' => 'yes',
+                        'text_align' => 'center'
+                    ]
+                ]
+            ]
+        ];
+        
+        // Trust Badges
+        $elements[] = [
+            'id' => 'trust-' . uniqid(),
+            'widgetType' => 'feature-list',
+            'settings' => [
+                'layout' => 'grid',
+                'columns' => '4',
+                'show_card' => 'no',
+                'icon_position' => 'top',
+                'text_align' => 'center',
+                'items' => [
+                    ['icon' => 'fa fa-truck-fast', 'title' => 'Free Shipping', 'description' => 'On orders over $50'],
+                    ['icon' => 'fa fa-shield-check', 'title' => 'Secure Payment', 'description' => '100% protected'],
+                    ['icon' => 'fa fa-rotate-left', 'title' => 'Easy Returns', 'description' => '30-day policy'],
+                    ['icon' => 'fa fa-headset', 'title' => '24/7 Support', 'description' => 'Always here to help']
+                ]
+            ]
+        ];
+        
+        // Footer
+        $elements[] = [
+            'id' => 'footer-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '1',
+                'background_color' => '#1a1a1a',
+                'padding' => ['top' => 40, 'right' => 40, 'bottom' => 40, 'left' => 40],
+                'margin' => ['top' => 60, 'right' => 0, 'bottom' => 0, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'footer-text-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => [
+                        'content' => '© 2025 Elite Shop. All rights reserved. Premium fashion and accessories.',
+                        'color' => '#ffffff',
+                        'align' => 'center',
+                        'font_size' => 14
+                    ]
+                ]
+            ]
+        ];
+        
+        return $elements;
+    }
+    
+    /**
+     * Build E-Commerce Product Detail Page
+     */
+    private function build_ecommerce_product_page() {
+        $elements = [];
+        
+        // Header
+        $elements[] = [
+            'id' => 'header-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'background_color' => '#ffffff',
+                'padding' => ['top' => 20, 'right' => 40, 'bottom' => 20, 'left' => 40],
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+                'box_shadow' => ['x' => 0, 'y' => 2, 'blur' => 10, 'color' => 'rgba(0,0,0,0.05)']
+            ],
+            'children' => [
+                [
+                    'id' => 'logo-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => ['title' => 'ELITE SHOP', 'html_tag' => 'h2', 'color' => '#1a1a1a', 'font_size' => 24, 'font_weight' => '700']
+                ],
+                [
+                    'id' => 'search-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => 'Search products...', 'align' => 'center', 'color' => '#666']
+                ],
+                [
+                    'id' => 'cart-' . uniqid(),
+                    'widgetType' => 'button',
+                    'settings' => ['text' => '🛒 Cart', 'bg_color' => '#92003b', 'text_color' => '#fff', 'align' => 'right']
+                ]
+            ]
+        ];
+        
+        // Product Detail Section
+        $elements[] = [
+            'id' => 'product-detail-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '2',
+                'column_gap' => 60,
+                'padding' => ['top' => 60, 'right' => 80, 'bottom' => 60, 'left' => 80],
+                'margin' => ['top' => 40, 'right' => 0, 'bottom' => 60, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'product-images-' . uniqid(),
+                    'widgetType' => 'gallery',
+                    'settings' => [
+                        'columns' => '2',
+                        'gap' => 15,
+                        'lightbox' => 'yes',
+                        'images' => [
+                            ['image_url' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop', 'caption' => 'Main view'],
+                            ['image_url' => 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&h=600&fit=crop', 'caption' => 'Side view'],
+                            ['image_url' => 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600&h=600&fit=crop', 'caption' => 'Detail'],
+                            ['image_url' => 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=600&h=600&fit=crop', 'caption' => 'Lifestyle']
+                        ]
+                    ]
+                ],
+                [
+                    'id' => 'product-info-' . uniqid(),
+                    'widgetType' => 'container',
+                    'settings' => ['columns' => '1'],
+                    'children' => [
+                        [
+                            'id' => 'product-title-' . uniqid(),
+                            'widgetType' => 'heading',
+                            'settings' => ['title' => 'Premium Wireless Headphones', 'html_tag' => 'h1', 'font_size' => 32, 'color' => '#1a1a1a', 'font_weight' => '700']
+                        ],
+                        [
+                            'id' => 'product-rating-' . uniqid(),
+                            'widgetType' => 'star-rating',
+                            'settings' => ['rating' => 4.8, 'show_title' => 'no', 'filled_color' => '#fbbf24', 'align' => 'left']
+                        ],
+                        [
+                            'id' => 'product-price-' . uniqid(),
+                            'widgetType' => 'heading',
+                            'settings' => ['title' => '$299.00', 'html_tag' => 'h2', 'font_size' => 36, 'color' => '#92003b', 'font_weight' => '700']
+                        ],
+                        [
+                            'id' => 'product-desc-' . uniqid(),
+                            'widgetType' => 'text',
+                            'settings' => ['content' => 'Experience premium sound quality with active noise cancellation, 30-hour battery life, and comfortable over-ear design. Perfect for music lovers and professionals.', 'color' => '#666', 'font_size' => 16]
+                        ],
+                        [
+                            'id' => 'product-features-' . uniqid(),
+                            'widgetType' => 'icon-list',
+                            'settings' => [
+                                'layout' => 'vertical',
+                                'icon_color' => '#10b981',
+                                'items' => [
+                                    ['icon' => 'fa fa-check-circle', 'text' => 'Active Noise Cancellation'],
+                                    ['icon' => 'fa fa-check-circle', 'text' => '30 Hours Battery Life'],
+                                    ['icon' => 'fa fa-check-circle', 'text' => 'Premium Sound Quality'],
+                                    ['icon' => 'fa fa-check-circle', 'text' => 'Bluetooth 5.0'],
+                                    ['icon' => 'fa fa-check-circle', 'text' => 'Foldable Design']
+                                ]
+                            ]
+                        ],
+                        [
+                            'id' => 'add-to-cart-' . uniqid(),
+                            'widgetType' => 'button',
+                            'settings' => ['text' => 'Add to Cart', 'bg_color' => '#92003b', 'text_color' => '#fff', 'size' => 'large', 'align' => 'left']
+                        ]
+                    ]
+                ]
+            ]
+        ];
+        
+        // Related Products
+        $elements[] = [
+            'id' => 'related-title-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => ['title' => 'You May Also Like', 'html_tag' => 'h2', 'font_size' => 32, 'align' => 'center', 'margin' => ['top' => 0, 'right' => 0, 'bottom' => 40, 'left' => 0]]
+        ];
+        
+        $elements[] = [
+            'id' => 'related-products-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '4',
+                'column_gap' => 30,
+                'padding' => ['top' => 0, 'right' => 40, 'bottom' => 60, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'rel-product1-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', 'title' => 'Wireless Earbuds', 'description' => '$99.00', 'button_text' => 'View', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'rel-product2-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop', 'title' => 'Smart Speaker', 'description' => '$149.00', 'button_text' => 'View', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'rel-product3-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop', 'title' => 'Smart Watch', 'description' => '$349.00', 'button_text' => 'View', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'rel-product4-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop', 'title' => 'Gaming Laptop', 'description' => '$1,299.00', 'button_text' => 'View', 'text_align' => 'center']
+                ]
+            ]
+        ];
+        
+        return $elements;
+    }
+    
+    /**
+     * Build E-Commerce Homepage
+     */
+    private function build_ecommerce_homepage() {
+        $elements = [];
+        
+        // Top Bar
+        $elements[] = [
+            'id' => 'topbar-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '2',
+                'background_color' => '#92003b',
+                'padding' => ['top' => 10, 'right' => 40, 'bottom' => 10, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'promo-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => '🎉 Summer Sale - Up to 50% OFF on all items!', 'color' => '#ffffff', 'font_size' => 13]
+                ],
+                [
+                    'id' => 'contact-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => '📞 +1 (555) 123-4567', 'color' => '#ffffff', 'align' => 'right', 'font_size' => 13]
+                ]
+            ]
+        ];
+        
+        // Header with Navigation
+        $elements[] = [
+            'id' => 'header-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'background_color' => '#ffffff',
+                'padding' => ['top' => 20, 'right' => 40, 'bottom' => 20, 'left' => 40],
+                'box_shadow' => ['x' => 0, 'y' => 2, 'blur' => 10, 'color' => 'rgba(0,0,0,0.05)']
+            ],
+            'children' => [
+                [
+                    'id' => 'logo-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => ['title' => 'ELITE SHOP', 'html_tag' => 'h1', 'color' => '#1a1a1a', 'font_size' => 28, 'font_weight' => '800']
+                ],
+                [
+                    'id' => 'nav-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => 'New Arrivals | Men | Women | Kids | Sale', 'align' => 'center', 'color' => '#333', 'font_size' => 14]
+                ],
+                [
+                    'id' => 'header-actions-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => '🔍 | 👤 | 🛒', 'align' => 'right', 'font_size' => 18]
+                ]
+            ]
+        ];
+        
+        // Hero Carousel
+        $elements[] = [
+            'id' => 'hero-carousel-' . uniqid(),
+            'widgetType' => 'carousel',
+            'settings' => [
+                'height' => 600,
+                'autoplay' => 'yes',
+                'autoplay_speed' => 5000,
+                'images' => [
+                    ['image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&h=600&fit=crop', 'caption' => 'Summer Collection 2025 - Up to 50% OFF'],
+                    ['image_url' => 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&h=600&fit=crop', 'caption' => 'New Arrivals - Shop the Latest Trends'],
+                    ['image_url' => 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600&h=600&fit=crop', 'caption' => 'Premium Quality - Free Shipping Over $50']
+                ]
+            ]
+        ];
+        
+        // Category Boxes
+        $elements[] = [
+            'id' => 'categories-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'column_gap' => 30,
+                'padding' => ['top' => 60, 'right' => 40, 'bottom' => 60, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'cat1-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?w=600&h=400&fit=crop',
+                        'title' => 'Women\'s Fashion',
+                        'description' => 'Explore the latest trends',
+                        'button_text' => 'Shop Women',
+                        'show_button' => 'yes',
+                        'text_align' => 'center',
+                        'button_bg_color' => '#92003b'
+                    ]
+                ],
+                [
+                    'id' => 'cat2-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=600&h=400&fit=crop',
+                        'title' => 'Men\'s Fashion',
+                        'description' => 'Stylish and modern',
+                        'button_text' => 'Shop Men',
+                        'show_button' => 'yes',
+                        'text_align' => 'center',
+                        'button_bg_color' => '#92003b'
+                    ]
+                ],
+                [
+                    'id' => 'cat3-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => [
+                        'image_url' => 'https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=600&h=400&fit=crop',
+                        'title' => 'Accessories',
+                        'description' => 'Complete your look',
+                        'button_text' => 'Shop Now',
+                        'show_button' => 'yes',
+                        'text_align' => 'center',
+                        'button_bg_color' => '#92003b'
+                    ]
+                ]
+            ]
+        ];
+        
+        // Featured Products
+        $elements[] = [
+            'id' => 'featured-heading-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => ['title' => 'Trending Now', 'html_tag' => 'h2', 'font_size' => 36, 'align' => 'center', 'color' => '#1a1a1a', 'margin' => ['top' => 0, 'right' => 0, 'bottom' => 50, 'left' => 0]]
+        ];
+        
+        $elements[] = [
+            'id' => 'featured-grid-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '4',
+                'column_gap' => 30,
+                'padding' => ['top' => 0, 'right' => 40, 'bottom' => 60, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'fprod1-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=500&fit=crop', 'title' => 'Classic Dress', 'description' => '$89.00', 'button_text' => 'Add to Cart', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'fprod2-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=500&fit=crop', 'title' => 'Designer Handbag', 'description' => '$249.00', 'button_text' => 'Add to Cart', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'fprod3-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&h=500&fit=crop', 'title' => 'Stylish Sneakers', 'description' => '$129.00', 'button_text' => 'Add to Cart', 'text_align' => 'center']
+                ],
+                [
+                    'id' => 'fprod4-' . uniqid(),
+                    'widgetType' => 'image-box',
+                    'settings' => ['image_url' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop', 'title' => 'Luxury Watch', 'description' => '$449.00', 'button_text' => 'Add to Cart', 'text_align' => 'center']
+                ]
+            ]
+        ];
+        
+        // Trust Section
+        $elements[] = [
+            'id' => 'trust-section-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '1',
+                'background_color' => '#f8f9fa',
+                'padding' => ['top' => 60, 'right' => 40, 'bottom' => 60, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'trust-features-' . uniqid(),
+                    'widgetType' => 'feature-list',
+                    'settings' => [
+                        'layout' => 'grid',
+                        'columns' => '4',
+                        'show_card' => 'yes',
+                        'icon_position' => 'top',
+                        'text_align' => 'center',
+                        'items' => [
+                            ['icon' => 'fa fa-truck-fast', 'title' => 'Free Shipping', 'description' => 'Free shipping worldwide on orders over $50'],
+                            ['icon' => 'fa fa-shield-halved', 'title' => 'Secure Payment', 'description' => '100% secure payment with SSL encryption'],
+                            ['icon' => 'fa fa-rotate-left', 'title' => '30-Day Return', 'description' => 'Easy returns within 30 days of purchase'],
+                            ['icon' => 'fa fa-headset', 'title' => '24/7 Support', 'description' => 'Dedicated customer support team always ready']
+                        ]
+                    ]
+                ]
+            ]
+        ];
+        
+        // Newsletter
+        $elements[] = [
+            'id' => 'newsletter-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '1',
+                'background_type' => 'gradient',
+                'background_gradient' => 'linear-gradient(135deg, #92003b 0%, #667eea 100%)',
+                'padding' => ['top' => 80, 'right' => 40, 'bottom' => 80, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'newsletter-title-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => ['title' => 'Subscribe to Our Newsletter', 'html_tag' => 'h2', 'font_size' => 32, 'color' => '#fff', 'align' => 'center']
+                ],
+                [
+                    'id' => 'newsletter-text-' . uniqid(),
+                    'widgetType' => 'text',
+                    'settings' => ['content' => 'Get exclusive deals, new arrivals, and fashion tips delivered to your inbox.', 'color' => '#fff', 'align' => 'center', 'font_size' => 16]
+                ],
+                [
+                    'id' => 'newsletter-btn-' . uniqid(),
+                    'widgetType' => 'button',
+                    'settings' => ['text' => 'Subscribe Now', 'bg_color' => '#ffffff', 'text_color' => '#92003b', 'size' => 'large', 'align' => 'center']
+                ]
+            ]
+        ];
+        
+        // Footer
+        $elements[] = [
+            'id' => 'footer-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '4',
+                'background_color' => '#1a1a1a',
+                'padding' => ['top' => 60, 'right' => 40, 'bottom' => 40, 'left' => 40],
+                'margin' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]
+            ],
+            'children' => [
+                [
+                    'id' => 'footer-about-' . uniqid(),
+                    'widgetType' => 'container',
+                    'settings' => ['columns' => '1'],
+                    'children' => [
+                        ['id' => 'f-title1-' . uniqid(), 'widgetType' => 'heading', 'settings' => ['title' => 'About Us', 'html_tag' => 'h3', 'color' => '#fff', 'font_size' => 18]],
+                        ['id' => 'f-text1-' . uniqid(), 'widgetType' => 'text', 'settings' => ['content' => 'Premium fashion and lifestyle products since 2010. Quality you can trust.', 'color' => '#999', 'font_size' => 14]]
+                    ]
+                ],
+                [
+                    'id' => 'footer-shop-' . uniqid(),
+                    'widgetType' => 'icon-list',
+                    'settings' => [
+                        'text_color' => '#999',
+                        'icon_color' => '#92003b',
+                        'icon_size' => 14,
+                        'text_size' => 14,
+                        'items' => [
+                            ['icon' => 'fa fa-angle-right', 'text' => 'New Arrivals'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Best Sellers'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Sale Items'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Gift Cards']
+                        ]
+                    ]
+                ],
+                [
+                    'id' => 'footer-help-' . uniqid(),
+                    'widgetType' => 'icon-list',
+                    'settings' => [
+                        'text_color' => '#999',
+                        'icon_color' => '#92003b',
+                        'icon_size' => 14,
+                        'text_size' => 14,
+                        'items' => [
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Shipping Info'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Returns'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'Size Guide'],
+                            ['icon' => 'fa fa-angle-right', 'text' => 'FAQs']
+                        ]
+                    ]
+                ],
+                [
+                    'id' => 'footer-payment-' . uniqid(),
+                    'widgetType' => 'container',
+                    'settings' => ['columns' => '1'],
+                    'children' => [
+                        ['id' => 'payment-title-' . uniqid(), 'widgetType' => 'heading', 'settings' => ['title' => 'We Accept', 'html_tag' => 'h3', 'color' => '#fff', 'font_size' => 18]],
+                        ['id' => 'payment-text-' . uniqid(), 'widgetType' => 'text', 'settings' => ['content' => '💳 Visa | MasterCard | PayPal | Apple Pay', 'color' => '#999', 'font_size' => 14]]
+                    ]
+                ]
+            ]
+        ];
+        
+        return $elements;
+    }
+    
+    /**
+     * Build Fashion Store Page
+     */
+    private function build_fashion_store_page() {
+        $elements = [];
+        
+        // Luxury Header
+        $elements[] = [
+            'id' => 'luxury-header-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '1',
+                'background_color' => '#000000',
+                'padding' => ['top' => 30, 'right' => 40, 'bottom' => 30, 'left' => 40]
+            ],
+            'children' => [
+                [
+                    'id' => 'brand-name-' . uniqid(),
+                    'widgetType' => 'heading',
+                    'settings' => ['title' => 'MAISON DE MODE', 'html_tag' => 'h1', 'color' => '#ffffff', 'font_size' => 32, 'align' => 'center', 'font_weight' => '300', 'letter_spacing' => '5px']
+                ]
+            ]
+        ];
+        
+        // Full-Width Hero
+        $elements[] = [
+            'id' => 'fashion-hero-' . uniqid(),
+            'widgetType' => 'image-box',
+            'settings' => [
+                'image_url' => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&h=600&fit=crop',
+                'title' => 'Autumn/Winter 2025',
+                'description' => 'Timeless elegance meets contemporary design',
+                'button_text' => 'Explore Collection',
+                'show_button' => 'yes',
+                'text_align' => 'center',
+                'title_color' => '#ffffff',
+                'description_color' => '#ffffff',
+                'title_size' => 48,
+                'button_bg_color' => '#ffffff',
+                'button_text_color' => '#000000'
+            ]
+        ];
+        
+        // Featured Collections
+        $elements[] = [
+            'id' => 'collections-title-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => ['title' => 'FEATURED COLLECTIONS', 'html_tag' => 'h2', 'font_size' => 28, 'align' => 'center', 'color' => '#000', 'letter_spacing' => '3px', 'margin' => ['top' => 60, 'right' => 0, 'bottom' => 50, 'left' => 0]]
+        ];
+        
+        $elements[] = [
+            'id' => 'collections-grid-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => ['columns' => '3', 'column_gap' => 20, 'padding' => ['top' => 0, 'right' => 40, 'bottom' => 80, 'left' => 40]],
+            'children' => [
+                ['id' => 'col1-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=500&h=700&fit=crop', 'title' => 'Evening Wear', 'description' => 'From $299', 'text_align' => 'center']],
+                ['id' => 'col2-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=500&h=700&fit=crop', 'title' => 'Casual Chic', 'description' => 'From $79', 'text_align' => 'center']],
+                ['id' => 'col3-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=500&h=700&fit=crop', 'title' => 'Accessories', 'description' => 'From $49', 'text_align' => 'center']]
+            ]
+        ];
+        
+        return $elements;
+    }
+    
+    /**
+     * Build Electronics Store Page
+     */
+    private function build_electronics_store_page() {
+        $elements = [];
+        
+        // Tech Header
+        $elements[] = [
+            'id' => 'tech-header-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '3',
+                'background_color' => '#0f172a',
+                'padding' => ['top' => 20, 'right' => 40, 'bottom' => 20, 'left' => 40]
+            ],
+            'children' => [
+                ['id' => 'tech-logo-' . uniqid(), 'widgetType' => 'heading', 'settings' => ['title' => '⚡ TECH STORE', 'html_tag' => 'h2', 'color' => '#fff', 'font_size' => 24, 'font_weight' => '700']],
+                ['id' => 'tech-nav-' . uniqid(), 'widgetType' => 'text', 'settings' => ['content' => 'Laptops | Phones | Tablets | Audio | Gaming', 'color' => '#cbd5e1', 'align' => 'center', 'font_size' => 14]],
+                ['id' => 'tech-cart-' . uniqid(), 'widgetType' => 'button', 'settings' => ['text' => '🛒 Cart', 'bg_color' => '#3b82f6', 'align' => 'right']]
+            ]
+        ];
+        
+        // Hero Banner
+        $elements[] = [
+            'id' => 'tech-hero-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => [
+                'columns' => '2',
+                'background_type' => 'gradient',
+                'background_gradient' => 'linear-gradient(135deg, #1e40af 0%, #7c3aed 100%)',
+                'padding' => ['top' => 100, 'right' => 60, 'bottom' => 100, 'left' => 60]
+            ],
+            'children' => [
+                [
+                    'id' => 'tech-hero-content-' . uniqid(),
+                    'widgetType' => 'container',
+                    'settings' => ['columns' => '1'],
+                    'children' => [
+                        ['id' => 'tech-hero-title-' . uniqid(), 'widgetType' => 'heading', 'settings' => ['title' => 'Latest Tech Gadgets', 'html_tag' => 'h1', 'color' => '#fff', 'font_size' => 48, 'font_weight' => '800']],
+                        ['id' => 'tech-hero-text-' . uniqid(), 'widgetType' => 'text', 'settings' => ['content' => 'Discover cutting-edge technology at unbeatable prices. From smartphones to laptops, we have everything you need.', 'color' => '#e0e7ff', 'font_size' => 18]],
+                        ['id' => 'tech-hero-btn-' . uniqid(), 'widgetType' => 'button', 'settings' => ['text' => 'Browse Products', 'bg_color' => '#fff', 'text_color' => '#1e40af', 'size' => 'large', 'align' => 'left']]
+                    ]
+                ],
+                ['id' => 'tech-hero-img-' . uniqid(), 'widgetType' => 'image', 'settings' => ['url' => 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=800&h=600&fit=crop']]
+            ]
+        ];
+        
+        // Product Showcase
+        $elements[] = [
+            'id' => 'showcase-title-' . uniqid(),
+            'widgetType' => 'heading',
+            'settings' => ['title' => 'Best Sellers', 'html_tag' => 'h2', 'font_size' => 36, 'align' => 'center', 'margin' => ['top' => 60, 'right' => 0, 'bottom' => 50, 'left' => 0]]
+        ];
+        
+        $elements[] = [
+            'id' => 'tech-products-' . uniqid(),
+            'widgetType' => 'container',
+            'settings' => ['columns' => '4', 'column_gap' => 30, 'padding' => ['top' => 0, 'right' => 40, 'bottom' => 80, 'left' => 40]],
+            'children' => [
+                ['id' => 'tech-prod1-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop', 'title' => 'Gaming Laptop', 'description' => '$1,499.00', 'button_text' => 'Buy Now', 'text_align' => 'center']],
+                ['id' => 'tech-prod2-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', 'title' => 'Wireless Headphones', 'description' => '$299.00', 'button_text' => 'Buy Now', 'text_align' => 'center']],
+                ['id' => 'tech-prod3-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop', 'title' => 'Smart Watch Pro', 'description' => '$399.00', 'button_text' => 'Buy Now', 'text_align' => 'center']],
+                ['id' => 'tech-prod4-' . uniqid(), 'widgetType' => 'image-box', 'settings' => ['image_url' => 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop', 'title' => '4K Drone', 'description' => '$799.00', 'button_text' => 'Buy Now', 'text_align' => 'center']]
+            ]
+        ];
+        
+        return $elements;
     }
 }
 

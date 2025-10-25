@@ -69,11 +69,17 @@ abstract class ProBuilder_Base_Widget {
     }
     
     protected $controls = [];
+    protected $current_section_tab = 'content'; // Track current tab for controls
     
     /**
      * Add control
      */
     protected function add_control($id, $args) {
+        // Auto-assign tab based on current section
+        if (!isset($args['tab'])) {
+            $args['tab'] = $this->current_section_tab;
+        }
+        error_log("ProBuilder: Control '$id' assigned to tab '{$args['tab']}'");
         $this->controls[$id] = $args;
     }
     
@@ -81,6 +87,26 @@ abstract class ProBuilder_Base_Widget {
      * Start controls section
      */
     protected function start_controls_section($id, $args) {
+        // Determine tab from section name or args
+        if (isset($args['tab'])) {
+            $this->current_section_tab = $args['tab'];
+        } else {
+            // Auto-detect from section name (case insensitive)
+            $id_lower = strtolower($id);
+            if (strpos($id_lower, 'content') !== false) {
+                $this->current_section_tab = 'content';
+            } elseif (strpos($id_lower, 'style') !== false || strpos($id_lower, 'typography') !== false) {
+                $this->current_section_tab = 'style';
+            } elseif (strpos($id_lower, 'advanced') !== false) {
+                $this->current_section_tab = 'advanced';
+            } else {
+                $this->current_section_tab = 'content'; // Default
+            }
+        }
+        
+        error_log("ProBuilder: Section '$id' assigned to tab '{$this->current_section_tab}'");
+        
+        $args['tab'] = $this->current_section_tab;
         $this->controls[$id] = array_merge($args, ['type' => 'section_start']);
     }
     
@@ -88,7 +114,8 @@ abstract class ProBuilder_Base_Widget {
      * End controls section
      */
     protected function end_controls_section() {
-        // Just for API compatibility
+        // Reset to content tab
+        $this->current_section_tab = 'content';
     }
     
     /**

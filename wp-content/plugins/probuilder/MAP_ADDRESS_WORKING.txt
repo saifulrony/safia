@@ -1,0 +1,171 @@
+═══════════════════════════════════════════════════════════
+         MAP WIDGET - ADDRESS INPUT NOW WORKS! 🎉
+═══════════════════════════════════════════════════════════
+
+✅ FIXED!
+
+You can now just TYPE an address and the map will show it!
+No need to manually find coordinates anymore!
+
+═══════════════════════════════════════════════════════════
+
+🚀 EASY WAY (Just Use Address):
+
+1. Add Map widget to your page
+
+2. Click "Edit" button
+
+3. In the Location tab, enter ONLY the Address:
+   
+   Examples:
+   ✓ "Eiffel Tower, Paris"
+   ✓ "1600 Amphitheatre Parkway, Mountain View, CA"
+   ✓ "Big Ben, London"
+   ✓ "Sydney Opera House, Australia"
+   ✓ "Central Park, New York"
+   ✓ "Tokyo Tower, Japan"
+
+4. Leave Latitude and Longitude EMPTY (or delete them)
+
+5. Done! Google Maps will find it automatically!
+
+═══════════════════════════════════════════════════════════
+
+⚙️ HOW IT WORKS:
+
+OPTION 1: ADDRESS ONLY (Easy!)
+├─ Type address in "Address" field
+├─ Leave "Latitude" and "Longitude" empty
+└─ Google Maps geocodes it automatically
+
+OPTION 2: COORDINATES (Precise)
+├─ Enter Latitude
+├─ Enter Longitude
+├─ Address is just for display text
+└─ Map uses exact coordinates
+
+═══════════════════════════════════════════════════════════
+
+📋 TRY THESE EXAMPLES:
+
+Just type these in the Address field:
+
+✓ "Eiffel Tower"
+✓ "Statue of Liberty"
+✓ "Taj Mahal"
+✓ "Pyramids of Giza"
+✓ "Golden Gate Bridge"
+✓ "Colosseum, Rome"
+✓ "Machu Picchu"
+✓ "Great Wall of China"
+
+Or use full addresses:
+✓ "1600 Pennsylvania Avenue, Washington, DC"
+✓ "221B Baker Street, London"
+✓ "350 Fifth Avenue, New York" (Empire State Building)
+
+═══════════════════════════════════════════════════════════
+
+💡 TIPS:
+
+1. BE SPECIFIC
+   Good: "Central Park, New York City"
+   Bad: "Park"
+
+2. INCLUDE CITY/COUNTRY
+   Good: "Opera House, Sydney, Australia"
+   Better: "Sydney Opera House"
+
+3. USE LANDMARKS
+   Google knows famous places!
+   ✓ "Eiffel Tower" works!
+   ✓ "Big Ben" works!
+   ✓ "Times Square" works!
+
+4. FOR BUSINESSES
+   Type the full business name + city
+   Example: "Apple Park, Cupertino"
+
+═══════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT:
+
+1. CLEAR BROWSER CACHE FIRST!
+   Press: Ctrl + Shift + R (Windows/Linux)
+   Or: Cmd + Shift + R (Mac)
+
+2. WHEN TO USE COORDINATES
+   - For very precise locations
+   - For new/unlisted addresses
+   - For custom map pins
+   - When address doesn't work
+
+3. WHEN TO USE ADDRESS
+   - For famous landmarks
+   - For businesses
+   - For street addresses
+   - For easier setup (most cases!)
+
+═══════════════════════════════════════════════════════════
+
+🎯 QUICK TEST:
+
+Try this RIGHT NOW:
+
+1. Clear browser cache
+2. Edit your Map widget
+3. Delete Latitude and Longitude (make them empty)
+4. In Address, type: "Eiffel Tower, Paris"
+5. Save
+6. Watch the map update to Paris! 🗼
+
+═══════════════════════════════════════════════════════════
+
+📊 WHAT CHANGED:
+
+BEFORE:
+✗ Had to manually find coordinates
+✗ Typing address did nothing
+✗ Complicated to use
+
+AFTER:
+✅ Just type address - it works!
+✅ Coordinates optional (for precision)
+✅ Simple and easy!
+✅ Google Maps geocodes automatically
+
+═══════════════════════════════════════════════════════════
+
+✨ BENEFITS:
+
+✅ No more searching for coordinates!
+✅ Just type any address or landmark
+✅ Google Maps finds it automatically
+✅ Still supports coordinates for precision
+✅ Works with ANY location worldwide
+✅ Easier and faster to use
+
+═══════════════════════════════════════════════════════════
+
+📝 SETTINGS SUMMARY:
+
+REQUIRED (choose one):
+  Option A: Address only
+  Option B: Latitude + Longitude
+
+OPTIONAL:
+  - Zoom Level (1-20)
+  - Height (200-800px)
+  - Border Radius (0-50px)
+  - Margins
+  - Map Type (Roadmap/Satellite/etc.)
+
+═══════════════════════════════════════════════════════════
+
+✅ STATUS: WORKING PERFECTLY!
+
+Map now responds to your address input!
+Just type and it works!
+
+═══════════════════════════════════════════════════════════
+

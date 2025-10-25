@@ -33,7 +33,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         ]);
         
         $this->add_control('columns', [
-            'label' => __('Columns', 'probuilder'),
+            'label' => __('Columns (Desktop)', 'probuilder'),
             'type' => 'select',
             'default' => '1',
             'options' => [
@@ -50,6 +50,33 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 '11' => __('11 Columns', 'probuilder'),
                 '12' => __('12 Columns', 'probuilder'),
             ],
+            'description' => __('Number of columns on desktop (> 1024px)', 'probuilder'),
+        ]);
+        
+        $this->add_control('columns_tablet', [
+            'label' => __('Columns (Tablet)', 'probuilder'),
+            'type' => 'select',
+            'default' => '2',
+            'options' => [
+                '1' => __('1 Column', 'probuilder'),
+                '2' => __('2 Columns', 'probuilder'),
+                '3' => __('3 Columns', 'probuilder'),
+                '4' => __('4 Columns', 'probuilder'),
+                '5' => __('5 Columns', 'probuilder'),
+                '6' => __('6 Columns', 'probuilder'),
+            ],
+            'description' => __('Number of columns on tablet (768px - 1024px)', 'probuilder'),
+        ]);
+        
+        $this->add_control('columns_mobile', [
+            'label' => __('Columns (Mobile)', 'probuilder'),
+            'type' => 'select',
+            'default' => '1',
+            'options' => [
+                '1' => __('1 Column', 'probuilder'),
+                '2' => __('2 Columns', 'probuilder'),
+            ],
+            'description' => __('Number of columns on mobile (< 768px)', 'probuilder'),
         ]);
         
         $this->add_control('column_gap', [
@@ -177,10 +204,15 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         $settings = $this->get_settings();
         $layout = $this->get_settings('layout', 'boxed');
         $columns = $this->get_settings('columns', '1');
+        $columns_tablet = $this->get_settings('columns_tablet', '2');
+        $columns_mobile = $this->get_settings('columns_mobile', '1');
         $column_gap = $this->get_settings('column_gap', 20);
         $content_width = $this->get_settings('content_width', 1140);
         $min_height = $this->get_settings('min_height', 100);
         $content_position = $this->get_settings('content_position', 'top');
+        
+        // Generate unique ID for this container
+        $container_id = 'probuilder-container-' . uniqid();
         
         // Background
         $bg_type = $this->get_settings('background_type', 'color');
@@ -241,15 +273,35 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
             $style .= 'display: flex; align-items: flex-end;';
         }
         
-        echo '<div class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns) . '">';
+        // Output responsive CSS
+        ?>
+        <style>
+            #<?php echo $container_id; ?> .probuilder-container-columns {
+                display: grid;
+                grid-template-columns: repeat(<?php echo esc_attr($columns); ?>, 1fr);
+                gap: <?php echo esc_attr($column_gap); ?>px;
+                width: 100%;
+            }
+            
+            /* Tablet (768px - 1024px) */
+            @media (max-width: 1024px) {
+                #<?php echo $container_id; ?> .probuilder-container-columns {
+                    grid-template-columns: repeat(<?php echo esc_attr($columns_tablet); ?>, 1fr);
+                }
+            }
+            
+            /* Mobile (< 768px) */
+            @media (max-width: 767px) {
+                #<?php echo $container_id; ?> .probuilder-container-columns {
+                    grid-template-columns: repeat(<?php echo esc_attr($columns_mobile); ?>, 1fr);
+                }
+            }
+        </style>
+        <?php
         
-        // Column wrapper style
-        $column_style = 'display: grid;';
-        $column_style .= 'grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr);';
-        $column_style .= 'gap: ' . esc_attr($column_gap) . 'px;';
-        $column_style .= 'width: 100%;';
+        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '">';
         
-        echo '<div class="probuilder-container-columns" style="' . $column_style . '">';
+        echo '<div class="probuilder-container-columns">';
         
         // Render children in columns
         $children = $this->get_settings('_children', []);

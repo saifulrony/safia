@@ -19,10 +19,32 @@
     wp_head(); 
     ?>
     <style>
-        /* Ensure editor loads even if CSS fails */
+        /* CRITICAL: Force positioning with inline styles */
+        body.admin-bar #wpadminbar {
+            z-index: 99999 !important;
+            position: fixed !important;
+            top: 0 !important;
+        }
+        
+        body.admin-bar .probuilder-editor-header {
+            position: fixed !important;
+            top: 60px !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 99998 !important;
+            height: 45px !important;
+            background: #ffffff !important;
+        }
+        
+        body.admin-bar .probuilder-editor-main {
+            margin-top: 105px !important;
+            height: calc(100vh - 105px) !important;
+        }
+        
+        /* Fallback styles if main CSS fails */
         body.probuilder-editor-body {
             margin: 0;
-            padding: 0;
+            padding: 0 !important;
             font-family: -apple-system, sans-serif;
         }
         .probuilder-editor-header {
@@ -51,6 +73,22 @@
         console.log('=== ProBuilder Editor Template Loaded ===');
         console.log('Post ID: <?php echo get_the_ID(); ?>');
         console.log('Template file: editor.php');
+        console.log('Cache buster: <?php echo time(); ?>');
+        
+        // Check positioning after DOM loads
+        jQuery(document).ready(function($) {
+            setTimeout(function() {
+                const $header = $('.probuilder-editor-header');
+                const $main = $('.probuilder-editor-main');
+                const $adminBar = $('#wpadminbar');
+                
+                console.log('=== POSITIONING CHECK ===');
+                console.log('Admin bar top:', $adminBar.css('top'), 'height:', $adminBar.height());
+                console.log('ProBuilder header top:', $header.css('top'), 'height:', $header.height());
+                console.log('ProBuilder main margin-top:', $main.css('margin-top'));
+                console.log('Body has admin-bar class:', $('body').hasClass('admin-bar'));
+            }, 500);
+        });
     </script>
     
     <!-- Editor Header -->
@@ -171,7 +209,7 @@
         </div>
         
         <!-- Canvas - Preview Area -->
-        <div class="probuilder-canvas">
+        <div class="probuilder-canvas" data-device="desktop">
             <div class="probuilder-canvas-inner">
                 <div id="probuilder-preview-area" class="probuilder-preview-area">
                     <!-- Elements will be added here -->
