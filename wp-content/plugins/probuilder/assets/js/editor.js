@@ -10,6 +10,29 @@
         widgets: [],
         elements: [],
         selectedElement: null,
+        history: [],
+        historyIndex: -1,
+        maxHistorySize: 50,
+        isPerformingHistoryAction: false,
+        globalStyles: {
+            colors: [
+                { id: 'primary', name: 'Primary', color: '#344047' },
+                { id: 'secondary', name: 'Secondary', color: '#2c3e50' },
+                { id: 'accent', name: 'Accent', color: '#4a5a6b' },
+                { id: 'text', name: 'Text', color: '#495157' }
+            ],
+            typography: {
+                h1: { fontSize: 48, fontWeight: 700, lineHeight: 1.2 },
+                h2: { fontSize: 36, fontWeight: 600, lineHeight: 1.3 },
+                h3: { fontSize: 28, fontWeight: 600, lineHeight: 1.4 },
+                body: { fontSize: 16, fontWeight: 400, lineHeight: 1.6 }
+            },
+            buttons: {
+                primary: { bgColor: '#344047', textColor: '#ffffff', borderRadius: 4 },
+                secondary: { bgColor: '#2c3e50', textColor: '#ffffff', borderRadius: 4 },
+                outline: { bgColor: 'transparent', textColor: '#344047', borderRadius: 4, border: '2px solid #344047' }
+            }
+        },
         
         /**
          * Initialize
@@ -83,6 +106,589 @@
             
             // Make globally accessible for templates
             window.ProBuilderApp = this;
+            
+            // Initialize keyboard shortcuts
+            this.initKeyboardShortcuts();
+            
+            // Initialize global styles
+            this.initGlobalStyles();
+            
+            // Save initial state
+            this.saveHistory();
+        },
+        
+        /**
+         * Initialize keyboard shortcuts
+         */
+        initKeyboardShortcuts: function() {
+            const self = this;
+            
+            $(document).on('keydown', function(e) {
+                // Ctrl/Cmd + Z = Undo
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    self.undo();
+                    return false;
+                }
+                
+                // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y = Redo
+                if ((e.ctrlKey || e.metaKey) && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
+                    e.preventDefault();
+                    self.redo();
+                    return false;
+                }
+                
+                // Ctrl/Cmd + S = Save
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    self.saveData();
+                    return false;
+                }
+                
+                // Ctrl/Cmd + C = Copy
+                if ((e.ctrlKey || e.metaKey) && e.key === 'c' && self.selectedElement) {
+                    e.preventDefault();
+                    self.copyElement();
+                    return false;
+                }
+                
+                // Ctrl/Cmd + V = Paste
+                if ((e.ctrlKey || e.metaKey) && e.key === 'v' && self.copiedElement) {
+                    e.preventDefault();
+                    self.pasteElement();
+                    return false;
+                }
+                
+                // Ctrl/Cmd + D = Duplicate
+                if ((e.ctrlKey || e.metaKey) && e.key === 'd' && self.selectedElement) {
+                    e.preventDefault();
+                    self.duplicateElement();
+                    return false;
+                }
+                
+                // Delete = Delete selected element
+                if (e.key === 'Delete' && self.selectedElement) {
+                    e.preventDefault();
+                    self.deleteSelectedElement();
+                    return false;
+                }
+            });
+            
+            console.log('✅ Keyboard shortcuts initialized');
+        },
+        
+        /**
+         * Initialize global styles
+         */
+        initGlobalStyles: function() {
+            const self = this;
+            
+            // Load saved global styles
+            const savedStyles = localStorage.getItem('probuilder_global_styles');
+            if (savedStyles) {
+                try {
+                    this.globalStyles = JSON.parse(savedStyles);
+                } catch (e) {
+                    console.error('Error loading global styles:', e);
+                }
+            }
+            
+            // Render global styles
+            this.renderGlobalColors();
+            this.renderGlobalTypography();
+            this.renderGlobalButtons();
+            
+            // Bind events
+            $('#add-global-color').on('click', function() {
+                self.addGlobalColor();
+            });
+            
+            console.log('✅ Global styles initialized');
+        },
+        
+        /**
+         * Render global colors
+         */
+        renderGlobalColors: function() {
+            const $container = $('#probuilder-color-palette');
+            $container.empty();
+            
+            this.globalStyles.colors.forEach((color, index) => {
+                const $colorItem = $(`
+                    <div class="probuilder-global-color-item" data-index="${index}">
+                        <div class="probuilder-color-preview" style="background: ${color.color};">
+                            <input type="color" class="probuilder-color-picker-input" value="${color.color}" data-index="${index}">
+                        </div>
+                        <div class="probuilder-color-info">
+                            <input type="text" class="probuilder-color-name" value="${color.name}" data-index="${index}" placeholder="Color name">
+                            <div class="probuilder-color-value">${color.color}</div>
+                        </div>
+                        <button class="probuilder-color-delete" data-index="${index}" title="Delete">
+                            <i class="dashicons dashicons-trash"></i>
+                        </button>
+                    </div>
+                `);
+                
+                $container.append($colorItem);
+            });
+            
+            // Bind color picker change
+            const self = this;
+            $container.find('.probuilder-color-picker-input').on('change', function() {
+                const index = $(this).data('index');
+                const newColor = $(this).val();
+                self.updateGlobalColor(index, 'color', newColor);
+            });
+            
+            // Bind name change
+            $container.find('.probuilder-color-name').on('change', function() {
+                const index = $(this).data('index');
+                const newName = $(this).val();
+                self.updateGlobalColor(index, 'name', newName);
+            });
+            
+            // Bind delete
+            $container.find('.probuilder-color-delete').on('click', function() {
+                const index = $(this).data('index');
+                self.deleteGlobalColor(index);
+            });
+        },
+        
+        /**
+         * Render global typography
+         */
+        renderGlobalTypography: function() {
+            const $container = $('#probuilder-typography-presets');
+            $container.empty();
+            
+            const types = ['h1', 'h2', 'h3', 'body'];
+            const labels = { h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3', body: 'Body Text' };
+            
+            types.forEach(type => {
+                const typo = this.globalStyles.typography[type];
+                const $typoItem = $(`
+                    <div class="probuilder-typo-preset" data-type="${type}">
+                        <div class="probuilder-typo-preview">
+                            <span style="font-size: ${typo.fontSize}px; font-weight: ${typo.fontWeight}; line-height: ${typo.lineHeight};">
+                                ${labels[type]}
+                            </span>
+                        </div>
+                        <div class="probuilder-typo-controls">
+                            <label>
+                                <span>Size:</span>
+                                <input type="number" class="probuilder-typo-fontsize" value="${typo.fontSize}" data-type="${type}" min="10" max="100">
+                            </label>
+                            <label>
+                                <span>Weight:</span>
+                                <select class="probuilder-typo-weight" data-type="${type}">
+                                    <option value="300" ${typo.fontWeight == 300 ? 'selected' : ''}>Light</option>
+                                    <option value="400" ${typo.fontWeight == 400 ? 'selected' : ''}>Normal</option>
+                                    <option value="600" ${typo.fontWeight == 600 ? 'selected' : ''}>Semi Bold</option>
+                                    <option value="700" ${typo.fontWeight == 700 ? 'selected' : ''}>Bold</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Line Height:</span>
+                                <input type="number" class="probuilder-typo-lineheight" value="${typo.lineHeight}" data-type="${type}" min="0.5" max="3" step="0.1">
+                            </label>
+                        </div>
+                    </div>
+                `);
+                
+                $container.append($typoItem);
+            });
+            
+            // Bind events
+            const self = this;
+            $container.find('.probuilder-typo-fontsize, .probuilder-typo-weight, .probuilder-typo-lineheight').on('change', function() {
+                const type = $(this).data('type');
+                self.updateTypography(type);
+            });
+        },
+        
+        /**
+         * Render global buttons
+         */
+        renderGlobalButtons: function() {
+            const $container = $('#probuilder-button-presets');
+            $container.empty();
+            
+            const buttonTypes = ['primary', 'secondary', 'outline'];
+            const labels = { primary: 'Primary', secondary: 'Secondary', outline: 'Outline' };
+            
+            Object.keys(this.globalStyles.buttons).forEach(type => {
+                const btn = this.globalStyles.buttons[type];
+                const $btnItem = $(`
+                    <div class="probuilder-button-preset" data-type="${type}">
+                        <div class="probuilder-button-preview">
+                            <button style="
+                                background: ${btn.bgColor};
+                                color: ${btn.textColor};
+                                border-radius: ${btn.borderRadius}px;
+                                border: ${btn.border || 'none'};
+                                padding: 12px 24px;
+                                cursor: default;
+                            ">
+                                ${labels[type]} Button
+                            </button>
+                        </div>
+                        <div class="probuilder-button-controls">
+                            <label>
+                                <span>Background:</span>
+                                <input type="color" class="probuilder-btn-bgcolor" value="${btn.bgColor}" data-type="${type}">
+                            </label>
+                            <label>
+                                <span>Text:</span>
+                                <input type="color" class="probuilder-btn-textcolor" value="${btn.textColor}" data-type="${type}">
+                            </label>
+                            <label>
+                                <span>Border Radius:</span>
+                                <input type="number" class="probuilder-btn-radius" value="${btn.borderRadius}" data-type="${type}" min="0" max="50">
+                            </label>
+                        </div>
+                    </div>
+                `);
+                
+                $container.append($btnItem);
+            });
+            
+            // Bind events
+            const self = this;
+            $container.find('.probuilder-btn-bgcolor, .probuilder-btn-textcolor, .probuilder-btn-radius').on('change', function() {
+                const type = $(this).data('type');
+                self.updateButtonStyle(type);
+            });
+        },
+        
+        /**
+         * Add global color
+         */
+        addGlobalColor: function() {
+            const newColor = {
+                id: 'color-' + Date.now(),
+                name: 'New Color',
+                color: '#' + Math.floor(Math.random()*16777215).toString(16)
+            };
+            
+            this.globalStyles.colors.push(newColor);
+            this.renderGlobalColors();
+            this.saveGlobalStyles();
+            this.showToast('Color added!');
+        },
+        
+        /**
+         * Update global color
+         */
+        updateGlobalColor: function(index, property, value) {
+            if (this.globalStyles.colors[index]) {
+                this.globalStyles.colors[index][property] = value;
+                
+                // Update preview
+                if (property === 'color') {
+                    $(`.probuilder-color-preview`).eq(index).css('background', value);
+                    $(`.probuilder-color-value`).eq(index).text(value);
+                }
+                
+                this.saveGlobalStyles();
+                
+                // Apply to canvas elements
+                this.applyGlobalStyles();
+            }
+        },
+        
+        /**
+         * Delete global color
+         */
+        deleteGlobalColor: function(index) {
+            if (confirm('Delete this color?')) {
+                this.globalStyles.colors.splice(index, 1);
+                this.renderGlobalColors();
+                this.saveGlobalStyles();
+                this.showToast('Color deleted!');
+            }
+        },
+        
+        /**
+         * Update typography
+         */
+        updateTypography: function(type) {
+            const $container = $(`.probuilder-typo-preset[data-type="${type}"]`);
+            const fontSize = $container.find('.probuilder-typo-fontsize').val();
+            const fontWeight = $container.find('.probuilder-typo-weight').val();
+            const lineHeight = $container.find('.probuilder-typo-lineheight').val();
+            
+            this.globalStyles.typography[type] = {
+                fontSize: parseInt(fontSize),
+                fontWeight: parseInt(fontWeight),
+                lineHeight: parseFloat(lineHeight)
+            };
+            
+            // Update preview
+            $container.find('.probuilder-typo-preview span').css({
+                'font-size': fontSize + 'px',
+                'font-weight': fontWeight,
+                'line-height': lineHeight
+            });
+            
+            this.saveGlobalStyles();
+            
+            // Apply to canvas elements
+            this.applyGlobalStyles();
+        },
+        
+        /**
+         * Update button style
+         */
+        updateButtonStyle: function(type) {
+            const $container = $(`.probuilder-button-preset[data-type="${type}"]`);
+            const bgColor = $container.find('.probuilder-btn-bgcolor').val();
+            const textColor = $container.find('.probuilder-btn-textcolor').val();
+            const borderRadius = $container.find('.probuilder-btn-radius').val();
+            
+            this.globalStyles.buttons[type].bgColor = bgColor;
+            this.globalStyles.buttons[type].textColor = textColor;
+            this.globalStyles.buttons[type].borderRadius = parseInt(borderRadius);
+            
+            // Update preview
+            $container.find('.probuilder-button-preview button').css({
+                'background': bgColor,
+                'color': textColor,
+                'border-radius': borderRadius + 'px'
+            });
+            
+            this.saveGlobalStyles();
+            
+            // Apply to canvas elements
+            this.applyGlobalStyles();
+        },
+        
+        /**
+         * Save global styles
+         */
+        saveGlobalStyles: function() {
+            localStorage.setItem('probuilder_global_styles', JSON.stringify(this.globalStyles));
+            console.log('✅ Global styles saved');
+        },
+        
+        /**
+         * Get global color by ID
+         */
+        getGlobalColor: function(colorId) {
+            const color = this.globalStyles.colors.find(c => c.id === colorId);
+            return color ? color.color : null;
+        },
+        
+        /**
+         * Apply global styles to all elements
+         */
+        applyGlobalStyles: function() {
+            console.log('🎨 Applying global styles to all elements...');
+            
+            // Re-render all elements to apply new global styles
+            this.elements.forEach(element => {
+                this.updateElementPreview(element);
+            });
+            
+            console.log('✅ Global styles applied to', this.elements.length, 'elements');
+        },
+        
+        /**
+         * Save current state to history
+         */
+        saveHistory: function() {
+            if (this.isPerformingHistoryAction) {
+                return; // Don't save during undo/redo
+            }
+            
+            // Clone current elements state
+            const state = JSON.parse(JSON.stringify(this.elements));
+            
+            // Remove future history if we're not at the end
+            if (this.historyIndex < this.history.length - 1) {
+                this.history = this.history.slice(0, this.historyIndex + 1);
+            }
+            
+            // Add new state
+            this.history.push(state);
+            
+            // Limit history size
+            if (this.history.length > this.maxHistorySize) {
+                this.history.shift();
+            } else {
+                this.historyIndex++;
+            }
+            
+            this.updateHistoryButtons();
+            console.log('📝 History saved. Index:', this.historyIndex, 'Total:', this.history.length);
+        },
+        
+        /**
+         * Undo
+         */
+        undo: function() {
+            if (this.historyIndex <= 0) {
+                console.log('⚠️ Nothing to undo');
+                return;
+            }
+            
+            this.historyIndex--;
+            this.restoreHistory();
+            console.log('↩️ Undo. Index:', this.historyIndex);
+        },
+        
+        /**
+         * Redo
+         */
+        redo: function() {
+            if (this.historyIndex >= this.history.length - 1) {
+                console.log('⚠️ Nothing to redo');
+                return;
+            }
+            
+            this.historyIndex++;
+            this.restoreHistory();
+            console.log('↪️ Redo. Index:', this.historyIndex);
+        },
+        
+        /**
+         * Restore state from history
+         */
+        restoreHistory: function() {
+            this.isPerformingHistoryAction = true;
+            
+            const state = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
+            this.elements = state;
+            
+            console.log('🔄 Restoring history state with', this.elements.length, 'elements');
+            
+            // Re-render canvas
+            $('#probuilder-preview-area').empty();
+            this.elements.forEach(element => {
+                this.renderElement(element);
+            });
+            
+            this.updateEmptyState();
+            
+            // Reinitialize drag & drop system after history restore
+            setTimeout(() => {
+                this.makeContainersDroppable();
+                this.reinitializeSidebarWidgets();
+                this.reinitializePreviewArea();
+                console.log('✅ History restored and drag & drop reinitialized');
+            }, 100);
+            
+            this.updateHistoryButtons();
+            
+            this.isPerformingHistoryAction = false;
+        },
+        
+        /**
+         * Update history button states
+         */
+        updateHistoryButtons: function() {
+            const canUndo = this.historyIndex > 0;
+            const canRedo = this.historyIndex < this.history.length - 1;
+            
+            $('#probuilder-undo').prop('disabled', !canUndo).toggleClass('disabled', !canUndo);
+            $('#probuilder-redo').prop('disabled', !canRedo).toggleClass('disabled', !canRedo);
+        },
+        
+        /**
+         * Copy element
+         */
+        copyElement: function() {
+            if (!this.selectedElement) return;
+            
+            const element = this.elements.find(el => el.id === this.selectedElement);
+            if (element) {
+                this.copiedElement = JSON.parse(JSON.stringify(element));
+                console.log('📋 Element copied:', element.widgetType);
+                
+                // Show toast notification
+                this.showToast('Element copied! Press Ctrl+V to paste');
+            }
+        },
+        
+        /**
+         * Paste element
+         */
+        pasteElement: function() {
+            if (!this.copiedElement) return;
+            
+            // Clone with new ID
+            const newElement = this.cloneElementData(this.copiedElement);
+            this.elements.push(newElement);
+            this.renderElement(newElement);
+            this.updateEmptyState();
+            this.saveHistory();
+            
+            console.log('📌 Element pasted:', newElement.widgetType);
+            this.showToast('Element pasted!');
+        },
+        
+        /**
+         * Duplicate element
+         */
+        duplicateElement: function() {
+            if (!this.selectedElement) return;
+            
+            const element = this.elements.find(el => el.id === this.selectedElement);
+            if (element) {
+                const newElement = this.cloneElementData(element);
+                
+                // Insert after original
+                const index = this.elements.findIndex(el => el.id === this.selectedElement);
+                this.elements.splice(index + 1, 0, newElement);
+                
+                this.renderElement(newElement);
+                this.updateEmptyState();
+                this.saveHistory();
+                
+                console.log('🔄 Element duplicated:', newElement.widgetType);
+                this.showToast('Element duplicated!');
+            }
+        },
+        
+        /**
+         * Delete selected element
+         */
+        deleteSelectedElement: function() {
+            if (!this.selectedElement) return;
+            
+            this.deleteElement(this.selectedElement);
+            this.showToast('Element deleted!');
+        },
+        
+        /**
+         * Show toast notification
+         */
+        showToast: function(message) {
+            const toast = $(`
+                <div class="probuilder-toast" style="
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #333;
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    z-index: 99999;
+                    font-size: 14px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    animation: slideUp 0.3s ease;
+                ">
+                    ${message}
+                </div>
+            `);
+            
+            $('body').append(toast);
+            
+            setTimeout(() => {
+                toast.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 2000);
         },
         
         /**
@@ -543,6 +1149,16 @@
                 self.savePage();
             });
             
+            // Undo button
+            $('#probuilder-undo').on('click', function() {
+                self.undo();
+            });
+            
+            // Redo button
+            $('#probuilder-redo').on('click', function() {
+                self.redo();
+            });
+            
             // Preview button
             $('#probuilder-preview').on('click', function() {
                 const url = '<?php echo home_url(); ?>/?p=' + ProBuilderEditor.post_id + '&preview=true';
@@ -688,6 +1304,9 @@
                 this.updateEmptyState();
                 console.log('Empty state updated');
                 
+                // Save to history
+                this.saveHistory();
+                
                 // Automatically select and open settings for the new element
                 setTimeout(() => {
                     this.selectElement(element);
@@ -826,17 +1445,21 @@
                 // Re-render the entire container
                 this.updateContainerWithChildren(containerElement);
                 
-                // Reinitialize sidebar widgets, preview area, and container drop zones
+                // Reinitialize entire drag & drop system
                 setTimeout(() => {
-                    console.log('🔄 Reinitializing drag & drop system...');
+                    console.log('🔄 Full drag & drop system reinitialization...');
+                    
+                    // Reinitialize all components
                     this.reinitializeSidebarWidgets();
                     this.reinitializePreviewArea();
-                    // Small additional delay to ensure containers are ready
+                    
+                    // Reinitialize containers with a delay
                     setTimeout(() => {
                         this.makeContainersDroppable();
-                        console.log('✅ All drag & drop components reinitialized');
-                    }, 100);
-                }, 200);
+                    }, 150);
+                    
+                    console.log('✅ Drag & drop system fully reinitialized');
+                }, 100);
                 
                 // Automatically select and open settings for the new element
                 setTimeout(() => {
@@ -940,7 +1563,7 @@
                         start: function() {
                             console.log('Started dragging widget:', widgetName);
                             $('.probuilder-element-placeholder').show();
-                            $('.probuilder-column').css('outline', '2px dashed #92003b');
+                            $('.probuilder-column').css('outline', '2px dashed #344047');
                             $('#probuilder-preview-area, .probuilder-column').addClass('drop-ready');
                         },
                         stop: function() {
@@ -1218,6 +1841,9 @@
                     console.log('✅ Element appended to preview area');
                 }
                 
+                // Apply motion/animation styles immediately after adding to DOM
+                this.applyMotionStyles(element, $element);
+                
                 // Make element sortable/movable
                 $('#probuilder-preview-area').sortable('refresh');
                 
@@ -1251,20 +1877,22 @@
                 // Enhanced preview based on widget type
                 switch (element.widgetType) {
                     case 'heading':
-                    const tag = settings.html_tag || 'h2';
-                    const headingStyle = `
-                        color: ${settings.color || '#333'};
-                        font-size: ${settings.font_size || 32}px;
-                        font-weight: ${settings.font_weight || 600};
-                        text-align: ${settings.align || 'left'};
-                        margin: 0;
-                        line-height: 1.3;
-                    `;
-                    return `<${tag} style="${headingStyle}">${settings.title || 'This is a heading'}</${tag}>`;
+                        const headingTag = settings.html_tag || 'h2';
+                        const headingColor = settings.color || this.getGlobalColor('primary') || '#344047';
+                        const headingStyle = `
+                            color: ${headingColor};
+                            font-size: ${settings.font_size || 32}px;
+                            font-weight: ${settings.font_weight || 600};
+                            text-align: ${settings.align || 'left'};
+                            margin: 0;
+                            line-height: 1.3;
+                        `;
+                        return `<${headingTag} style="${headingStyle}">${settings.title || 'This is a heading'}</${headingTag}>`;
                     
                 case 'text':
+                    const textColor = settings.text_color || this.getGlobalColor('text') || '#495157';
                     const textStyle = `
-                        color: ${settings.text_color || '#666'};
+                        color: ${textColor};
                         font-size: ${settings.font_size || 16}px;
                         line-height: ${settings.line_height || 1.6};
                         margin: 0;
@@ -1273,12 +1901,14 @@
                     return `<div style="${textStyle}">${textContent}</div>`;
                     
                 case 'button':
+                    const btnBgColor = settings.bg_color || this.getGlobalColor('primary') || '#344047';
+                    const btnTextColor = settings.text_color || '#ffffff';
                     const btnStyle = `
                         padding: ${settings.padding?.top || 12}px ${settings.padding?.right || 24}px ${settings.padding?.bottom || 12}px ${settings.padding?.left || 24}px;
-                        background: ${settings.bg_color || '#93003c'};
-                        color: ${settings.text_color || '#fff'};
+                        background: ${btnBgColor};
+                        color: ${btnTextColor};
                         border: none;
-                        border-radius: ${settings.border_radius || 3}px;
+                        border-radius: ${settings.border_radius || 4}px;
                         cursor: pointer;
                         font-size: 14px;
                         font-weight: 500;
@@ -4156,6 +4786,158 @@
         },
         
         /**
+         * Get motion controls for all widgets - Enhanced with comprehensive animations
+         */
+        getMotionControls: function() {
+            return {
+                // Entrance Animation
+                '_motion_animation': {
+                    label: 'Entrance Animation',
+                    type: 'select',
+                    default: 'none',
+                    options: {
+                        'none': 'None',
+                        // Fade Animations
+                        'fadeIn': 'Fade In',
+                        'fadeInUp': 'Fade In Up',
+                        'fadeInDown': 'Fade In Down',
+                        'fadeInLeft': 'Fade In Left',
+                        'fadeInRight': 'Fade In Right',
+                        // Zoom Animations
+                        'zoomIn': 'Zoom In',
+                        'zoomInUp': 'Zoom In Up',
+                        'zoomInDown': 'Zoom In Down',
+                        'zoomInLeft': 'Zoom In Left',
+                        'zoomInRight': 'Zoom In Right',
+                        // Slide Animations
+                        'slideInUp': 'Slide In Up',
+                        'slideInDown': 'Slide In Down',
+                        'slideInLeft': 'Slide In Left',
+                        'slideInRight': 'Slide In Right',
+                        // Bounce Animations
+                        'bounceIn': 'Bounce In',
+                        'bounceInUp': 'Bounce In Up',
+                        'bounceInDown': 'Bounce In Down',
+                        'bounceInLeft': 'Bounce In Left',
+                        'bounceInRight': 'Bounce In Right',
+                        // Flip & Rotate
+                        'flipInX': 'Flip In X',
+                        'flipInY': 'Flip In Y',
+                        'rotateIn': 'Rotate In',
+                        'rotateInUpLeft': 'Rotate In Up Left',
+                        'rotateInUpRight': 'Rotate In Up Right',
+                        'rotateInDownLeft': 'Rotate In Down Left',
+                        'rotateInDownRight': 'Rotate In Down Right',
+                        // Special Effects
+                        'lightSpeedInRight': 'Light Speed In Right',
+                        'lightSpeedInLeft': 'Light Speed In Left',
+                        'rollIn': 'Roll In',
+                        'jackInTheBox': 'Jack In The Box',
+                        'backInUp': 'Back In Up',
+                        'backInDown': 'Back In Down',
+                        'backInLeft': 'Back In Left',
+                        'backInRight': 'Back In Right'
+                    },
+                    tab: 'motion'
+                },
+                '_motion_duration': {
+                    label: 'Animation Duration (ms)',
+                    type: 'slider',
+                    default: 1000,
+                    range: {
+                        px: { min: 200, max: 3000, step: 100 }
+                    },
+                    unit: 'ms',
+                    tab: 'motion'
+                },
+                '_motion_delay': {
+                    label: 'Animation Delay (ms)',
+                    type: 'slider',
+                    default: 0,
+                    range: {
+                        px: { min: 0, max: 5000, step: 100 }
+                    },
+                    unit: 'ms',
+                    tab: 'motion'
+                },
+                '_motion_easing': {
+                    label: 'Easing Function',
+                    type: 'select',
+                    default: 'ease-in-out',
+                    options: {
+                        'linear': 'Linear',
+                        'ease': 'Ease',
+                        'ease-in': 'Ease In',
+                        'ease-out': 'Ease Out',
+                        'ease-in-out': 'Ease In Out',
+                        'ease-in-back': 'Ease In Back',
+                        'ease-out-back': 'Ease Out Back',
+                        'ease-in-out-back': 'Ease In Out Back'
+                    },
+                    tab: 'motion'
+                },
+                // Hover Animation
+                '_motion_hover': {
+                    label: 'Hover Animation',
+                    type: 'select',
+                    default: 'none',
+                    options: {
+                        'none': 'None',
+                        'grow': 'Grow',
+                        'shrink': 'Shrink',
+                        'pulse': 'Pulse',
+                        'push': 'Push',
+                        'pop': 'Pop',
+                        'bounce': 'Bounce',
+                        'rotate': 'Rotate',
+                        'grow-rotate': 'Grow & Rotate',
+                        'float': 'Float',
+                        'sink': 'Sink',
+                        'wobble': 'Wobble',
+                        'skew': 'Skew',
+                        'buzz': 'Buzz'
+                    },
+                    tab: 'motion'
+                },
+                // Advanced Options
+                '_motion_repeat': {
+                    label: 'Repeat Animation',
+                    type: 'select',
+                    default: '1',
+                    options: {
+                        '1': 'Once',
+                        '2': 'Twice',
+                        '3': 'Three Times',
+                        'infinite': 'Infinite Loop'
+                    },
+                    tab: 'motion'
+                },
+                '_motion_viewport': {
+                    label: 'Animate on Scroll',
+                    type: 'switcher',
+                    default: 'yes',
+                    tab: 'motion'
+                },
+                '_motion_viewport_offset': {
+                    label: 'Viewport Offset (%)',
+                    type: 'slider',
+                    default: 20,
+                    range: {
+                        px: { min: 0, max: 100, step: 5 }
+                    },
+                    unit: '%',
+                    tab: 'motion'
+                },
+                '_motion_preview_btn': {
+                    label: 'Preview Animation',
+                    type: 'raw_html',
+                    html: '<button type="button" class="probuilder-button probuilder-preview-animation" style="width: 100%; margin-top: 10px;">▶️ Preview Animation</button>',
+                    tab: 'motion'
+                }
+            };
+        },
+        
+        /**
          * Render settings
          */
         renderSettings: function(element, widget, activeTab = 'content') {
@@ -4170,13 +4952,16 @@
                 return;
             }
             
-            console.log('Controls to render:', Object.keys(widget.controls).length);
+            // Merge motion controls with widget controls for the motion tab
+            const allControls = activeTab === 'motion' ? this.getMotionControls() : widget.controls;
+            
+            console.log('Controls to render:', Object.keys(allControls).length);
             
             const self = this;
             let controlsRendered = 0;
             
-            Object.keys(widget.controls).forEach(key => {
-                const control = widget.controls[key];
+            Object.keys(allControls).forEach(key => {
+                const control = allControls[key];
                 
                 // Filter by tab - only show controls for active tab
                 const controlTab = control.tab || 'content';
@@ -4255,8 +5040,19 @@
                 } else if (control.type === 'slider') {
                     // Slider control
                     $control.find('.probuilder-slider').on('input change', function() {
-                        element.settings[key] = $(this).val();
-                        console.log('Slider updated:', key, $(this).val());
+                        const newValue = $(this).val();
+                        element.settings[key] = newValue;
+                        console.log('✅ Slider updated:', key, '=', newValue);
+                        
+                        // Update value display
+                        $(this).next('.probuilder-slider-value').text(newValue + (control.unit || ''));
+                        
+                        // If it's a motion control, apply animation immediately
+                        if (key.startsWith('_motion_')) {
+                            console.log('🎬 Motion slider changed! Applying animation...');
+                            self.applyMotionStyles(element);
+                        }
+                        
                         self.updateElementPreview(element);
                     });
                 } else if (control.type === 'color') {
@@ -4369,14 +5165,27 @@
                     // Switcher control
                     $control.find('.probuilder-switcher-input').on('change', function() {
                         element.settings[key] = $(this).is(':checked') ? 'yes' : 'no';
-                        console.log('Switcher updated:', key, element.settings[key]);
+                        console.log('✅ Switcher updated:', key, element.settings[key]);
                         self.updateElementPreview(element);
                     });
                     
                     // All other controls
                     $control.find('input, select, textarea').not('.probuilder-switcher-input').on('input change', function() {
-                        element.settings[key] = $(this).val();
-                        console.log('Control updated:', key, $(this).val());
+                        const newValue = $(this).val();
+                        element.settings[key] = newValue;
+                        console.log('✅ Control updated:', key, '=', newValue);
+                        
+                        // Update slider value display
+                        if ($(this).hasClass('probuilder-slider')) {
+                            $(this).next('.probuilder-slider-value').text(newValue + (control.unit || ''));
+                        }
+                        
+                        // If it's a motion control, apply animation immediately
+                        if (key.startsWith('_motion_')) {
+                            console.log('🎬 Motion control changed! Applying animation...');
+                            self.applyMotionStyles(element);
+                        }
+                        
                         self.updateElementPreview(element);
                     });
                 }
@@ -4396,6 +5205,162 @@
                     </div>
                 `);
             }
+            
+            // Add preview animation button handler (for motion tab)
+            if (activeTab === 'motion') {
+                $content.find('.probuilder-preview-animation').off('click').on('click', function() {
+                    self.previewAnimation(element);
+                });
+            }
+        },
+        
+        /**
+         * Preview animation on canvas element - Replays the animation
+         */
+        previewAnimation: function(element) {
+            const animation = element.settings._motion_animation || 'fadeIn';
+            const duration = element.settings._motion_duration || 1000;
+            const easing = element.settings._motion_easing || 'ease-in-out';
+            
+            console.log('🎬 Preview animation clicked for:', element.id);
+            console.log('Animation:', animation, 'Duration:', duration);
+            
+            if (!animation || animation === 'none') {
+                alert('Please select an animation first!');
+                return;
+            }
+            
+            // Find the element in the canvas
+            const $canvasElement = $(`.probuilder-element[data-id="${element.id}"]`);
+            
+            if ($canvasElement.length === 0) {
+                console.error('❌ Canvas element not found:', element.id);
+                return;
+            }
+            
+            // Get the preview area
+            const $preview = $canvasElement.find('.probuilder-element-preview');
+            
+            if ($preview.length === 0) {
+                console.error('❌ Preview area not found');
+                return;
+            }
+            
+            console.log('✅ Element found, replaying animation...');
+            
+            // Remove existing animation to reset
+            $preview.css('animation', 'none');
+            
+            // Force reflow to reset
+            void $preview[0].offsetWidth;
+            
+            // Apply animation
+            $preview.css({
+                'animation-name': animation,
+                'animation-duration': duration + 'ms',
+                'animation-timing-function': easing,
+                'animation-fill-mode': 'both',
+                'opacity': '1'
+            });
+            
+            console.log('✅ Animation replayed!');
+            
+            // Don't reset - let it stay animated
+        },
+        
+        /**
+         * Apply motion/animation styles to canvas element
+         */
+        applyMotionStyles: function(element, $element) {
+            // Get motion settings
+            const animation = element.settings._motion_animation || 'none';
+            const duration = element.settings._motion_duration || 1000;
+            const delay = element.settings._motion_delay || 0;
+            const easing = element.settings._motion_easing || 'ease-in-out';
+            const hoverAnimation = element.settings._motion_hover || 'none';
+            const repeat = element.settings._motion_repeat || '1';
+            
+            console.log('🎬 applyMotionStyles called for element:', element.id);
+            console.log('Animation settings:', { animation, duration, delay, easing, hoverAnimation, repeat });
+            
+            // If no $element passed, find it
+            if (!$element || $element.length === 0) {
+                $element = $(`.probuilder-element[data-id="${element.id}"]`);
+                console.log('Found element:', $element.length);
+            }
+            
+            if ($element.length === 0) {
+                console.error('❌ Element not found in DOM:', element.id);
+                return;
+            }
+            
+            // Apply to the preview area inside the element
+            const $preview = $element.find('.probuilder-element-preview');
+            
+            if ($preview.length === 0) {
+                console.error('❌ Preview area not found for:', element.id);
+                return;
+            }
+            
+            // Remove previous animation classes
+            $preview.removeClass(function(index, className) {
+                return (className.match(/(^|\s)probuilder-animate-\S+/g) || []).join(' ');
+            });
+            
+            // Clear any existing animation first
+            $preview.css('animation', 'none');
+            
+            // Force reflow to reset animation
+            void $preview[0].offsetWidth;
+            
+            // Apply entrance animation if set
+            if (animation && animation !== 'none') {
+                console.log('✅ Applying animation:', animation);
+                
+                // Apply animation to preview area
+                $preview.css({
+                    'animation-name': animation,
+                    'animation-duration': duration + 'ms',
+                    'animation-delay': delay + 'ms',
+                    'animation-timing-function': easing,
+                    'animation-fill-mode': 'both',
+                    'animation-iteration-count': repeat === 'infinite' ? 'infinite' : repeat
+                });
+                
+                $preview.addClass('probuilder-animate-' + animation);
+                
+                console.log('✅ Animation applied to preview area');
+            } else {
+                console.log('ℹ️ Animation set to none, clearing...');
+                // Clear animation if set to none
+                $preview.css('animation', 'none');
+            }
+            
+            // Apply hover animation if set
+            if (hoverAnimation && hoverAnimation !== 'none') {
+                $preview.addClass('probuilder-hover-' + hoverAnimation);
+                
+                // Add hover animation CSS dynamically
+                const hoverStyle = `
+                    .probuilder-hover-${hoverAnimation}:hover {
+                        animation: ${hoverAnimation} 0.5s ease-in-out !important;
+                    }
+                `;
+                
+                // Check if style already exists
+                if (!$('#probuilder-hover-styles').length) {
+                    $('head').append('<style id="probuilder-hover-styles"></style>');
+                }
+                
+                const $styleTag = $('#probuilder-hover-styles');
+                if ($styleTag.text().indexOf(hoverAnimation) === -1) {
+                    $styleTag.append(hoverStyle);
+                }
+                
+                console.log('✅ Hover animation added:', hoverAnimation);
+            }
+            
+            console.log('✅ Motion styles applied successfully');
         },
         
         /**
@@ -4754,6 +5719,15 @@
             const newPreview = this.generatePreview(element);
             $element.find('.probuilder-element-preview').html(newPreview);
             
+            // Apply motion/animation styles if set
+            this.applyMotionStyles(element, $element);
+            
+            // Save to history with debounce
+            clearTimeout(this.historyDebounceTimer);
+            this.historyDebounceTimer = setTimeout(() => {
+                this.saveHistory();
+            }, 1000); // Save 1 second after last change
+            
             // Re-initialize drop zones if it's a container
             if (element.widgetType === 'container') {
                 const self = this;
@@ -4845,9 +5819,32 @@
                 
                 // Re-initialize jQuery UI drop zones with additional delay
                 setTimeout(function() {
-                    // Just reinitialize container drop zones
+                    // Reinitialize container drop zones
                     self.makeContainersDroppable();
-                    console.log('✅ Container drop zones re-initialized');
+                    
+                    // Check and reinitialize sidebar widgets if needed
+                    const $widgets = $('.probuilder-widget');
+                    let needsReinit = false;
+                    $widgets.each(function() {
+                        if (!$(this).data('ui-draggable')) {
+                            needsReinit = true;
+                            return false;
+                        }
+                    });
+                    
+                    if (needsReinit) {
+                        console.log('⚠️ Sidebar widgets lost, reinitializing...');
+                        self.reinitializeSidebarWidgets();
+                    }
+                    
+                    // Check and reinitialize preview area if needed
+                    const $previewArea = $('#probuilder-preview-area');
+                    if (!$previewArea.data('ui-droppable')) {
+                        console.log('⚠️ Preview area droppable lost, reinitializing...');
+                        self.reinitializePreviewArea();
+                    }
+                    
+                    console.log('✅ All drag & drop components verified and reinitialized');
                 }, 100);
                 
                 console.log('✅ Container fully updated with interactive children and drop zones');
@@ -5416,6 +6413,9 @@
             $(`.probuilder-element[data-id="${element.id}"]`).remove();
             this.closeSettings();
             this.updateEmptyState();
+            
+            // Save to history
+            this.saveHistory();
         },
         
         /**

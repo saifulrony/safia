@@ -57,6 +57,8 @@ final class ProBuilder {
      */
     private function includes() {
         // Core classes
+        require_once PROBUILDER_PATH . 'includes/class-cache.php';
+        require_once PROBUILDER_PATH . 'includes/class-assets-optimizer.php';
         require_once PROBUILDER_PATH . 'includes/class-base-widget.php';
         require_once PROBUILDER_PATH . 'includes/class-widgets-manager.php';
         require_once PROBUILDER_PATH . 'includes/class-editor.php';
@@ -64,6 +66,7 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-ajax.php';
         require_once PROBUILDER_PATH . 'includes/class-templates.php';
         require_once PROBUILDER_PATH . 'includes/class-templates-library.php';
+        require_once PROBUILDER_PATH . 'includes/class-theme-integration.php';
         
         // Layout Widgets
         require_once PROBUILDER_PATH . 'widgets/container.php';
@@ -139,6 +142,12 @@ final class ProBuilder {
      * Initialize plugin
      */
     public function init() {
+        // Initialize cache system
+        ProBuilder_Cache::instance();
+        
+        // Initialize assets optimizer
+        ProBuilder_Assets_Optimizer::instance();
+        
         // Initialize widgets manager
         ProBuilder_Widgets_Manager::instance();
         
@@ -153,6 +162,9 @@ final class ProBuilder {
         
         // Initialize templates
         ProBuilder_Templates::instance();
+        
+        // Initialize theme integration
+        ProBuilder_Theme_Integration::instance();
         
         // Load text domain
         load_plugin_textdomain('probuilder', false, dirname(plugin_basename(__FILE__)) . '/languages');
@@ -259,11 +271,26 @@ final class ProBuilder {
     }
     
     /**
-     * Enqueue frontend scripts
+     * Enqueue frontend scripts with optimization
      */
     public function frontend_scripts() {
-        wp_enqueue_style('probuilder-frontend', PROBUILDER_URL . 'assets/css/frontend.css', [], PROBUILDER_VERSION);
-        wp_enqueue_script('probuilder-frontend', PROBUILDER_URL . 'assets/js/frontend.js', ['jquery'], PROBUILDER_VERSION, true);
+        // Check if minified versions exist, use them if available
+        $css_file = file_exists(PROBUILDER_PATH . 'assets/css/frontend.min.css') 
+            ? 'assets/css/frontend.min.css' 
+            : 'assets/css/frontend.css';
+        
+        $js_file = file_exists(PROBUILDER_PATH . 'assets/js/frontend.min.js')
+            ? 'assets/js/frontend.min.js'
+            : 'assets/js/frontend.js';
+        
+        wp_enqueue_style('probuilder-frontend', PROBUILDER_URL . $css_file, [], PROBUILDER_VERSION);
+        wp_enqueue_script('probuilder-frontend', PROBUILDER_URL . $js_file, ['jquery'], PROBUILDER_VERSION, true);
+        
+        // Add inline optimization settings
+        wp_localize_script('probuilder-frontend', 'probuilderOptimization', [
+            'cacheEnabled' => ProBuilder_Cache::instance()->is_cache_enabled(),
+            'lazyLoad' => apply_filters('probuilder_lazy_load', true),
+        ]);
     }
     
     /**

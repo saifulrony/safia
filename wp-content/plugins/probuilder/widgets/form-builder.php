@@ -62,13 +62,20 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
                         'text' => 'Text',
                         'email' => 'Email',
                         'tel' => 'Phone',
+                        'url' => 'URL',
+                        'password' => 'Password',
                         'textarea' => 'Textarea',
                         'select' => 'Select',
                         'checkbox' => 'Checkbox',
                         'radio' => 'Radio',
                         'file' => 'File Upload',
                         'date' => 'Date',
-                        'number' => 'Number'
+                        'time' => 'Time',
+                        'datetime-local' => 'Date & Time',
+                        'number' => 'Number',
+                        'range' => 'Range Slider',
+                        'color' => 'Color Picker',
+                        'hidden' => 'Hidden Field'
                     ],
                     'default' => 'text'
                 ],
@@ -95,6 +102,61 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
                     'label' => 'Options (for select/radio/checkbox)',
                     'type' => 'textarea',
                     'description' => 'One option per line'
+                ],
+                [
+                    'name' => 'field_min_length',
+                    'label' => 'Min Length',
+                    'type' => 'number',
+                    'description' => 'Minimum characters (for text fields)'
+                ],
+                [
+                    'name' => 'field_max_length',
+                    'label' => 'Max Length',
+                    'type' => 'number',
+                    'description' => 'Maximum characters (for text fields)'
+                ],
+                [
+                    'name' => 'field_pattern',
+                    'label' => 'Custom Pattern',
+                    'type' => 'text',
+                    'description' => 'Regex pattern for validation'
+                ],
+                [
+                    'name' => 'field_min',
+                    'label' => 'Min Value',
+                    'type' => 'number',
+                    'description' => 'Minimum value (for number/range fields)'
+                ],
+                [
+                    'name' => 'field_max',
+                    'label' => 'Max Value',
+                    'type' => 'number',
+                    'description' => 'Maximum value (for number/range fields)'
+                ],
+                [
+                    'name' => 'field_step',
+                    'label' => 'Step Value',
+                    'type' => 'number',
+                    'description' => 'Step increment (for number/range fields)'
+                ],
+                [
+                    'name' => 'field_accept',
+                    'label' => 'Accepted File Types',
+                    'type' => 'text',
+                    'description' => 'e.g., .jpg,.png,.pdf (for file upload)'
+                ],
+                [
+                    'name' => 'field_multiple',
+                    'label' => 'Allow Multiple Files',
+                    'type' => 'switcher',
+                    'default' => 'no',
+                    'description' => 'For file upload fields'
+                ],
+                [
+                    'name' => 'field_validation_message',
+                    'label' => 'Custom Validation Message',
+                    'type' => 'text',
+                    'description' => 'Message shown on validation error'
                 ]
             ],
             'default' => [
@@ -228,12 +290,44 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
             $required = $field['field_required'] === 'yes' ? 'required' : '';
             $required_attr = $field['field_required'] === 'yes' ? ' *' : '';
             
+            // Build validation attributes
+            $validation_attrs = [];
+            if (!empty($field['field_min_length'])) {
+                $validation_attrs[] = 'minlength="' . esc_attr($field['field_min_length']) . '"';
+            }
+            if (!empty($field['field_max_length'])) {
+                $validation_attrs[] = 'maxlength="' . esc_attr($field['field_max_length']) . '"';
+            }
+            if (!empty($field['field_pattern'])) {
+                $validation_attrs[] = 'pattern="' . esc_attr($field['field_pattern']) . '"';
+            }
+            if (!empty($field['field_min'])) {
+                $validation_attrs[] = 'min="' . esc_attr($field['field_min']) . '"';
+            }
+            if (!empty($field['field_max'])) {
+                $validation_attrs[] = 'max="' . esc_attr($field['field_max']) . '"';
+            }
+            if (!empty($field['field_step'])) {
+                $validation_attrs[] = 'step="' . esc_attr($field['field_step']) . '"';
+            }
+            if (!empty($field['field_validation_message'])) {
+                $validation_attrs[] = 'data-validation-message="' . esc_attr($field['field_validation_message']) . '"';
+            }
+            
+            $validation_str = implode(' ', $validation_attrs);
+            
+            // Skip hidden fields from visible output
+            if ($field['field_type'] === 'hidden') {
+                echo '<input type="hidden" name="' . esc_attr($field_id) . '" value="' . esc_attr($field['field_placeholder']) . '">';
+                continue;
+            }
+            
             echo '<div class="probuilder-form-field" style="margin-bottom: 20px;">';
             echo '<label for="' . esc_attr($field_id) . '" style="display: block; margin-bottom: 5px; font-weight: 600; color: #1e293b;">' . esc_html($field['field_label']) . $required_attr . '</label>';
             
             switch ($field['field_type']) {
                 case 'textarea':
-                    echo '<textarea id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" placeholder="' . esc_attr($field['field_placeholder']) . '" ' . $required . ' style="width: 100%; padding: 12px; border: 1px solid ' . esc_attr($settings['field_border_color']) . '; border-radius: 4px; background-color: ' . esc_attr($settings['field_bg_color']) . '; font-family: inherit; resize: vertical; min-height: 100px;"></textarea>';
+                    echo '<textarea id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" placeholder="' . esc_attr($field['field_placeholder']) . '" ' . $required . ' ' . $validation_str . ' style="width: 100%; padding: 12px; border: 1px solid ' . esc_attr($settings['field_border_color']) . '; border-radius: 4px; background-color: ' . esc_attr($settings['field_bg_color']) . '; font-family: inherit; resize: vertical; min-height: 100px;"></textarea>';
                     break;
                     
                 case 'select':
@@ -283,9 +377,21 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
                     }
                     break;
                     
+                case 'file':
+                    $accept_attr = !empty($field['field_accept']) ? 'accept="' . esc_attr($field['field_accept']) . '"' : '';
+                    $multiple_attr = $field['field_multiple'] === 'yes' ? 'multiple' : '';
+                    echo '<input type="file" id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" ' . $required . ' ' . $accept_attr . ' ' . $multiple_attr . ' style="width: 100%; padding: 12px; border: 1px solid ' . esc_attr($settings['field_border_color']) . '; border-radius: 4px; background-color: ' . esc_attr($settings['field_bg_color']) . '; font-family: inherit;">';
+                    break;
+                    
+                case 'range':
+                    $range_value = isset($field['field_min']) ? $field['field_min'] : 0;
+                    echo '<input type="range" id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" ' . $required . ' ' . $validation_str . ' value="' . esc_attr($range_value) . '" style="width: 100%;">';
+                    echo '<output for="' . esc_attr($field_id) . '" style="display: block; margin-top: 5px; color: #64748b; font-size: 14px;">' . esc_html($range_value) . '</output>';
+                    break;
+                    
                 default:
-                    $input_type = in_array($field['field_type'], ['email', 'tel', 'date', 'number']) ? $field['field_type'] : 'text';
-                    echo '<input type="' . esc_attr($input_type) . '" id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" placeholder="' . esc_attr($field['field_placeholder']) . '" ' . $required . ' style="width: 100%; padding: 12px; border: 1px solid ' . esc_attr($settings['field_border_color']) . '; border-radius: 4px; background-color: ' . esc_attr($settings['field_bg_color']) . '; font-family: inherit;">';
+                    $input_type = in_array($field['field_type'], ['email', 'tel', 'url', 'password', 'date', 'time', 'datetime-local', 'number', 'color']) ? $field['field_type'] : 'text';
+                    echo '<input type="' . esc_attr($input_type) . '" id="' . esc_attr($field_id) . '" name="' . esc_attr($field_id) . '" placeholder="' . esc_attr($field['field_placeholder']) . '" ' . $required . ' ' . $validation_str . ' style="width: 100%; padding: 12px; border: 1px solid ' . esc_attr($settings['field_border_color']) . '; border-radius: 4px; background-color: ' . esc_attr($settings['field_bg_color']) . '; font-family: inherit;">';
                     break;
             }
             
@@ -304,10 +410,42 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("' . esc_js($form_id) . '");
             if (form) {
+                // Handle range slider output updates
+                const rangeInputs = form.querySelectorAll("input[type=range]");
+                rangeInputs.forEach(function(rangeInput) {
+                    const output = rangeInput.nextElementSibling;
+                    if (output && output.tagName === "OUTPUT") {
+                        rangeInput.addEventListener("input", function() {
+                            output.textContent = this.value;
+                        });
+                    }
+                });
+                
+                // Custom validation messages
+                const inputs = form.querySelectorAll("input, textarea, select");
+                inputs.forEach(function(input) {
+                    const customMessage = input.getAttribute("data-validation-message");
+                    if (customMessage) {
+                        input.addEventListener("invalid", function(e) {
+                            e.preventDefault();
+                            this.setCustomValidity(customMessage);
+                        });
+                        input.addEventListener("input", function() {
+                            this.setCustomValidity("");
+                        });
+                    }
+                });
+                
                 form.addEventListener("submit", function(e) {
                     e.preventDefault();
                     
-                    // Simple form validation and submission
+                    // Validate form
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+                    
+                    // Get form data
                     const formData = new FormData(form);
                     const submitBtn = form.querySelector("button[type=submit]");
                     const originalText = submitBtn.textContent;
@@ -319,22 +457,32 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
                     setTimeout(function() {
                         alert("' . esc_js($settings['success_message']) . '");
                         form.reset();
+                        // Reset range slider outputs
+                        rangeInputs.forEach(function(rangeInput) {
+                            const output = rangeInput.nextElementSibling;
+                            if (output && output.tagName === "OUTPUT") {
+                                output.textContent = rangeInput.value;
+                            }
+                        });
                         submitBtn.textContent = originalText;
                         submitBtn.disabled = false;
                     }, 1000);
                 });
                 
                 // Add focus styles
-                const inputs = form.querySelectorAll("input, textarea, select");
                 inputs.forEach(function(input) {
                     input.addEventListener("focus", function() {
-                        this.style.borderColor = "' . esc_js($settings['field_focus_color']) . '";
-                        this.style.boxShadow = "0 0 0 2px rgba(' . esc_js(str_replace('#', '', $settings['field_focus_color'])) . ', 0.2)";
+                        if (this.type !== "range") {
+                            this.style.borderColor = "' . esc_js($settings['field_focus_color']) . '";
+                            this.style.boxShadow = "0 0 0 2px rgba(' . esc_js(str_replace('#', '', $settings['field_focus_color'])) . ', 0.2)";
+                        }
                     });
                     
                     input.addEventListener("blur", function() {
-                        this.style.borderColor = "' . esc_js($settings['field_border_color']) . '";
-                        this.style.boxShadow = "none";
+                        if (this.type !== "range") {
+                            this.style.borderColor = "' . esc_js($settings['field_border_color']) . '";
+                            this.style.boxShadow = "none";
+                        }
                     });
                 });
             }

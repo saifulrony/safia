@@ -23,7 +23,7 @@ class ProBuilder_Frontend {
     }
     
     /**
-     * Render ProBuilder content
+     * Render ProBuilder content with caching
      */
     public function render_content($content) {
         global $post;
@@ -32,13 +32,38 @@ class ProBuilder_Frontend {
             return $content;
         }
         
-        $probuilder_data = get_post_meta($post->ID, '_probuilder_data', true);
+        // Try to get cached output first
+        $cache = ProBuilder_Cache::instance();
+        $cached_output = $cache->get_rendered_output($post->ID);
+        
+        if ($cached_output !== false && !is_user_logged_in()) {
+            return $cached_output;
+        }
+        
+        // Get element data (check cache first)
+        $probuilder_data = $cache->get_element_data($post->ID);
+        
+        if ($probuilder_data === false) {
+            $probuilder_data = get_post_meta($post->ID, '_probuilder_data', true);
+            
+            if (!empty($probuilder_data)) {
+                $cache->set_element_data($post->ID, $probuilder_data);
+            }
+        }
         
         if (empty($probuilder_data)) {
             return $content;
         }
         
-        return $this->render_elements($probuilder_data);
+        // Render elements
+        $output = $this->render_elements($probuilder_data);
+        
+        // Cache the rendered output for non-logged-in users
+        if (!is_user_logged_in()) {
+            $cache->set_rendered_output($post->ID, $output);
+        }
+        
+        return $output;
     }
     
     /**

@@ -112,6 +112,15 @@
                     <i class="dashicons dashicons-smartphone"></i>
                 </button>
             </div>
+            
+            <div class="probuilder-history-controls">
+                <button id="probuilder-undo" class="probuilder-btn probuilder-btn-icon disabled" title="Undo (Ctrl+Z)">
+                    <i class="dashicons dashicons-undo"></i>
+                </button>
+                <button id="probuilder-redo" class="probuilder-btn probuilder-btn-icon disabled" title="Redo (Ctrl+Shift+Z)">
+                    <i class="dashicons dashicons-redo"></i>
+                </button>
+            </div>
         </div>
         
         <div class="probuilder-header-right">
@@ -150,6 +159,10 @@
                 <button class="probuilder-tab-btn" data-tab="templates">
                     <i class="dashicons dashicons-layout"></i>
                     <?php esc_html_e('Templates', 'probuilder'); ?>
+                </button>
+                <button class="probuilder-tab-btn" data-tab="globalstyles">
+                    <i class="dashicons dashicons-admin-appearance"></i>
+                    <?php esc_html_e('Global Styles', 'probuilder'); ?>
                 </button>
             </div>
             
@@ -205,6 +218,56 @@
                     </div>
                 </div>
                 
+                <!-- Global Styles Tab -->
+                <div class="probuilder-tab-content" data-tab="globalstyles">
+                    <div class="probuilder-global-styles-container">
+                        
+                        <!-- Color Palette Section -->
+                        <div class="probuilder-global-section">
+                            <div class="probuilder-global-section-header">
+                                <i class="dashicons dashicons-art"></i>
+                                <h3><?php esc_html_e('Color Palette', 'probuilder'); ?></h3>
+                            </div>
+                            <div class="probuilder-global-section-content">
+                                <div class="probuilder-color-palette" id="probuilder-color-palette">
+                                    <!-- Colors will be added by JavaScript -->
+                                </div>
+                                <button class="probuilder-btn probuilder-btn-secondary probuilder-btn-sm" id="add-global-color">
+                                    <i class="dashicons dashicons-plus-alt2"></i>
+                                    <?php esc_html_e('Add Color', 'probuilder'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Typography Section -->
+                        <div class="probuilder-global-section">
+                            <div class="probuilder-global-section-header">
+                                <i class="dashicons dashicons-editor-textcolor"></i>
+                                <h3><?php esc_html_e('Typography', 'probuilder'); ?></h3>
+                            </div>
+                            <div class="probuilder-global-section-content">
+                                <div class="probuilder-typography-presets" id="probuilder-typography-presets">
+                                    <!-- Typography presets will be added by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Button Styles Section -->
+                        <div class="probuilder-global-section">
+                            <div class="probuilder-global-section-header">
+                                <i class="dashicons dashicons-button"></i>
+                                <h3><?php esc_html_e('Button Styles', 'probuilder'); ?></h3>
+                            </div>
+                            <div class="probuilder-global-section-content">
+                                <div class="probuilder-button-presets" id="probuilder-button-presets">
+                                    <!-- Button presets will be added by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
             </div>
         </div>
         
@@ -257,6 +320,10 @@
                 <button class="probuilder-settings-tab" data-tab="advanced">
                     <i class="dashicons dashicons-admin-settings"></i>
                     <?php esc_html_e('Advanced', 'probuilder'); ?>
+                </button>
+                <button class="probuilder-settings-tab" data-tab="motion">
+                    <i class="dashicons dashicons-controls-play"></i>
+                    <?php esc_html_e('Motion', 'probuilder'); ?>
                 </button>
             </div>
             
