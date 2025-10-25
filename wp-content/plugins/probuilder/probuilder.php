@@ -114,6 +114,11 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'widgets/wp-header.php';
         require_once PROBUILDER_PATH . 'widgets/wp-sidebar.php';
         require_once PROBUILDER_PATH . 'widgets/wp-footer.php';
+        require_once PROBUILDER_PATH . 'widgets/form-builder.php';
+        require_once PROBUILDER_PATH . 'widgets/slider.php';
+        require_once PROBUILDER_PATH . 'widgets/blog-posts.php';
+        require_once PROBUILDER_PATH . 'widgets/faq.php';
+        require_once PROBUILDER_PATH . 'widgets/timeline.php';
     }
     
     /**

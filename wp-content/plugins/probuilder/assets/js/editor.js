@@ -234,44 +234,12 @@
             
             console.log('✅ Widgets are now draggable:', $('.probuilder-widget').length);
             
-            // Make preview area droppable (only for NEW widgets from sidebar)
+            // Make preview area sortable (for reordering existing elements)
             const $previewArea = $('#probuilder-preview-area');
             console.log('Preview area found:', $previewArea.length > 0 ? 'YES' : 'NO');
             
-            $previewArea.droppable({
-                accept: '.probuilder-widget', // Only accept widgets from sidebar, NOT existing elements
-                tolerance: 'pointer',
-                greedy: true,
-                drop: function(event, ui) {
-                    // Check if this is a widget from sidebar (not an existing element)
-                    if (!ui.draggable.hasClass('probuilder-element')) {
-                        const widgetName = ui.draggable.data('widget');
-                        console.log('🎯 Dropped NEW widget on preview area:', widgetName);
-                        if (widgetName) {
-                            self.addElement(widgetName);
-                        }
-                    } else {
-                        console.log('🔄 Existing element being reordered (handled by sortable)');
-                    }
-                },
-                over: function(event, ui) {
-                    if (!ui.draggable.hasClass('probuilder-element')) {
-                        console.log('Widget dragged over preview area');
-                        $(this).addClass('probuilder-drop-active');
-                    }
-                },
-                out: function() {
-                    console.log('Widget dragged out of preview area');
-                    $(this).removeClass('probuilder-drop-active');
-                }
-            });
-            
-            console.log('✅ Preview area is now droppable (for NEW widgets only)');
-            
-            // Make preview area sortable
             $previewArea.sortable({
                 items: '> .probuilder-element',
-                // No handle - can drag from anywhere!
                 placeholder: 'probuilder-element-placeholder',
                 tolerance: 'pointer',
                 cursor: 'move',
@@ -279,24 +247,103 @@
                 distance: 15,
                 delay: 200,
                 revert: 150,
-                cancel: 'input, textarea, select, button, a, .probuilder-element-actions',
+                cancel: 'input, textarea, select, button, a, .probuilder-element-actions, .probuilder-add-below-btn',
                 start: function(event, ui) {
-                    console.log('🎯 Started dragging element from anywhere');
+                    console.log('🎯 Started dragging element');
                     ui.item.addClass('dragging-element');
                     ui.placeholder.height(ui.item.outerHeight());
-                    // Change cursor to grabbing
                     $('body').css('cursor', 'grabbing');
                 },
                 stop: function(event, ui) {
                     console.log('🎯 Stopped dragging element');
                     ui.item.removeClass('dragging-element');
-                    // Reset cursor
                     $('body').css('cursor', '');
                 },
                 update: function() {
                     console.log('🎯 Elements reordered - updating data');
                     self.updateElementsOrder();
                 }
+            });
+            
+            // Make preview area droppable for NEW widgets from sidebar
+            $previewArea.droppable({
+                accept: '.probuilder-widget',
+                tolerance: 'pointer',
+                greedy: false, // Allow both preview area and columns to receive events
+                drop: function(event, ui) {
+                    // Check if we're actually over a column (don't add if so)
+                    const $target = $(event.target);
+                    if ($target.hasClass('probuilder-column') || $target.closest('.probuilder-column').length > 0) {
+                        console.log('🎯 Drop intercepted by column, skipping preview area handler');
+                        return; // Column will handle it
+                    }
+                    
+                    const widgetName = ui.draggable.data('widget');
+                    console.log('🎯 Dropped NEW widget on canvas:', widgetName);
+                    
+                    if (widgetName) {
+                        // Get drop position by checking Y coordinate
+                        const dropY = event.pageY;
+                        const $elements = $previewArea.children('.probuilder-element');
+                        let insertIndex = $elements.length; // Default to end
+                        
+                        // Find where to insert based on Y position
+                        $elements.each(function(index) {
+                            const $el = $(this);
+                            const elTop = $el.offset().top;
+                            const elMiddle = elTop + ($el.outerHeight() / 2);
+                            
+                            if (dropY < elMiddle && insertIndex === $elements.length) {
+                                insertIndex = index;
+                                return false; // Break loop
+                            }
+                        });
+                        
+                        console.log('Inserting at index:', insertIndex);
+                        self.addElementAtPosition(widgetName, insertIndex);
+                    }
+                },
+                over: function(event, ui) {
+                    if (ui.draggable.hasClass('probuilder-widget')) {
+                        $(this).addClass('probuilder-drop-active');
+                    }
+                },
+                out: function() {
+                    $(this).removeClass('probuilder-drop-active');
+                }
+            });
+            
+            // Make sidebar widgets draggable
+            $('.probuilder-widget').each(function() {
+                const $widget = $(this);
+                const widgetName = $widget.data('widget');
+                
+                $widget.draggable({
+                    helper: function() {
+                        // Create a clone that looks like the widget
+                        return $(this).clone().css({
+                            'width': $(this).width(),
+                            'opacity': 0.8,
+                            'z-index': 10000
+                        });
+                    },
+                    appendTo: 'body',
+                    zIndex: 10000,
+                    cursor: 'move',
+                    revert: 'invalid',
+                    revertDuration: 200,
+                    start: function() {
+                        console.log('Started dragging widget:', widgetName);
+                        $('.probuilder-element-placeholder').show();
+                        $('.probuilder-column').css('outline', '2px dashed #92003b');
+                        // Make canvas areas droppable-ready
+                        $('#probuilder-preview-area, .probuilder-column').addClass('drop-ready');
+                    },
+                    stop: function() {
+                        $('.probuilder-column').css('outline', '');
+                        $('#probuilder-preview-area, .probuilder-column').removeClass('drop-ready');
+                    }
+                });
             });
             
             console.log('✅ Preview area is now sortable - drag from anywhere on element!');
@@ -313,34 +360,174 @@
         makeContainersDroppable: function() {
             const self = this;
             
-            $('.probuilder-element[data-widget="container"] .probuilder-element-preview').each(function() {
-                $(this).droppable({
-                    accept: '.probuilder-widget',
-                    tolerance: 'pointer',
-                    greedy: true,
-                    drop: function(event, ui) {
-                        console.log('Dropped into container');
-                        const widgetName = ui.draggable.data('widget');
-                        const containerId = $(this).closest('.probuilder-element').data('id');
-                        
-                        if (widgetName && containerId) {
-                            self.addElementToContainer(widgetName, containerId);
+            try {
+                console.log('🔧 Reinitializing container drop zones...');
+                
+                // First, make the entire container droppable to catch any drops
+                $('.probuilder-element[data-widget="container"]').each(function() {
+                    const $container = $(this);
+                    const containerId = $container.data('id');
+                    
+                    if (!containerId) return;
+                    
+                    // Destroy existing droppable if exists
+                    if ($container.data('ui-droppable')) {
+                        try {
+                            $container.droppable('destroy');
+                        } catch (e) {
+                            console.warn('Error destroying container droppable:', e);
                         }
-                    },
-                    over: function() {
-                        $(this).css('background', '#fef1f6');
-                    },
-                    out: function() {
-                        $(this).css('background', '');
                     }
+                    
+                    // Make entire container droppable as fallback
+                    $container.droppable({
+                        accept: '.probuilder-widget',
+                        tolerance: 'pointer',
+                        greedy: true, // Capture all drops inside container bounds
+                        drop: function(event, ui) {
+                            const widgetName = ui.draggable.data('widget');
+                            
+                            // Remove overlay
+                            $(this).find('.probuilder-drop-overlay').remove();
+                            
+                            console.log('✅ Dropped widget in container (will add to end):', widgetName);
+                            
+                            if (widgetName && containerId) {
+                                // Always add to end of container to create new row
+                                self.addElementToContainer(widgetName, containerId, null);
+                            }
+                        },
+                        over: function(event, ui) {
+                            if (ui.draggable.hasClass('probuilder-widget')) {
+                                const $containerElement = $(this);
+                                
+                                // Check if overlay already exists
+                                if ($containerElement.find('.probuilder-drop-overlay').length === 0) {
+                                    // Add overlay indicator that doesn't affect layout
+                                    const overlay = `
+                                        <div class="probuilder-drop-overlay" style="
+                                            position: absolute;
+                                            top: 0;
+                                            left: 0;
+                                            right: 0;
+                                            bottom: 0;
+                                            background: rgba(254, 241, 246, 0.9);
+                                            border: 3px dashed #92003b;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            z-index: 5;
+                                            pointer-events: none;
+                                            animation: pulse 1.5s ease-in-out infinite;
+                                        ">
+                                            <div style="
+                                                background: white;
+                                                padding: 20px 30px;
+                                                border-radius: 8px;
+                                                box-shadow: 0 4px 12px rgba(146, 0, 59, 0.2);
+                                                text-align: center;
+                                            ">
+                                                <i class="dashicons dashicons-plus-alt2" style="font-size: 48px; color: #92003b; margin-bottom: 10px; display: block;"></i>
+                                                <span style="font-size: 16px; font-weight: 600; color: #92003b; display: block;">Drop inside container</span>
+                                                <span style="font-size: 13px; color: #666; margin-top: 5px; display: block;">Element will be added to the grid</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                    $containerElement.append(overlay);
+                                    console.log('✨ Drop overlay created');
+                                }
+                            }
+                        },
+                        out: function(event, ui) {
+                            // Remove overlay
+                            $(this).find('.probuilder-drop-overlay').remove();
+                            console.log('🧹 Drop overlay removed');
+                        }
+                    });
                 });
                 
-                // Make sortable within container
-                $(this).sortable({
-                    items: '> .probuilder-element',
-                    handle: '.probuilder-element-drag',
-                    placeholder: 'probuilder-element-placeholder',
-                    tolerance: 'pointer'
+                // Make container columns droppable for widgets from sidebar
+                const $columns = $('.probuilder-element[data-widget="container"] .probuilder-column');
+                console.log('Found', $columns.length, 'container columns');
+                
+                $columns.each(function() {
+                    const $column = $(this);
+                    const containerId = $column.data('container-id');
+                    const columnIndex = $column.data('column-index');
+                    
+                    // Destroy existing droppable/sortable if they exist
+                    try {
+                        if ($column.data('ui-droppable')) {
+                            $column.droppable('destroy');
+                        }
+                        if ($column.data('ui-sortable')) {
+                            $column.sortable('destroy');
+                        }
+                    } catch (e) {
+                        console.warn('Error destroying old handlers:', e);
+                    }
+                    
+                    // Make column droppable for new widgets
+                    $column.droppable({
+                        accept: '.probuilder-widget',
+                        tolerance: 'pointer',
+                        greedy: false, // Allow container to also handle drops
+                        drop: function(event, ui) {
+                            // Only handle if this is an empty drop zone
+                            if (!$column.hasClass('probuilder-drop-zone')) {
+                                console.log('Column has content, letting container handle drop');
+                                return;
+                            }
+                            
+                            const widgetName = ui.draggable.data('widget');
+                            console.log('🎯 Dropped widget in empty column:', widgetName, 'column:', columnIndex);
+                            
+                            if (widgetName && containerId) {
+                                self.addElementToContainer(widgetName, containerId, columnIndex);
+                                event.stopPropagation(); // Prevent container from also handling
+                            }
+                            
+                            // Reset background
+                            $(this).css('background', '');
+                        },
+                        over: function(event, ui) {
+                            if (ui.draggable.hasClass('probuilder-widget')) {
+                                $(this).css('background', '#fef1f6');
+                            }
+                        },
+                        out: function() {
+                            $(this).css('background', '');
+                        }
+                    });
+                    
+                    // Make column sortable for reordering nested elements
+                    $column.sortable({
+                        items: '> .probuilder-nested-element',
+                        placeholder: 'probuilder-element-placeholder',
+                        tolerance: 'pointer',
+                        cursor: 'move',
+                        connectWith: '.probuilder-column',
+                        opacity: 0.7,
+                        distance: 10,
+                        handle: '.probuilder-nested-drag'
+                    });
+                });
+                
+                console.log('✅ Container drop zones initialized successfully');
+            } catch (error) {
+                console.error('❌ Error in makeContainersDroppable:', error);
+            }
+            
+            // Make container drop zones clickable
+            $('.probuilder-drop-zone').each(function() {
+                const $zone = $(this);
+                const containerId = $zone.data('container-id');
+                const columnIndex = $zone.data('column-index');
+                
+                $zone.off('click').on('click', function(e) {
+                    e.stopPropagation();
+                    console.log('Drop zone clicked:', containerId, 'column:', columnIndex);
+                    self.showWidgetTemplateSelector(containerId, columnIndex);
                 });
             });
         },
@@ -396,6 +583,13 @@
             // Tab switching
             $('.probuilder-tab-btn').on('click', function() {
                 const tab = $(this).data('tab');
+                
+                // If Templates tab clicked, show modal instead
+                if (tab === 'templates') {
+                    self.showTemplatesModal();
+                    return;
+                }
+                
                 $('.probuilder-tab-btn').removeClass('active');
                 $(this).addClass('active');
                 $('.probuilder-tab-content').removeClass('active');
@@ -494,6 +688,12 @@
                 this.updateEmptyState();
                 console.log('Empty state updated');
                 
+                // Automatically select and open settings for the new element
+                setTimeout(() => {
+                    this.selectElement(element);
+                    console.log('Element auto-selected:', element.id);
+                }, 100);
+                
                 // Re-initialize drop zones with slight delay
                 setTimeout(() => {
                     this.makeContainersDroppable();
@@ -510,11 +710,65 @@
         },
         
         /**
+         * Add element at specific position
+         */
+        addElementAtPosition: function(widgetName, insertIndex, settings = {}) {
+            try {
+                console.log('Adding element at position:', widgetName, 'at index:', insertIndex);
+                
+                const widget = this.widgets.find(w => w.name === widgetName);
+                if (!widget) {
+                    console.error('Widget not found:', widgetName);
+                    alert('Error: Widget "' + widgetName + '" not found!');
+                    return;
+                }
+                
+                const element = {
+                    id: 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                    widgetType: widgetName,
+                    settings: Object.assign({}, this.getDefaultSettings(widget), settings),
+                    children: []
+                };
+                
+                console.log('Element created:', element);
+                
+                // Insert at specific position
+                this.elements.splice(insertIndex, 0, element);
+                console.log('Element inserted at index:', insertIndex);
+                
+                // Re-render all elements to reflect new order
+                this.renderElements();
+                console.log('All elements re-rendered');
+                
+                this.updateEmptyState();
+                
+                // Automatically select and open settings for the new element
+                setTimeout(() => {
+                    this.selectElement(element);
+                    console.log('Element auto-selected:', element.id);
+                }, 100);
+                
+                // Re-initialize drop zones with slight delay
+                setTimeout(() => {
+                    this.makeContainersDroppable();
+                }, 50);
+                
+                console.log('✅ Element added at position successfully:', widgetName, element.id);
+                
+                return element;
+            } catch (error) {
+                console.error('❌ Error adding element at position:', error);
+                alert('Error adding element: ' + error.message);
+                return null;
+            }
+        },
+        
+        /**
          * Add element to container
          */
-        addElementToContainer: function(widgetName, containerId) {
+        addElementToContainer: function(widgetName, containerId, columnIndex = null) {
             try {
-                console.log('Adding element to container:', widgetName, 'into', containerId);
+                console.log('Adding element to container:', widgetName, 'into', containerId, 'at column:', columnIndex);
                 
                 const widget = this.widgets.find(w => w.name === widgetName);
                 if (!widget) {
@@ -541,13 +795,54 @@
                 if (!containerElement.children) {
                     containerElement.children = [];
                 }
-                containerElement.children.push(newElement);
                 
-                console.log('Element added to container children array');
-                console.log('Container now has', containerElement.children.length, 'children');
+                // Check if specified column position is already filled
+                const columns = parseInt(containerElement.settings.columns || 1);
+                const filledColumns = containerElement.children.length;
+                
+                if (columnIndex !== null && columnIndex >= 0) {
+                    // Check if dropping into an existing filled column
+                    if (columnIndex < filledColumns) {
+                        // Column already has an element - just append to end
+                        containerElement.children.push(newElement);
+                        console.log('Column', columnIndex, 'already filled. Element appended as position:', containerElement.children.length - 1);
+                    } else {
+                        // Empty column - insert at that position
+                        const insertIndex = Math.min(columnIndex, containerElement.children.length);
+                        containerElement.children.splice(insertIndex, 0, newElement);
+                        console.log('Element inserted at empty column:', insertIndex);
+                    }
+                } else {
+                    // Default behavior: append to end
+                    containerElement.children.push(newElement);
+                    console.log('Element appended to end');
+                }
+                
+                // Log the grid layout
+                console.log(`Container layout: ${containerElement.children.length} elements in ${columns}-column grid`);
+                const rows = Math.ceil(containerElement.children.length / columns);
+                console.log(`This creates ${rows} row(s)`);
                 
                 // Re-render the entire container
                 this.updateContainerWithChildren(containerElement);
+                
+                // Reinitialize sidebar widgets, preview area, and container drop zones
+                setTimeout(() => {
+                    console.log('🔄 Reinitializing drag & drop system...');
+                    this.reinitializeSidebarWidgets();
+                    this.reinitializePreviewArea();
+                    // Small additional delay to ensure containers are ready
+                    setTimeout(() => {
+                        this.makeContainersDroppable();
+                        console.log('✅ All drag & drop components reinitialized');
+                    }, 100);
+                }, 200);
+                
+                // Automatically select and open settings for the new element
+                setTimeout(() => {
+                    this.selectElement(newElement);
+                    console.log('Element auto-selected:', newElement.id);
+                }, 100);
                 
                 console.log('✅ Element successfully added to container');
                 
@@ -556,6 +851,175 @@
                 console.error('❌ Error adding element to container:', error);
                 alert('Error: ' + error.message);
                 return null;
+            }
+        },
+        
+        /**
+         * Add new row to container
+         */
+        addRowToContainer: function(containerId) {
+            try {
+                console.log('Adding new row to container:', containerId);
+                
+                const containerElement = this.elements.find(e => e.id === containerId);
+                if (!containerElement) {
+                    console.error('Container not found:', containerId);
+                    alert('Error: Container not found');
+                    return;
+                }
+                
+                // Enable rows if not already enabled
+                if (!containerElement.settings.enable_rows) {
+                    containerElement.settings.enable_rows = 'yes';
+                }
+                
+                // Initialize rows array if not exists
+                if (!containerElement.settings.rows) {
+                    containerElement.settings.rows = [];
+                }
+                
+                // Add new row with default settings
+                const newRow = {
+                    row_columns: '2',
+                    row_columns_tablet: '2',
+                    row_columns_mobile: '1',
+                    row_gap: 20
+                };
+                
+                containerElement.settings.rows.push(newRow);
+                
+                console.log('New row added. Total rows:', containerElement.settings.rows.length);
+                
+                // Re-render the container with proper handlers
+                this.updateContainerWithChildren(containerElement);
+                
+                // Show success message
+                this.showNotification('New row added to container!', 'success');
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Error adding row to container:', error);
+                alert('Error: ' + error.message);
+                return false;
+            }
+        },
+        
+        /**
+         * Reinitialize sidebar widgets draggable
+         */
+        reinitializeSidebarWidgets: function() {
+            const self = this;
+            
+            try {
+                console.log('🔧 Reinitializing sidebar widgets...');
+                
+                // Make sidebar widgets draggable
+                $('.probuilder-widget').each(function() {
+                    const $widget = $(this);
+                    const widgetName = $widget.data('widget');
+                    
+                    // Destroy existing draggable if it exists
+                    if ($widget.data('ui-draggable')) {
+                        $widget.draggable('destroy');
+                    }
+                    
+                    // Recreate draggable
+                    $widget.draggable({
+                        helper: function() {
+                            return $(this).clone().css({
+                                'width': $(this).width(),
+                                'opacity': 0.8,
+                                'z-index': 10000
+                            });
+                        },
+                        appendTo: 'body',
+                        zIndex: 10000,
+                        cursor: 'move',
+                        revert: 'invalid',
+                        revertDuration: 200,
+                        start: function() {
+                            console.log('Started dragging widget:', widgetName);
+                            $('.probuilder-element-placeholder').show();
+                            $('.probuilder-column').css('outline', '2px dashed #92003b');
+                            $('#probuilder-preview-area, .probuilder-column').addClass('drop-ready');
+                        },
+                        stop: function() {
+                            $('.probuilder-column').css('outline', '');
+                            $('#probuilder-preview-area, .probuilder-column').removeClass('drop-ready');
+                        }
+                    });
+                });
+                
+                console.log('✅ Sidebar widgets reinitialized successfully');
+            } catch (error) {
+                console.error('❌ Error reinitializing sidebar widgets:', error);
+            }
+        },
+        
+        /**
+         * Reinitialize preview area droppable
+         */
+        reinitializePreviewArea: function() {
+            const self = this;
+            
+            try {
+                console.log('🔧 Reinitializing preview area...');
+                
+                const $previewArea = $('#probuilder-preview-area');
+                
+                // Destroy existing droppable if it exists
+                if ($previewArea.data('ui-droppable')) {
+                    $previewArea.droppable('destroy');
+                }
+                
+                // Recreate preview area droppable
+                $previewArea.droppable({
+                    accept: '.probuilder-widget',
+                    tolerance: 'pointer',
+                    greedy: false,
+                    drop: function(event, ui) {
+                        const $target = $(event.target);
+                        if ($target.hasClass('probuilder-column') || $target.closest('.probuilder-column').length > 0) {
+                            console.log('🎯 Drop intercepted by column, skipping preview area handler');
+                            return;
+                        }
+                        
+                        const widgetName = ui.draggable.data('widget');
+                        console.log('🎯 Dropped NEW widget on canvas:', widgetName);
+                        
+                        if (widgetName) {
+                            const dropY = event.pageY;
+                            const $elements = $previewArea.children('.probuilder-element');
+                            let insertIndex = $elements.length;
+                            
+                            $elements.each(function(index) {
+                                const $el = $(this);
+                                const elTop = $el.offset().top;
+                                const elMiddle = elTop + ($el.outerHeight() / 2);
+                                
+                                if (dropY < elMiddle && insertIndex === $elements.length) {
+                                    insertIndex = index;
+                                    return false;
+                                }
+                            });
+                            
+                            console.log('Inserting at index:', insertIndex);
+                            self.addElementAtPosition(widgetName, insertIndex);
+                        }
+                    },
+                    over: function(event, ui) {
+                        if (ui.draggable.hasClass('probuilder-widget')) {
+                            $(this).addClass('probuilder-drop-active');
+                        }
+                    },
+                    out: function() {
+                        $(this).removeClass('probuilder-drop-active');
+                    }
+                });
+                
+                console.log('✅ Preview area reinitialized successfully');
+            } catch (error) {
+                console.error('❌ Error reinitializing preview area:', error);
             }
         },
         
@@ -602,6 +1066,23 @@
                                 `<button class="probuilder-column-btn ${(element.settings.columns || '1') == num ? 'active' : ''}" data-columns="${num}">${num}</button>`
                             ).join('')}
                         </div>
+                        <div class="probuilder-row-controls" style="margin-top: 10px;">
+                            <button class="probuilder-add-row-btn" data-element-id="${element.id}" style="
+                                background: #007cba;
+                                color: white;
+                                border: none;
+                                padding: 5px 10px;
+                                border-radius: 3px;
+                                font-size: 12px;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                gap: 5px;
+                            ">
+                                <i class="dashicons dashicons-plus-alt2" style="font-size: 14px;"></i>
+                                Add Row
+                            </button>
+                        </div>
                     </div>
                 ` : '';
                 
@@ -627,6 +1108,11 @@
                         </div>
                         <div class="probuilder-element-preview">
                             ${preview}
+                        </div>
+                        <div class="probuilder-element-add-below">
+                            <button class="probuilder-add-below-btn" title="Add Element Below">
+                                <i class="dashicons dashicons-plus-alt2"></i>
+                            </button>
                         </div>
                     </div>
                 `);
@@ -656,11 +1142,19 @@
                     self.deleteElement(element);
                 });
                 
+                // Add below button
+                $element.find('.probuilder-add-below-btn').on('click', function(e) {
+                    e.stopPropagation();
+                    console.log('Add below button clicked for:', element.id);
+                    self.showAddElementModal(element);
+                });
+                
                 // Click to select
                 $element.on('click', function(e) {
                     if (!$(e.target).closest('.probuilder-element-actions').length && 
                         !$(e.target).closest('.probuilder-column-btn').length &&
-                        !$(e.target).closest('.probuilder-drop-zone').length) {
+                        !$(e.target).closest('.probuilder-drop-zone').length &&
+                        !$(e.target).closest('.probuilder-add-below-btn').length) {
                         console.log('Element clicked, selecting:', element.id);
                         self.selectElement(element);
                     }
@@ -682,6 +1176,13 @@
                         
                         // Re-render the container
                         self.updateElementPreview(element);
+                    });
+                    
+                    // Add row button handler
+                    $element.find('.probuilder-add-row-btn').on('click', function(e) {
+                        e.stopPropagation();
+                        console.log('Adding new row to container:', element.id);
+                        self.addRowToContainer(element.id);
                     });
                     
                     // Attach click handlers to drop zones immediately
@@ -801,6 +1302,8 @@
                     const columnsTablet = settings.columns_tablet || '2';
                     const columnsMobile = settings.columns_mobile || '1';
                     const columnGap = settings.column_gap || 20;
+                    const enableRows = settings.enable_rows || 'no';
+                    const rows = settings.rows || [];
                     const containerId = 'container-preview-' + element.id;
                     const bgType = settings.background_type || 'color';
                     let background = '';
@@ -821,17 +1324,47 @@
                         border-radius: ${settings.border_radius || 0}px;
                     `;
                     
-                    const columnStyle = `
-                        display: grid;
-                        grid-template-columns: repeat(${columns}, 1fr);
-                        gap: ${columnGap}px;
-                    `;
-                    
                     // Generate responsive CSS
-                    const responsiveCSS = `
+                    let responsiveCSS = `
                         <style>
+                            #${containerId} .probuilder-container-row {
+                                display: block;
+                                width: 100%;
+                                margin-bottom: 20px;
+                            }
+                            #${containerId} .probuilder-container-row:last-child {
+                                margin-bottom: 0;
+                            }
                             #${containerId} .probuilder-container-columns {
                                 display: grid;
+                                width: 100%;
+                            }
+                    `;
+                    
+                    if (enableRows === 'yes' && rows.length > 0) {
+                        // Multiple rows CSS
+                        rows.forEach((row, index) => {
+                            responsiveCSS += `
+                                #${containerId} .probuilder-row-${index} .probuilder-container-columns {
+                                    grid-template-columns: repeat(${row.row_columns || 2}, 1fr);
+                                    gap: ${row.row_gap || 20}px;
+                                }
+                                @media (max-width: 1024px) {
+                                    #${containerId} .probuilder-row-${index} .probuilder-container-columns {
+                                        grid-template-columns: repeat(${row.row_columns_tablet || 2}, 1fr);
+                                    }
+                                }
+                                @media (max-width: 767px) {
+                                    #${containerId} .probuilder-row-${index} .probuilder-container-columns {
+                                        grid-template-columns: repeat(${row.row_columns_mobile || 1}, 1fr);
+                                    }
+                                }
+                            `;
+                        });
+                    } else {
+                        // Single row CSS
+                        responsiveCSS += `
+                            #${containerId} .probuilder-container-columns {
                                 grid-template-columns: repeat(${columns}, 1fr);
                                 gap: ${columnGap}px;
                             }
@@ -845,99 +1378,207 @@
                                     grid-template-columns: repeat(${columnsMobile}, 1fr);
                                 }
                             }
-                        </style>
-                    `;
+                        `;
+                    }
+                    
+                    responsiveCSS += `</style>`;
                     
                     // Check if container has children
                     const hasChildren = element.children && element.children.length > 0;
                     
-                    if (hasChildren) {
-                        let columnsHTML = '<div class="probuilder-container-columns">';
-                        for (let i = 0; i < element.children.length; i++) {
-                            const child = element.children[i];
-                            const childWidget = this.widgets.find(w => w.name === child.widgetType);
-                            const childPreview = this.generatePreview(child, depth + 1);
+                    if (enableRows === 'yes' && rows.length > 0) {
+                        // Multiple rows layout
+                        let rowsHTML = '';
+                        let childIndex = 0;
+                        
+                        rows.forEach((row, rowIndex) => {
+                            rowsHTML += `<div class="probuilder-container-row probuilder-row-${rowIndex}">`;
+                            rowsHTML += '<div class="probuilder-container-columns">';
                             
-                            columnsHTML += `
-                                <div class="probuilder-column" style="min-height: 50px; padding: 5px; position: relative; z-index: 1;">
-                                    <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}" style="position: relative; z-index: 1;">
-                                        <div class="probuilder-nested-controls" style="
-                                            position: absolute;
-                                            top: 0;
-                                            right: 0;
-                                            display: none;
-                                            gap: 4px;
-                                            z-index: 100;
-                                            background: rgba(255, 255, 255, 0.95);
-                                            padding: 4px;
-                                            border-radius: 3px;
-                                            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                                        ">
-                                            <button class="probuilder-nested-drag" title="Move" style="
-                                                background: #71717a;
-                                                border: none;
-                                                color: #ffffff;
-                                                width: 24px;
-                                                height: 24px;
-                                                border-radius: 2px;
-                                                cursor: move;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                font-size: 12px;
-                                            ">
-                                                <i class="dashicons dashicons-move" style="font-size: 12px;"></i>
-                                            </button>
-                                            <button class="probuilder-nested-edit" title="Edit" style="
-                                                background: #92003b;
-                                                border: none;
-                                                color: #ffffff;
-                                                width: 24px;
-                                                height: 24px;
-                                                border-radius: 2px;
-                                                cursor: pointer;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                font-size: 12px;
-                                            ">
-                                                <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
-                                            </button>
-                                            <button class="probuilder-nested-delete" title="Delete" style="
-                                                background: #dc2626;
-                                                border: none;
-                                                color: #ffffff;
-                                                width: 24px;
-                                                height: 24px;
-                                                border-radius: 2px;
-                                                cursor: pointer;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                font-size: 12px;
-                                            ">
-                                                <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
-                                            </button>
+                            const numColumns = parseInt(row.row_columns || 2);
+                            
+                            // Show columns for this row
+                            for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+                                const child = element.children && element.children[childIndex];
+                                
+                                if (child) {
+                                    // Render child element
+                                    const childPreview = this.generatePreview(child, depth + 1);
+                                    rowsHTML += `
+                                        <div class="probuilder-column" style="min-height: 50px; padding: 5px; position: relative; z-index: 1;">
+                                            <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}" style="position: relative; z-index: 1;">
+                                                <div class="probuilder-nested-controls" style="
+                                                    position: absolute;
+                                                    top: 0;
+                                                    right: 0;
+                                                    display: none;
+                                                    gap: 4px;
+                                                    z-index: 100;
+                                                    background: rgba(255, 255, 255, 0.95);
+                                                    padding: 4px;
+                                                    border-radius: 3px;
+                                                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                                ">
+                                                    <button class="probuilder-nested-drag" title="Move" style="
+                                                        background: #71717a;
+                                                        border: none;
+                                                        color: #ffffff;
+                                                        width: 24px;
+                                                        height: 24px;
+                                                        border-radius: 2px;
+                                                        cursor: move;
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        font-size: 12px;
+                                                    ">
+                                                        <i class="dashicons dashicons-move" style="font-size: 12px;"></i>
+                                                    </button>
+                                                    <button class="probuilder-nested-edit" title="Edit" style="
+                                                        background: #92003b;
+                                                        border: none;
+                                                        color: #ffffff;
+                                                        width: 24px;
+                                                        height: 24px;
+                                                        border-radius: 2px;
+                                                        cursor: pointer;
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        font-size: 12px;
+                                                    ">
+                                                        <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
+                                                    </button>
+                                                    <button class="probuilder-nested-delete" title="Delete" style="
+                                                        background: #dc2626;
+                                                        border: none;
+                                                        color: #ffffff;
+                                                        width: 24px;
+                                                        height: 24px;
+                                                        border-radius: 2px;
+                                                        cursor: pointer;
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        font-size: 12px;
+                                                    ">
+                                                        <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="probuilder-nested-preview">
+                                                    ${childPreview}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="probuilder-nested-preview">
-                                            ${childPreview}
+                                    `;
+                                    childIndex++;
+                                } else {
+                                    // Show empty drop zone
+                                    rowsHTML += `<div class="probuilder-column probuilder-drop-zone" data-container-id="${element.id}" data-column-index="${childIndex}" style="min-height: 100px; border: 1px dashed #d5dadf; padding: 20px; text-align: center; color: #a4afb7; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                        <i class="dashicons dashicons-plus" style="font-size: 24px; opacity: 0.4; margin-bottom: 5px;"></i>
+                                        <span style="font-size: 13px; opacity: 0.7;">Row ${rowIndex + 1} - Col ${colIndex + 1}</span>
+                                    </div>`;
+                                    childIndex++;
+                                }
+                            }
+                            
+                            rowsHTML += '</div>';
+                            rowsHTML += '</div>';
+                        });
+                        
+                        return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${rowsHTML}</div>`;
+                    } else {
+                        // Single row layout (but grid can create multiple rows automatically)
+                        let columnsHTML = '<div class="probuilder-container-row probuilder-row-0"><div class="probuilder-container-columns">';
+                        
+                        // Show ALL children - grid will automatically wrap to multiple rows
+                        const numChildren = element.children ? element.children.length : 0;
+                        const totalSlots = Math.max(columns, numChildren);
+                        
+                        for (let i = 0; i < totalSlots; i++) {
+                            const child = element.children && element.children[i];
+                            
+                            if (child) {
+                                // Render child element
+                                const childPreview = this.generatePreview(child, depth + 1);
+                                
+                                columnsHTML += `
+                                    <div class="probuilder-column" style="min-height: 50px; padding: 5px; position: relative; z-index: 1;">
+                                        <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}" style="position: relative; z-index: 1;">
+                                            <div class="probuilder-nested-controls" style="
+                                                position: absolute;
+                                                top: 0;
+                                                right: 0;
+                                                display: none;
+                                                gap: 4px;
+                                                z-index: 100;
+                                                background: rgba(255, 255, 255, 0.95);
+                                                padding: 4px;
+                                                border-radius: 3px;
+                                                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                            ">
+                                                <button class="probuilder-nested-drag" title="Move" style="
+                                                    background: #71717a;
+                                                    border: none;
+                                                    color: #ffffff;
+                                                    width: 24px;
+                                                    height: 24px;
+                                                    border-radius: 2px;
+                                                    cursor: move;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    font-size: 12px;
+                                                ">
+                                                    <i class="dashicons dashicons-move" style="font-size: 12px;"></i>
+                                                </button>
+                                                <button class="probuilder-nested-edit" title="Edit" style="
+                                                    background: #92003b;
+                                                    border: none;
+                                                    color: #ffffff;
+                                                    width: 24px;
+                                                    height: 24px;
+                                                    border-radius: 2px;
+                                                    cursor: pointer;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    font-size: 12px;
+                                                ">
+                                                    <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
+                                                </button>
+                                                <button class="probuilder-nested-delete" title="Delete" style="
+                                                    background: #dc2626;
+                                                    border: none;
+                                                    color: #ffffff;
+                                                    width: 24px;
+                                                    height: 24px;
+                                                    border-radius: 2px;
+                                                    cursor: pointer;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    font-size: 12px;
+                                                ">
+                                                    <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
+                                                </button>
+                                            </div>
+                                            <div class="probuilder-nested-preview">
+                                                ${childPreview}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            `;
+                                `;
+                            } else {
+                                // Show empty drop zone for this column
+                                columnsHTML += `<div class="probuilder-column probuilder-drop-zone" data-container-id="${element.id}" data-column-index="${i}" style="min-height: 100px; border: 1px dashed #d5dadf; padding: 20px; text-align: center; color: #a4afb7; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <i class="dashicons dashicons-plus" style="font-size: 24px; opacity: 0.4; margin-bottom: 5px;"></i>
+                                    <span style="font-size: 13px; opacity: 0.7;">Click to add widget</span>
+                                </div>`;
+                            }
                         }
-                        columnsHTML += '</div>';
-                        return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${columnsHTML}</div>`;
-                    } else {
-                        // Empty container - show drop zones
-                        let columnsHTML = '<div class="probuilder-container-columns">';
-                        for (let i = 0; i < columns; i++) {
-                            columnsHTML += `<div class="probuilder-column probuilder-drop-zone" data-container-id="${element.id}" data-column-index="${i}" style="min-height: 100px; border: 1px dashed #d5dadf; padding: 20px; text-align: center; color: #a4afb7; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <i class="dashicons dashicons-plus" style="font-size: 24px; opacity: 0.4; margin-bottom: 5px;"></i>
-                                <span style="font-size: 13px; opacity: 0.7;">Click to add widget</span>
-                            </div>`;
-                        }
-                        columnsHTML += '</div>';
+                        
+                        columnsHTML += '</div></div>';
                         return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${columnsHTML}</div>`;
                     }
                     
@@ -3105,6 +3746,335 @@
                     footerHTML += `</div>`;
                     return footerHTML;
                     
+                case 'form-builder':
+                    const fbFormTitle = settings.form_title || 'Contact Us';
+                    const fbFormDescription = settings.form_description || 'Send us a message and we\'ll get back to you as soon as possible.';
+                    const fbFormButtonText = settings.submit_button_text || 'Send Message';
+                    const fbFormBgColor = settings.form_bg_color || '#ffffff';
+                    const fbFormPadding = settings.form_padding || {top: 30, right: 30, bottom: 30, left: 30};
+                    const fbFormBorderRadius = settings.form_border_radius || {size: 8};
+                    const fbFormBoxShadow = settings.form_box_shadow !== 'no';
+                    const fbFieldBgColor = settings.field_bg_color || '#ffffff';
+                    const fbFieldBorderColor = settings.field_border_color || '#e1e5e9';
+                    const fbFieldFocusColor = settings.field_focus_color || '#92003b';
+                    const fbButtonBgColor = settings.button_bg_color || '#92003b';
+                    const fbButtonTextColor = settings.button_text_color || '#ffffff';
+                    
+                    const fbFormStyle = `
+                        background-color: ${fbFormBgColor};
+                        padding: ${fbFormPadding.top}px ${fbFormPadding.right}px ${fbFormPadding.bottom}px ${fbFormPadding.left}px;
+                        border-radius: ${fbFormBorderRadius.size}px;
+                        ${fbFormBoxShadow ? 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);' : ''}
+                    `;
+                    
+                    let fbFormHTML = `<div style="${fbFormStyle}">`;
+                    
+                    if (fbFormTitle) {
+                        fbFormHTML += `<h3 style="margin-top: 0; margin-bottom: 15px; color: #1e293b; font-size: 24px;">${fbFormTitle}</h3>`;
+                    }
+                    
+                    if (fbFormDescription) {
+                        fbFormHTML += `<p style="margin-bottom: 25px; color: #64748b; font-size: 14px;">${fbFormDescription}</p>`;
+                    }
+                    
+                    fbFormHTML += `<form style="display: flex; flex-direction: column; gap: 20px;">`;
+                    
+                    // Sample form fields
+                    fbFormHTML += `<div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #1e293b; font-size: 14px;">Name *</label>
+                        <input type="text" placeholder="Your Name" style="width: 100%; padding: 12px; border: 1px solid ${fbFieldBorderColor}; border-radius: 4px; font-family: inherit; box-sizing: border-box;" disabled>
+                    </div>`;
+                    
+                    fbFormHTML += `<div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #1e293b; font-size: 14px;">Email *</label>
+                        <input type="email" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 1px solid ${fbFieldBorderColor}; border-radius: 4px; font-family: inherit; box-sizing: border-box;" disabled>
+                    </div>`;
+                    
+                    fbFormHTML += `<div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #1e293b; font-size: 14px;">Message *</label>
+                        <textarea placeholder="Your message..." style="width: 100%; padding: 12px; border: 1px solid ${fbFieldBorderColor}; border-radius: 4px; font-family: inherit; min-height: 100px; resize: vertical; box-sizing: border-box;" disabled></textarea>
+                    </div>`;
+                    
+                    fbFormHTML += `<button type="submit" style="background-color: ${fbButtonBgColor}; color: ${fbButtonTextColor}; padding: 12px 30px; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; align-self: flex-start;">${fbFormButtonText}</button>`;
+                    
+                    fbFormHTML += `</form></div>`;
+                    return fbFormHTML;
+                    
+                case 'slider':
+                    const slSliderHeight = settings.slider_height || {size: 500};
+                    const slShowArrows = settings.show_arrows !== 'no';
+                    const slShowDots = settings.show_dots !== 'no';
+                    const slOverlayColor = settings.overlay_color || 'rgba(0,0,0,0.4)';
+                    const slTitleColor = settings.title_color || '#ffffff';
+                    const slDescriptionColor = settings.description_color || '#ffffff';
+                    const slButtonBgColor = settings.button_bg_color || '#92003b';
+                    const slButtonTextColor = settings.button_text_color || '#ffffff';
+                    const slArrowColor = settings.arrow_color || '#ffffff';
+                    const slDotColor = settings.dot_color || '#ffffff';
+                    const slActiveDotColor = settings.active_dot_color || '#92003b';
+                    
+                    let slSliderHTML = `<div style="position: relative; height: ${slSliderHeight.size}px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">`;
+                    
+                    // Overlay
+                    slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: ${slOverlayColor};"></div>`;
+                    
+                    // Content
+                    slSliderHTML += `<div style="position: relative; z-index: 2; text-align: center; color: white; padding: 40px;">
+                        <h2 style="color: ${slTitleColor}; font-size: 36px; font-weight: 700; margin: 0 0 20px 0; line-height: 1.2;">Welcome to Our Website</h2>
+                        <p style="color: ${slDescriptionColor}; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">Discover amazing products and services that will transform your business.</p>
+                        <a href="#" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 16px;">Get Started</a>
+                    </div>`;
+                    
+                    // Navigation Arrows
+                    if (slShowArrows) {
+                        slSliderHTML += `<button style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: ${slArrowColor}; font-size: 24px; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 3;">‹</button>`;
+                        slSliderHTML += `<button style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: ${slArrowColor}; font-size: 24px; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 3;">›</button>`;
+                    }
+                    
+                    // Dots Navigation
+                    if (slShowDots) {
+                        slSliderHTML += `<div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3;">
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slActiveDotColor}; cursor: pointer;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slDotColor}; opacity: 0.5; cursor: pointer;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slDotColor}; opacity: 0.5; cursor: pointer;"></div>
+                        </div>`;
+                    }
+                    
+                    slSliderHTML += `</div>`;
+                    return slSliderHTML;
+                    
+                case 'blog-posts':
+                    const bpPostsPerPage = settings.posts_per_page || {size: 6};
+                    const bpPostLayout = settings.post_layout || 'grid';
+                    const bpColumns = settings.columns || '3';
+                    const bpShowImage = settings.show_image !== 'no';
+                    const bpShowTitle = settings.show_title !== 'no';
+                    const bpShowExcerpt = settings.show_excerpt !== 'no';
+                    const bpShowMeta = settings.show_meta !== 'no';
+                    const bpShowReadMore = settings.show_read_more !== 'no';
+                    const bpReadMoreText = settings.read_more_text || 'Read More';
+                    const bpCardBgColor = settings.card_bg_color || '#ffffff';
+                    const bpCardBorderRadius = settings.card_border_radius || {size: 8};
+                    const bpCardBoxShadow = settings.card_box_shadow !== 'no';
+                    const bpTitleColor = settings.title_color || '#1e293b';
+                    const bpExcerptColor = settings.excerpt_color || '#64748b';
+                    const bpMetaColor = settings.meta_color || '#94a3b8';
+                    const bpReadMoreBgColor = settings.read_more_bg_color || '#92003b';
+                    const bpReadMoreTextColor = settings.read_more_text_color || '#ffffff';
+                    
+                    const bpGridColumns = bpPostLayout === 'grid' ? bpColumns : '1';
+                    const bpCardStyle = `
+                        background-color: ${bpCardBgColor};
+                        border-radius: ${bpCardBorderRadius.size}px;
+                        overflow: hidden;
+                        ${bpCardBoxShadow ? 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);' : ''}
+                    `;
+                    
+                    let bpBlogHTML = `<div style="display: grid; grid-template-columns: repeat(${bpGridColumns}, 1fr); gap: 30px;">`;
+                    
+                    // Sample blog posts
+                    const samplePosts = [
+                        {title: 'Getting Started with ProBuilder', excerpt: 'A complete guide for beginners who want to create stunning websites without coding knowledge.', category: 'Design', date: 'March 15, 2024', author: 'John Doe'},
+                        {title: 'Advanced Design Techniques', excerpt: 'Pro tips and tricks for creating professional-looking websites with advanced features.', category: 'Development', date: 'March 12, 2024', author: 'Jane Smith'},
+                        {title: 'Performance Optimization', excerpt: 'Learn how to speed up your website and improve user experience with these optimization tips.', category: 'Marketing', date: 'March 10, 2024', author: 'Mike Johnson'}
+                    ];
+                    
+                    samplePosts.forEach((post, index) => {
+                        bpBlogHTML += `<article style="${bpCardStyle}">`;
+                        
+                        if (bpShowImage) {
+                            const gradients = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'];
+                            bpBlogHTML += `<div style="height: 200px; background: ${gradients[index]}; position: relative;">
+                                <div style="position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px;">${post.category}</div>
+                            </div>`;
+                        }
+                        
+                        bpBlogHTML += `<div style="padding: 25px;">`;
+                        
+                        if (bpShowMeta) {
+                            bpBlogHTML += `<div style="margin-bottom: 15px; font-size: 14px; color: ${bpMetaColor};">${post.date} • ${post.author}</div>`;
+                        }
+                        
+                        if (bpShowTitle) {
+                            bpBlogHTML += `<h3 style="margin: 0 0 15px 0; font-size: 18px; line-height: 1.4;">
+                                <a href="#" style="color: ${bpTitleColor}; text-decoration: none;">${post.title}</a>
+                            </h3>`;
+                        }
+                        
+                        if (bpShowExcerpt) {
+                            bpBlogHTML += `<p style="color: ${bpExcerptColor}; line-height: 1.6; margin: 0 0 20px 0; font-size: 14px;">${post.excerpt}</p>`;
+                        }
+                        
+                        if (bpShowReadMore) {
+                            bpBlogHTML += `<a href="#" style="display: inline-block; background-color: ${bpReadMoreBgColor}; color: ${bpReadMoreTextColor}; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">${bpReadMoreText}</a>`;
+                        }
+                        
+                        bpBlogHTML += `</div></article>`;
+                    });
+                    
+                    bpBlogHTML += `</div>`;
+                    return bpBlogHTML;
+                    
+                case 'faq':
+                    const fqFaqTitle = settings.faq_title || 'Frequently Asked Questions';
+                    const fqFaqDescription = settings.faq_description || 'Find answers to the most common questions about our products and services.';
+                    const fqFaqLayout = settings.layout || 'accordion';
+                    const fqAllowMultiple = settings.allow_multiple !== 'yes';
+                    const fqItemBgColor = settings.item_bg_color || '#ffffff';
+                    const fqItemBorderColor = settings.item_border_color || '#e1e5e9';
+                    const fqQuestionColor = settings.question_color || '#1e293b';
+                    const fqAnswerColor = settings.answer_color || '#64748b';
+                    const fqIconColor = settings.icon_color || '#92003b';
+                    const fqActiveColor = settings.active_color || '#92003b';
+                    const fqBorderRadius = settings.border_radius || {size: 8};
+                    
+                    let fqFaqHTML = `<div style="max-width: 800px; margin: 0 auto;">`;
+                    
+                    if (fqFaqTitle) {
+                        fqFaqHTML += `<h2 style="color: #1e293b; font-size: 32px; font-weight: 700; margin: 0 0 15px 0; text-align: center;">${fqFaqTitle}</h2>`;
+                    }
+                    
+                    if (fqFaqDescription) {
+                        fqFaqHTML += `<p style="color: #64748b; font-size: 16px; text-align: center; margin: 0 0 40px 0;">${fqFaqDescription}</p>`;
+                    }
+                    
+                    fqFaqHTML += `<div style="display: flex; flex-direction: column; gap: 15px;">`;
+                    
+                    // Sample FAQ items
+                    const sampleFAQs = [
+                        {question: 'What is your return policy?', answer: 'We offer a 30-day return policy for all products in original condition. Simply contact our customer service team to initiate a return.', icon: 'fa fa-undo'},
+                        {question: 'How long does shipping take?', answer: 'Standard shipping takes 3-5 business days. Express shipping is available for next-day delivery in most areas.', icon: 'fa fa-shipping-fast'},
+                        {question: 'Do you offer customer support?', answer: 'Yes! Our customer support team is available 24/7 via live chat, email, and phone to help with any questions or issues.', icon: 'fa fa-headset'}
+                    ];
+                    
+                    sampleFAQs.forEach((faq, index) => {
+                        const fqItemStyle = `
+                            background-color: ${fqItemBgColor};
+                            border: 1px solid ${fqItemBorderColor};
+                            border-radius: ${fqBorderRadius.size}px;
+                            overflow: hidden;
+                        `;
+                        
+                        fqFaqHTML += `<div style="${fqItemStyle}">`;
+                        
+                        const fqHeaderStyle = `padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; ${index === 0 ? `background: ${fqActiveColor};` : ''}`;
+                        
+                        fqFaqHTML += `<div style="${fqHeaderStyle}">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <i class="${faq.icon}" style="color: ${fqIconColor}; font-size: 18px; width: 20px; text-align: center;"></i>
+                                <h3 style="margin: 0; color: ${fqQuestionColor}; font-size: 18px; font-weight: 600;">${faq.question}</h3>
+                            </div>
+                            <i class="fa fa-chevron-down" style="color: ${fqIconColor}; font-size: 14px; transform: ${index === 0 ? 'rotate(180deg)' : 'rotate(0deg)'};"></i>
+                        </div>`;
+                        
+                        if (index === 0) {
+                            fqFaqHTML += `<div style="padding: 0 20px 20px 20px; color: ${fqAnswerColor}; line-height: 1.6;">
+                                <p style="margin: 0;">${faq.answer}</p>
+                            </div>`;
+                        }
+                        
+                        fqFaqHTML += `</div>`;
+                    });
+                    
+                    fqFaqHTML += `</div></div>`;
+                    return fqFaqHTML;
+                    
+                case 'timeline':
+                    const tlTimelineTitle = settings.timeline_title || 'Our Journey';
+                    const tlTimelineDescription = settings.timeline_description || 'Follow our journey from the beginning to where we are today.';
+                    const tlTimelineLayout = settings.layout || 'vertical';
+                    const tlShowConnector = settings.show_connector !== 'no';
+                    const tlItemBgColor = settings.item_bg_color || '#ffffff';
+                    const tlItemBorderColor = settings.item_border_color || '#e1e5e9';
+                    const tlDateColor = settings.date_color || '#92003b';
+                    const tlIconBgColor = settings.icon_bg_color || '#92003b';
+                    const tlIconColor = settings.icon_color || '#ffffff';
+                    const tlConnectorColor = settings.connector_color || '#e1e5e9';
+                    const tlBorderRadius = settings.border_radius || {size: 8};
+                    
+                    let tlTimelineHTML = `<div>`;
+                    
+                    if (tlTimelineTitle) {
+                        tlTimelineHTML += `<h2 style="color: #1e293b; font-size: 32px; font-weight: 700; margin: 0 0 15px 0; text-align: center;">${tlTimelineTitle}</h2>`;
+                    }
+                    
+                    if (tlTimelineDescription) {
+                        tlTimelineHTML += `<p style="color: #64748b; font-size: 16px; text-align: center; margin: 0 0 50px 0;">${tlTimelineDescription}</p>`;
+                    }
+                    
+                    if (tlTimelineLayout === 'vertical') {
+                        tlTimelineHTML += `<div style="position: relative; max-width: 800px; margin: 0 auto;">`;
+                        
+                        if (tlShowConnector) {
+                            tlTimelineHTML += `<div style="position: absolute; left: 30px; top: 0; bottom: 0; width: 2px; background-color: ${tlConnectorColor};"></div>`;
+                        }
+                        
+                        // Sample timeline items
+                        const sampleItems = [
+                            {date: '2020', title: 'Company Founded', description: 'We started our journey with a vision to revolutionize the industry and provide innovative solutions.', icon: 'fa fa-rocket'},
+                            {date: '2021', title: 'First Product Launch', description: 'Launched our flagship product that quickly gained recognition in the market.', icon: 'fa fa-star'},
+                            {date: '2022', title: 'International Expansion', description: 'Expanded our operations to serve customers across multiple countries.', icon: 'fa fa-globe'}
+                        ];
+                        
+                        sampleItems.forEach((item, index) => {
+                            const tlItemStyle = `
+                                background-color: ${tlItemBgColor};
+                                border: 1px solid ${tlItemBorderColor};
+                                border-radius: ${tlBorderRadius.size}px;
+                                padding: 25px;
+                                margin-left: 80px;
+                                margin-bottom: 30px;
+                                position: relative;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            `;
+                            
+                            tlTimelineHTML += `<div style="${tlItemStyle}">
+                                <div style="position: absolute; left: -60px; top: 25px; width: 40px; height: 40px; background-color: ${tlIconBgColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                                    <i class="${item.icon}" style="color: ${tlIconColor}; font-size: 16px;"></i>
+                                </div>
+                                <div style="color: ${tlDateColor}; font-size: 14px; font-weight: 600; margin-bottom: 10px;">${item.date}</div>
+                                <h3 style="color: #1e293b; font-size: 20px; font-weight: 600; margin: 0 0 15px 0;">${item.title}</h3>
+                                <p style="color: #64748b; margin: 0; line-height: 1.6;">${item.description}</p>
+                            </div>`;
+                        });
+                        
+                        tlTimelineHTML += `</div>`;
+                    } else {
+                        tlTimelineHTML += `<div style="display: flex; overflow-x: auto; gap: 30px; padding: 20px 0;">`;
+                        
+                        const sampleItems = [
+                            {date: '2020', title: 'Company Founded', description: 'We started our journey with a vision to revolutionize the industry.', icon: 'fa fa-rocket'},
+                            {date: '2021', title: 'First Product Launch', description: 'Launched our flagship product that quickly gained recognition.', icon: 'fa fa-star'},
+                            {date: '2022', title: 'International Expansion', description: 'Expanded our operations to serve customers worldwide.', icon: 'fa fa-globe'}
+                        ];
+                        
+                        sampleItems.forEach((item, index) => {
+                            const tlItemStyle = `
+                                background-color: ${tlItemBgColor};
+                                border: 1px solid ${tlItemBorderColor};
+                                border-radius: ${tlBorderRadius.size}px;
+                                padding: 25px;
+                                min-width: 300px;
+                                flex-shrink: 0;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            `;
+                            
+                            tlTimelineHTML += `<div style="${tlItemStyle}">
+                                <div style="width: 50px; height: 50px; background-color: ${tlIconBgColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                                    <i class="${item.icon}" style="color: ${tlIconColor}; font-size: 20px;"></i>
+                                </div>
+                                <div style="color: ${tlDateColor}; font-size: 14px; font-weight: 600; margin-bottom: 10px; text-align: center;">${item.date}</div>
+                                <h3 style="color: #1e293b; font-size: 18px; font-weight: 600; margin: 0 0 15px 0; text-align: center;">${item.title}</h3>
+                                <p style="color: #64748b; margin: 0; line-height: 1.6; text-align: center;">${item.description}</p>
+                            </div>`;
+                        });
+                        
+                        tlTimelineHTML += `</div>`;
+                    }
+                    
+                    tlTimelineHTML += `</div>`;
+                    return tlTimelineHTML;
+                    
                 default:
                     return `<div style="padding: 25px; background: #f8f9fa; text-align: center; border: 1px solid #e6e9ec; border-radius: 3px; color: #6d7882;"><i class="${widget.icon}" style="font-size: 32px; color: #93003c; margin-bottom: 10px;"></i><br><strong>${widget.title}</strong><br><small style="color: #a4afb7;">Click edit to customize</small></div>`;
             }
@@ -3125,12 +4095,15 @@
         },
         
         /**
-         * Select element
+         * Select element (automatically opens settings)
          */
         selectElement: function(element) {
             this.selectedElement = element;
             $('.probuilder-element').removeClass('selected');
             $(`.probuilder-element[data-id="${element.id}"]`).addClass('selected');
+            
+            // Automatically open settings when element is selected
+            this.openSettings(element);
         },
         
         /**
@@ -3140,7 +4113,11 @@
             console.log('==================== OPENING SETTINGS ====================');
             console.log('Element:', element.id, element.widgetType);
             
-            this.selectElement(element);
+            // Just update the selected element visually (don't call selectElement to avoid circular call)
+            this.selectedElement = element;
+            $('.probuilder-element').removeClass('selected');
+            $(`.probuilder-element[data-id="${element.id}"]`).addClass('selected');
+            
             const widget = this.widgets.find(w => w.name === element.widgetType);
             
             if (!widget) {
@@ -3866,8 +4843,12 @@
                     self.showWidgetTemplateSelector(containerId, columnIndex);
                 });
                 
-                // Re-initialize jQuery UI drop zones
-                self.makeContainersDroppable();
+                // Re-initialize jQuery UI drop zones with additional delay
+                setTimeout(function() {
+                    // Just reinitialize container drop zones
+                    self.makeContainersDroppable();
+                    console.log('✅ Container drop zones re-initialized');
+                }, 100);
                 
                 console.log('✅ Container fully updated with interactive children and drop zones');
             }, 50);
@@ -4640,7 +5621,7 @@
                     <div class="probuilder-selector-modal" style="background: #ffffff; border-radius: 8px; width: 90%; max-width: 900px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
                         <div style="padding: 20px 25px; border-bottom: 1px solid #e6e9ec; display: flex; justify-content: space-between; align-items: center;">
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #495157;">
-                                <i class="dashicons dashicons-plus-alt" style="color: #92003b;"></i>
+                                <i class="dashicons dashicons-plus-alt2" style="color: #92003b;"></i>
                                 Add Element
                             </h3>
                             <button class="probuilder-selector-close" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: #a1a1aa; line-height: 1; width: 32px; height: 32px; padding: 0;">&times;</button>
@@ -4691,11 +5672,11 @@
             // Select widget
             $('.probuilder-selector-widget').on('click', function() {
                 const widgetName = $(this).data('widget');
-                console.log('Widget selected:', widgetName, 'for container:', containerId);
+                console.log('Widget selected:', widgetName, 'for container:', containerId, 'column:', columnIndex);
                 
                 if (containerId) {
-                    // Add to specific container
-                    self.addElementToContainer(widgetName, containerId);
+                    // Add to specific container at specified column
+                    self.addElementToContainer(widgetName, containerId, columnIndex);
                 } else {
                     // Add to main canvas
                     self.addElement(widgetName);
@@ -4706,6 +5687,2949 @@
                     $(this).remove();
                 });
             });
+        },
+        
+        /**
+         * Show add element modal (for adding below an element)
+         */
+        showAddElementModal: function(afterElement) {
+            const self = this;
+            
+            const modalHTML = `
+                <div class="probuilder-selector-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 999999; display: flex; align-items: center; justify-content: center;">
+                    <div class="probuilder-selector-modal" style="background: #ffffff; border-radius: 8px; width: 90%; max-width: 900px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+                        <div style="padding: 20px 25px; border-bottom: 1px solid #e6e9ec; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #495157;">
+                                <i class="dashicons dashicons-plus-alt2" style="color: #92003b;"></i>
+                                Add Element Below
+                            </h3>
+                            <button class="probuilder-selector-close" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: #a1a1aa; line-height: 1; width: 32px; height: 32px; padding: 0;">&times;</button>
+                        </div>
+                        <div style="padding: 25px; overflow-y: auto; flex: 1;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px;">
+                                ${this.widgets.map(widget => `
+                                    <div class="probuilder-selector-widget" data-widget="${widget.name}" style="background: #ffffff; border: 1px solid #e6e9ec; border-radius: 6px; padding: 15px 10px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                                        <i class="${widget.icon}" style="font-size: 28px; color: #92003b; margin-bottom: 8px; display: block;"></i>
+                                        <div style="font-size: 11px; font-weight: 600; color: #495157; line-height: 1.3;">${widget.title}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            $('body').append(modalHTML);
+            
+            // Close modal
+            $('.probuilder-selector-close, .probuilder-selector-overlay').on('click', function(e) {
+                if (e.target === this) {
+                    $('.probuilder-selector-overlay').fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                }
+            });
+            
+            // Widget hover effect
+            $('.probuilder-selector-widget').hover(
+                function() {
+                    $(this).css({
+                        'border-color': '#92003b',
+                        'transform': 'translateY(-4px)',
+                        'box-shadow': '0 8px 16px rgba(146, 0, 59, 0.15)'
+                    });
+                },
+                function() {
+                    $(this).css({
+                        'border-color': '#e6e9ec',
+                        'transform': 'translateY(0)',
+                        'box-shadow': 'none'
+                    });
+                }
+            );
+            
+            // Select widget
+            $('.probuilder-selector-widget').on('click', function() {
+                const widgetName = $(this).data('widget');
+                console.log('Widget selected to add after:', afterElement.id);
+                
+                // Find the index of the current element
+                const currentIndex = self.elements.findIndex(e => e.id === afterElement.id);
+                
+                if (currentIndex !== -1) {
+                    // Create new element
+                    const widget = self.widgets.find(w => w.name === widgetName);
+                    if (widget) {
+                        const newElement = {
+                            id: 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                            widgetType: widgetName,
+                            settings: Object.assign({}, self.getDefaultSettings(widget)),
+                            children: []
+                        };
+                        
+                        // Insert after the current element
+                        self.elements.splice(currentIndex + 1, 0, newElement);
+                        
+                        // Re-render all elements
+                        self.renderElements();
+                        
+                        // Auto-select the new element
+                        setTimeout(() => {
+                            self.selectElement(newElement);
+                        }, 100);
+                        
+                        console.log('Element added after:', afterElement.id);
+                    }
+                }
+                
+                // Close modal
+                $('.probuilder-selector-overlay').fadeOut(200, function() {
+                    $(this).remove();
+                });
+            });
+        },
+        
+        /**
+         * Generate template thumbnail
+         */
+        generateTemplateThumbnail: function(templateId) {
+            const thumbnails = {
+                // Full Page Templates
+                'page-landing': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <!-- Header -->
+                        <div style="background: #1e293b; height: 18px; display: flex; align-items: center; padding: 0 8px; gap: 6px;">
+                            <div style="width: 30px; height: 6px; background: #92003b; border-radius: 2px;"></div>
+                            <div style="margin-left: auto; display: flex; gap: 3px;">
+                                ${[1,2,3].map(() => `<div style="width: 12px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 1px;"></div>`).join('')}
+                            </div>
+                        </div>
+                        <!-- Hero -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 45px; display: flex; align-items: center; justify-content: center;">
+                            <div style="text-align: center;">
+                                <div style="width: 60px; height: 5px; background: rgba(255,255,255,0.9); margin: 0 auto 3px; border-radius: 2px;"></div>
+                                <div style="width: 40px; height: 3px; background: rgba(255,255,255,0.7); margin: 0 auto 5px; border-radius: 2px;"></div>
+                                <div style="width: 20px; height: 8px; background: white; margin: 0 auto; border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                        <!-- Features -->
+                        <div style="padding: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                            ${[1,2,3].map(() => `
+                                <div style="text-align: center;">
+                                    <div style="width: 12px; height: 12px; background: #92003b; border-radius: 50%; margin: 0 auto 3px;"></div>
+                                    <div style="width: 80%; height: 2px; background: #e2e8f0; margin: 0 auto 2px; border-radius: 1px;"></div>
+                                    <div style="width: 100%; height: 2px; background: #f1f5f9; margin: 0 auto; border-radius: 1px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <!-- Pricing -->
+                        <div style="background: #f8f9fa; padding: 6px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">
+                            ${[1,2,3].map((i) => `<div style="background: white; border: 1px solid ${i === 2 ? '#92003b' : '#e6e9ec'}; height: 20px; border-radius: 3px;"></div>`).join('')}
+                        </div>
+                        <!-- CTA -->
+                        <div style="background: #92003b; height: 20px; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 40px; height: 6px; background: rgba(255,255,255,0.9); border-radius: 2px;"></div>
+                        </div>
+                        <!-- Footer -->
+                        <div style="background: #1e293b; height: 15px;"></div>
+                    </div>
+                `,
+                'page-about': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <div style="background: #1e293b; height: 15px;"></div>
+                        <div style="background: #f8f9fa; height: 25px; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 50px; height: 4px; background: #92003b; border-radius: 2px;"></div>
+                        </div>
+                        <div style="padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                            <div style="background: #e6e9ec; height: 40px; border-radius: 4px;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 3px; justify-content: center;">
+                                ${[1,2,3,4].map(() => `<div style="width: 100%; height: 3px; background: #e2e8f0; border-radius: 1px;"></div>`).join('')}
+                            </div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 4px 0;">
+                            ${[1,2,3,4].map(() => `
+                                <div style="text-align: center;">
+                                    <div style="width: 15px; height: 15px; background: #cbd5e1; border-radius: 50%; margin: 0 auto 2px;"></div>
+                                    <div style="width: 80%; height: 2px; background: #e2e8f0; margin: 0 auto; border-radius: 1px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="background: #1e293b; height: 15px;"></div>
+                    </div>
+                `,
+                'page-services': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <div style="background: #1e293b; height: 15px;"></div>
+                        <div style="background: linear-gradient(135deg, #92003b 0%, #d5006d 100%); height: 30px; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 45px; height: 5px; background: rgba(255,255,255,0.9); border-radius: 2px;"></div>
+                        </div>
+                        <div style="padding: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                            ${[1,2,3].map(() => `
+                                <div style="border: 1px solid #e6e9ec; padding: 6px; border-radius: 4px; text-align: center;">
+                                    <div style="width: 12px; height: 12px; background: #92003b; border-radius: 50%; margin: 0 auto 3px;"></div>
+                                    <div style="width: 80%; height: 3px; background: #e2e8f0; margin: 0 auto 2px; border-radius: 1px;"></div>
+                                    <div style="width: 100%; height: 2px; background: #f1f5f9; margin: 0 auto 3px; border-radius: 1px;"></div>
+                                    <div style="width: 50%; height: 6px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="padding: 8px;">
+                            <div style="background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                                ${[1,2,3].map(() => `<div style="width: 100%; height: 6px; background: white; margin-bottom: 3px; border-radius: 2px; border: 1px solid #e2e8f0;"></div>`).join('')}
+                                <div style="width: 40%; height: 10px; background: #92003b; border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'page-portfolio': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <div style="background: #0f172a; height: 15px;"></div>
+                        <div style="padding: 6px 8px; text-align: center;">
+                            <div style="width: 40px; height: 5px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                            <div style="width: 60px; height: 3px; background: #cbd5e1; margin: 0 auto; border-radius: 1px;"></div>
+                        </div>
+                        <div style="padding: 0 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                            ${[1,2,3,4,5,6].map((i) => `
+                                <div style="aspect-ratio: 1; background: linear-gradient(135deg, ${['#667eea', '#f59e0b', '#ec4899', '#10b981', '#3b82f6', '#8b5cf6'][i-1]} 0%, ${['#764ba2', '#d97706', '#db2777', '#059669', '#2563eb', '#7c3aed'][i-1]} 100%); border-radius: 4px;"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                'page-shop': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <div style="background: #1e293b; height: 12px; display: flex; align-items: center; padding: 0 6px; justify-content: space-between;">
+                            <div style="width: 20px; height: 4px; background: #92003b; border-radius: 1px;"></div>
+                            <div style="display: flex; gap: 2px;">
+                                ${[1,2,3].map(() => `<div style="width: 10px; height: 3px; background: rgba(255,255,255,0.5); border-radius: 1px;"></div>`).join('')}
+                            </div>
+                        </div>
+                        <div style="background: #92003b; height: 25px; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 50px; height: 6px; background: rgba(255,255,255,0.9); border-radius: 2px;"></div>
+                        </div>
+                        <div style="padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+                            ${[1,2,3,4,5,6,7,8].map(() => `
+                                <div style="border: 1px solid #e6e9ec; border-radius: 4px; overflow: hidden;">
+                                    <div style="background: #f1f5f9; height: 25px;"></div>
+                                    <div style="padding: 3px; text-align: center;">
+                                        <div style="width: 80%; height: 2px; background: #cbd5e1; margin: 0 auto 2px; border-radius: 1px;"></div>
+                                        <div style="width: 40%; height: 4px; background: #92003b; margin: 0 auto; border-radius: 1px;"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                'page-blog': `
+                    <div style="background: white; height: 100%; overflow: hidden;">
+                        <div style="background: #1e293b; height: 15px;"></div>
+                        <div style="padding: 8px; display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                            <div>
+                                ${[1,2].map(() => `
+                                    <div style="background: white; border: 1px solid #e6e9ec; margin-bottom: 6px; border-radius: 4px; overflow: hidden;">
+                                        <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); height: 25px;"></div>
+                                        <div style="padding: 5px;">
+                                            <div style="width: 80%; height: 3px; background: #1e293b; margin-bottom: 2px; border-radius: 1px;"></div>
+                                            <div style="width: 100%; height: 2px; background: #e2e8f0; margin-bottom: 2px; border-radius: 1px;"></div>
+                                            <div style="width: 90%; height: 2px; background: #e2e8f0; border-radius: 1px;"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="background: #f8f9fa; padding: 6px; border-radius: 4px;">
+                                ${[1,2,3,4].map(() => `<div style="width: 100%; height: 3px; background: #cbd5e1; margin-bottom: 3px; border-radius: 1px;"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `,
+                
+                // Hero Sections
+                'hero-1': `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative;">
+                        <div style="position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; opacity: 0.3;"></div>
+                        <div style="position: absolute; bottom: 8px; left: 8px; width: 30px; height: 30px; background: rgba(255,255,255,0.15); border-radius: 50%; opacity: 0.3;"></div>
+                        <div style="text-align: center; color: white; max-width: 80%;">
+                            <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.95); margin: 0 auto 6px; border-radius: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
+                            <div style="width: 75%; height: 8px; background: rgba(255,255,255,0.8); margin: 0 auto 4px; border-radius: 3px;"></div>
+                            <div style="width: 85%; height: 6px; background: rgba(255,255,255,0.6); margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 70%; height: 6px; background: rgba(255,255,255,0.5); margin: 0 auto 12px; border-radius: 2px;"></div>
+                            <div style="display: flex; gap: 6px; justify-content: center;">
+                                <div style="width: 35px; height: 18px; background: rgba(255,255,255,0.95); border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></div>
+                                <div style="width: 35px; height: 18px; background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.6); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'hero-2': `
+                    <div style="background: #1e293b; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative;">
+                        <div style="width: 80%; max-width: 200px; text-align: center;">
+                            <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.95); margin: 0 auto 6px; border-radius: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>
+                            <div style="width: 75%; height: 8px; background: rgba(255,255,255,0.75); margin: 0 auto 4px; border-radius: 3px;"></div>
+                            <div style="width: 85%; height: 6px; background: rgba(255,255,255,0.6); margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 70%; height: 6px; background: rgba(255,255,255,0.5); margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 90%; height: 6px; background: rgba(255,255,255,0.4); margin: 0 auto 14px; border-radius: 2px;"></div>
+                            <div style="width: 45%; height: 20px; background: #92003b; margin: 0 auto; border-radius: 5px; box-shadow: 0 4px 12px rgba(146, 0, 59, 0.4);"></div>
+                        </div>
+                        <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px;">
+                            ${[1,2,3].map((i) => `<div style="width: 6px; height: 6px; background: ${i === 2 ? '#92003b' : 'rgba(255,255,255,0.3)'}; border-radius: 50%;"></div>`).join('')}
+                        </div>
+                    </div>
+                `,
+                'hero-3': `
+                    <div style="background: #f8f9fa; height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0;">
+                        <div style="background: linear-gradient(135deg, #e6e9ec 0%, #cbd5e1 100%); display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div style="width: 70px; height: 70px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
+                            <div style="position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; background: rgba(255,255,255,0.4); border-radius: 50%;"></div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; justify-content: center; padding: 15px; background: white;">
+                            <div style="width: 85%; height: 9px; background: #1e293b; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+                            <div style="width: 95%; height: 5px; background: #cbd5e1; margin-bottom: 4px; border-radius: 2px;"></div>
+                            <div style="width: 75%; height: 5px; background: #e2e8f0; margin-bottom: 4px; border-radius: 2px;"></div>
+                            <div style="width: 90%; height: 5px; background: #e2e8f0; margin-bottom: 12px; border-radius: 2px;"></div>
+                            <div style="width: 45%; height: 16px; background: #92003b; border-radius: 4px; box-shadow: 0 2px 6px rgba(146, 0, 59, 0.3);"></div>
+                        </div>
+                    </div>
+                `,
+                
+                // Features
+                'features-1': `
+                    <div style="background: white; height: 100%; padding: 15px;">
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <div style="width: 50px; height: 6px; background: #92003b; margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 70px; height: 4px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            ${[1,2,3].map(() => `
+                                <div style="text-align: center; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e6e9ec;">
+                                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #92003b 0%, #d5006d 100%); border-radius: 50%; margin: 0 auto 8px; box-shadow: 0 2px 8px rgba(146, 0, 59, 0.3);"></div>
+                                    <div style="width: 90%; height: 6px; background: #1e293b; margin: 0 auto 4px; border-radius: 2px;"></div>
+                                    <div style="width: 100%; height: 4px; background: #cbd5e1; margin: 0 auto 3px; border-radius: 2px;"></div>
+                                    <div style="width: 95%; height: 4px; background: #e2e8f0; margin: 0 auto; border-radius: 2px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                'features-2': `
+                    <div style="background: #f8f9fa; height: 100%; padding: 15px;">
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <div style="width: 50px; height: 6px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                            <div style="width: 65px; height: 4px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                        </div>
+                        ${[1,2].map(() => `
+                            <div style="display: flex; gap: 12px; align-items: flex-start; background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid #e6e9ec;">
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #92003b 0%, #d5006d 100%); border-radius: 6px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(146, 0, 59, 0.3); display: flex; align-items: center; justify-content: center;">
+                                    <div style="width: 10px; height: 10px; border: 2px solid white; border-radius: 50%;"></div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="width: 75%; height: 6px; background: #1e293b; margin-bottom: 5px; border-radius: 2px;"></div>
+                                    <div style="width: 95%; height: 4px; background: #cbd5e1; margin-bottom: 3px; border-radius: 2px;"></div>
+                                    <div style="width: 88%; height: 4px; background: #e2e8f0; border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `,
+                'features-3': `
+                    <div style="background: white; height: 100%; padding: 15px;">
+                        ${[1,2,3,4].map(() => `
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                                <div style="width: 12px; height: 12px; background: #92003b; border-radius: 50%; flex-shrink: 0;"></div>
+                                <div style="flex: 1; height: 5px; background: #e2e8f0; border-radius: 2px;"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `,
+                
+                // Pricing
+                'pricing-1': `
+                    <div style="background: #f8f9fa; height: 100%; padding: 12px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="width: 50px; height: 6px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                            <div style="width: 70px; height: 4px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                            ${[1,2,3].map((i) => `
+                                <div style="background: white; border: 2px solid ${i === 2 ? '#92003b' : '#e6e9ec'}; border-radius: 8px; padding: 12px; text-align: center; box-shadow: ${i === 2 ? '0 8px 20px rgba(146, 0, 59, 0.2)' : '0 2px 8px rgba(0,0,0,0.05)'}; transform: ${i === 2 ? 'scale(1.05)' : 'scale(1)'};">
+                                    ${i === 2 ? '<div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #92003b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 8px;">POPULAR</div>' : ''}
+                                    <div style="width: 70%; height: 6px; background: #1e293b; margin: 0 auto 6px; border-radius: 2px;"></div>
+                                    <div style="width: 50%; height: 14px; background: linear-gradient(135deg, #92003b 0%, #d5006d 100%); margin: 0 auto 8px; border-radius: 3px; box-shadow: 0 2px 6px rgba(146, 0, 59, 0.3);"></div>
+                                    <div style="width: 85%; height: 3px; background: #e2e8f0; margin: 0 auto 3px; border-radius: 2px;"></div>
+                                    <div style="width: 85%; height: 3px; background: #e2e8f0; margin: 0 auto 3px; border-radius: 2px;"></div>
+                                    <div style="width: 85%; height: 3px; background: #e2e8f0; margin: 0 auto 8px; border-radius: 2px;"></div>
+                                    <div style="width: 60%; height: 12px; background: ${i === 2 ? 'linear-gradient(135deg, #92003b 0%, #d5006d 100%)' : '#cbd5e1'}; margin: 0 auto; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                'pricing-2': `
+                    <div style="background: white; height: 100%; padding: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px;">
+                            ${[1,2,3,4].map(() => `<div style="height: 12px; background: #92003b; border-radius: 2px;"></div>`).join('')}
+                        </div>
+                        ${[1,2,3].map(() => `
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px;">
+                                ${[1,2,3,4].map(() => `<div style="height: 8px; background: #f1f5f9; border-radius: 2px;"></div>`).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `,
+                
+                // Testimonials
+                'testimonial-1': `
+                    <div style="background: linear-gradient(to bottom, #f8f9fa 0%, white 100%); height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                        <div style="text-align: center; max-width: 75%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e6e9ec;">
+                            <div style="font-size: 24px; color: #92003b; margin-bottom: 10px;">"</div>
+                            <div style="width: 100%; height: 5px; background: #1e293b; margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 90%; height: 4px; background: #cbd5e1; margin: 0 auto 4px; border-radius: 2px;"></div>
+                            <div style="width: 85%; height: 4px; background: #e2e8f0; margin: 0 auto 10px; border-radius: 2px;"></div>
+                            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 50%; margin: 0 auto 10px; border: 3px solid white; box-shadow: 0 3px 12px rgba(59, 130, 246, 0.3);"></div>
+                            <div style="width: 60%; height: 5px; background: #1e293b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                            <div style="width: 45%; height: 3px; background: #cbd5e1; margin: 0 auto 6px; border-radius: 2px;"></div>
+                            <div style="display: flex; gap: 3px; justify-content: center;">
+                                ${[1,2,3,4,5].map(() => `<div style="width: 8px; height: 8px; background: #fbbf24; border-radius: 1px;"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'testimonial-2': `
+                    <div style="background: #f8f9fa; height: 100%; padding: 12px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="width: 55px; height: 5px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${[1,2].map((i) => `
+                                <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6e9ec; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+                                    <div style="color: #92003b; font-size: 20px; margin-bottom: 6px;">"</div>
+                                    <div style="width: 100%; height: 4px; background: #cbd5e1; margin-bottom: 3px; border-radius: 2px;"></div>
+                                    <div style="width: 90%; height: 4px; background: #e2e8f0; margin-bottom: 3px; border-radius: 2px;"></div>
+                                    <div style="width: 75%; height: 4px; background: #e2e8f0; margin-bottom: 8px; border-radius: 2px;"></div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div style="width: 26px; height: 26px; background: linear-gradient(135deg, ${i === 1 ? '#10b981' : '#f59e0b'} 0%, ${i === 1 ? '#059669' : '#d97706'} 100%); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"></div>
+                                        <div style="flex: 1;">
+                                            <div style="width: 80%; height: 4px; background: #1e293b; margin-bottom: 2px; border-radius: 1px;"></div>
+                                            <div style="width: 60%; height: 3px; background: #cbd5e1; border-radius: 1px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                
+                // CTA
+                'cta-1': `
+                    <div style="background: linear-gradient(135deg, #92003b 0%, #d5006d 100%); height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+                        <div style="width: 70%; height: 10px; background: rgba(255,255,255,0.9); margin-bottom: 6px; border-radius: 3px;"></div>
+                        <div style="width: 50%; height: 6px; background: rgba(255,255,255,0.6); margin-bottom: 12px; border-radius: 3px;"></div>
+                        <div style="width: 35%; height: 18px; background: white; border-radius: 4px;"></div>
+                    </div>
+                `,
+                'cta-2': `
+                    <div style="background: #1e293b; height: 100%; padding: 15px; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="width: 60%; height: 8px; background: rgba(255,255,255,0.8); margin-bottom: 6px; border-radius: 3px;"></div>
+                        <div style="width: 40%; height: 6px; background: rgba(255,255,255,0.5); margin-bottom: 12px; border-radius: 3px;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <div style="flex: 1; height: 16px; background: rgba(255,255,255,0.3); border-radius: 3px;"></div>
+                            <div style="width: 30%; height: 16px; background: #92003b; border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                `,
+                
+                // Team
+                'team-1': `
+                    <div style="background: white; height: 100%; padding: 12px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="width: 45px; height: 5px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                            <div style="width: 60px; height: 3px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            ${[1,2,3,4].map((i) => `
+                                <div style="text-align: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e6e9ec;">
+                                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, ${['#3b82f6', '#10b981', '#f59e0b', '#ec4899'][i-1]} 0%, ${['#2563eb', '#059669', '#d97706', '#db2777'][i-1]} 100%); border-radius: 50%; margin: 0 auto 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 2px solid white;"></div>
+                                    <div style="width: 85%; height: 5px; background: #1e293b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                                    <div style="width: 65%; height: 3px; background: #cbd5e1; margin: 0 auto; border-radius: 2px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                'team-2': `
+                    <div style="background: #f8f9fa; height: 100%; padding: 12px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="width: 45px; height: 5px; background: #92003b; margin: 0 auto 3px; border-radius: 2px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${[1,2].map((i) => `
+                                <div style="background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e6e9ec;">
+                                    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, ${i === 1 ? '#3b82f6' : '#ec4899'} 0%, ${i === 1 ? '#2563eb' : '#db2777'} 100%); border-radius: 50%; margin: 0 auto 8px; border: 3px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.2);"></div>
+                                    <div style="width: 75%; height: 6px; background: #1e293b; margin: 0 auto 4px; border-radius: 2px;"></div>
+                                    <div style="width: 55%; height: 4px; background: #92003b; margin: 0 auto 6px; border-radius: 2px;"></div>
+                                    <div style="width: 95%; height: 3px; background: #e2e8f0; margin: 0 auto 2px; border-radius: 1px;"></div>
+                                    <div style="width: 90%; height: 3px; background: #e2e8f0; margin: 0 auto; border-radius: 1px;"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `,
+                
+                // Gallery
+                'gallery-1': `
+                    <div style="background: white; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; padding: 10px;">
+                        ${[1,2,3,4,5,6].map((i) => `
+                            <div style="background: linear-gradient(135deg, ${i % 2 === 0 ? '#fbbf24' : '#ec4899'} 0%, ${i % 2 === 0 ? '#f59e0b' : '#db2777'} 100%); border-radius: 4px;"></div>
+                        `).join('')}
+                    </div>
+                `,
+                'gallery-2': `
+                    <div style="background: #1e293b; height: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 10px;">
+                        ${[1,2,3,4,5,6,7,8].map(() => `
+                            <div style="background: #334155; border-radius: 3px; aspect-ratio: 1;"></div>
+                        `).join('')}
+                    </div>
+                `,
+                
+                // Contact
+                'contact-1': `
+                    <div style="background: white; height: 100%; padding: 15px;">
+                        <div style="width: 60%; height: 8px; background: #92003b; margin-bottom: 10px; border-radius: 3px;"></div>
+                        ${[1,2,3].map(() => `
+                            <div style="width: 100%; height: 12px; background: #f1f5f9; margin-bottom: 6px; border-radius: 3px; border: 1px solid #e2e8f0;"></div>
+                        `).join('')}
+                        <div style="width: 40%; height: 16px; background: #92003b; margin-top: 8px; border-radius: 3px;"></div>
+                    </div>
+                `,
+                'contact-2': `
+                    <div style="background: white; height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px;">
+                        <div>
+                            ${[1,2].map(() => `
+                                <div style="width: 100%; height: 10px; background: #f1f5f9; margin-bottom: 6px; border-radius: 3px; border: 1px solid #e2e8f0;"></div>
+                            `).join('')}
+                            <div style="width: 50%; height: 14px; background: #92003b; margin-top: 6px; border-radius: 3px;"></div>
+                        </div>
+                        <div style="background: #e6e9ec; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 20px; height: 20px; background: #92003b; border-radius: 50%;"></div>
+                        </div>
+                    </div>
+                `,
+                
+                // Footer
+                'footer-1': `
+                    <div style="background: #1e293b; height: 100%; padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                            ${[1,2,3].map(() => `
+                                <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;"></div>
+                            `).join('')}
+                        </div>
+                        <div style="width: 60%; height: 4px; background: rgba(255,255,255,0.2); margin: 0 auto; border-radius: 2px;"></div>
+                    </div>
+                `,
+                'footer-2': `
+                    <div style="background: #0f172a; height: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px;">
+                        ${[1,2,3,4].map(() => `
+                            <div>
+                                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.6); margin-bottom: 4px; border-radius: 2px;"></div>
+                                ${[1,2,3].map(() => `
+                                    <div style="width: 80%; height: 3px; background: rgba(255,255,255,0.3); margin-bottom: 3px; border-radius: 2px;"></div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `
+            };
+            
+            return thumbnails[templateId] || `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <i class="dashicons dashicons-welcome-widgets-menus" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);"></i>
+                </div>
+            `;
+        },
+        
+        /**
+         * Show templates modal
+         */
+        showTemplatesModal: function() {
+            const self = this;
+            
+            // Define template categories and templates
+            const templateCategories = {
+                'pages': {
+                    title: 'Full Page Templates',
+                    icon: 'dashicons-welcome-widgets-menus',
+                    templates: [
+                        { id: 'page-landing', name: 'Landing Page', preview: 'Complete landing page with hero, features, pricing, and CTA' },
+                        { id: 'page-about', name: 'About Page', preview: 'Professional about page with team section and company info' },
+                        { id: 'page-services', name: 'Services Page', preview: 'Services showcase with pricing and contact form' },
+                        { id: 'page-portfolio', name: 'Portfolio Page', preview: 'Portfolio gallery with project showcase' },
+                        { id: 'page-shop', name: 'Shop Homepage', preview: 'E-commerce homepage with products and promotions' },
+                        { id: 'page-blog', name: 'Blog Homepage', preview: 'Blog layout with featured posts and sidebar' }
+                    ]
+                },
+                'hero': {
+                    title: 'Hero Sections',
+                    icon: 'dashicons-welcome-view-site',
+                    templates: [
+                        { id: 'hero-1', name: 'Hero with Image', preview: 'Hero section with large background image and CTA' },
+                        { id: 'hero-2', name: 'Hero Centered', preview: 'Centered hero with text and button' },
+                        { id: 'hero-3', name: 'Hero Split', preview: 'Split layout with image and content' }
+                    ]
+                },
+                'features': {
+                    title: 'Features',
+                    icon: 'dashicons-star-filled',
+                    templates: [
+                        { id: 'features-1', name: '3 Column Features', preview: 'Three column feature grid' },
+                        { id: 'features-2', name: 'Icon Features', preview: 'Features with large icons' },
+                        { id: 'features-3', name: 'Feature List', preview: 'List style features' }
+                    ]
+                },
+                'pricing': {
+                    title: 'Pricing Tables',
+                    icon: 'dashicons-cart',
+                    templates: [
+                        { id: 'pricing-1', name: '3 Pricing Plans', preview: 'Three pricing tables' },
+                        { id: 'pricing-2', name: 'Comparison Table', preview: 'Detailed comparison pricing' }
+                    ]
+                },
+                'testimonials': {
+                    title: 'Testimonials',
+                    icon: 'dashicons-format-quote',
+                    templates: [
+                        { id: 'testimonial-1', name: 'Testimonial Carousel', preview: 'Sliding testimonials' },
+                        { id: 'testimonial-2', name: 'Testimonial Grid', preview: 'Grid layout testimonials' }
+                    ]
+                },
+                'cta': {
+                    title: 'Call to Action',
+                    icon: 'dashicons-megaphone',
+                    templates: [
+                        { id: 'cta-1', name: 'Simple CTA', preview: 'Clean call to action' },
+                        { id: 'cta-2', name: 'CTA with Form', preview: 'CTA with newsletter signup' }
+                    ]
+                },
+                'team': {
+                    title: 'Team Sections',
+                    icon: 'dashicons-groups',
+                    templates: [
+                        { id: 'team-1', name: 'Team Grid', preview: '4 column team members' },
+                        { id: 'team-2', name: 'Team Cards', preview: 'Card style team display' }
+                    ]
+                },
+                'gallery': {
+                    title: 'Galleries',
+                    icon: 'dashicons-format-gallery',
+                    templates: [
+                        { id: 'gallery-1', name: 'Photo Gallery', preview: 'Masonry photo gallery' },
+                        { id: 'gallery-2', name: 'Portfolio Grid', preview: 'Portfolio style gallery' }
+                    ]
+                },
+                'contact': {
+                    title: 'Contact Sections',
+                    icon: 'dashicons-email',
+                    templates: [
+                        { id: 'contact-1', name: 'Contact Form', preview: 'Simple contact section' },
+                        { id: 'contact-2', name: 'Contact with Map', preview: 'Contact form with map' }
+                    ]
+                },
+                'footer': {
+                    title: 'Footers',
+                    icon: 'dashicons-align-full-width',
+                    templates: [
+                        { id: 'footer-1', name: 'Simple Footer', preview: 'Clean footer with links' },
+                        { id: 'footer-2', name: 'Footer with Widgets', preview: 'Multi-column footer' }
+                    ]
+                }
+            };
+            
+            // Build modal HTML
+            let modalHTML = `
+                <div class="probuilder-templates-modal-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.85);
+                    z-index: 999999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    backdrop-filter: blur(3px);
+                ">
+                    <div class="probuilder-templates-modal" style="
+                        background: #ffffff;
+                        border-radius: 12px;
+                        width: 95%;
+                        max-width: 1200px;
+                        max-height: 90vh;
+                        display: flex;
+                        flex-direction: column;
+                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+                        overflow: hidden;
+                    ">
+                        <!-- Header -->
+                        <div style="
+                            padding: 25px 30px;
+                            border-bottom: 1px solid #e6e9ec;
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            background: linear-gradient(135deg, #92003b 0%, #d5006d 100%);
+                        ">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="dashicons dashicons-layout" style="color: #ffffff; font-size: 32px;"></i>
+                                <div>
+                                    <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">Template Library</h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.8);">Choose a pre-designed template to get started quickly</p>
+                                </div>
+                            </div>
+                            <button class="probuilder-templates-close" style="
+                                background: rgba(255, 255, 255, 0.2);
+                                border: none;
+                                color: #ffffff;
+                                width: 36px;
+                                height: 36px;
+                                border-radius: 50%;
+                                cursor: pointer;
+                                font-size: 24px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                transition: all 0.2s;
+                            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+                        </div>
+                        
+                        <!-- Search Box -->
+                        <div style="padding: 20px 30px; border-bottom: 1px solid #e6e9ec; background: white;">
+                            <div style="position: relative;">
+                                <i class="dashicons dashicons-search" style="
+                                    position: absolute;
+                                    left: 12px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    color: #71717a;
+                                    font-size: 18px;
+                                "></i>
+                                <input type="text" id="template-search" placeholder="Search templates..." style="
+                                    width: 100%;
+                                    padding: 12px 12px 12px 40px;
+                                    border: 2px solid #e6e9ec;
+                                    border-radius: 6px;
+                                    font-size: 14px;
+                                    color: #1e293b;
+                                    transition: all 0.2s;
+                                    outline: none;
+                                " onfocus="this.style.borderColor='#92003b'; this.style.boxShadow='0 0 0 3px rgba(146, 0, 59, 0.1)'" onblur="this.style.borderColor='#e6e9ec'; this.style.boxShadow='none'">
+                            </div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div id="templates-content" style="
+                            flex: 1;
+                            overflow-y: auto;
+                            padding: 30px;
+                            background: #f8f9fa;
+                        ">
+            `;
+            
+            // Add each category
+            Object.keys(templateCategories).forEach(categoryKey => {
+                const category = templateCategories[categoryKey];
+                
+                modalHTML += `
+                    <div class="template-category" style="margin-bottom: 40px;">
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            margin-bottom: 20px;
+                            padding-bottom: 12px;
+                            border-bottom: 2px solid #92003b;
+                        ">
+                            <i class="dashicons ${category.icon}" style="font-size: 24px; color: #92003b;"></i>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">${category.title}</h3>
+                            <span style="
+                                background: #92003b;
+                                color: #ffffff;
+                                padding: 2px 10px;
+                                border-radius: 12px;
+                                font-size: 11px;
+                                font-weight: 600;
+                            ">${category.templates.length}</span>
+                        </div>
+                        
+                        <div style="
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                            gap: 20px;
+                        ">
+                `;
+                
+                // Add templates
+                category.templates.forEach(template => {
+                    const thumbnail = self.generateTemplateThumbnail(template.id);
+                    
+                    modalHTML += `
+                        <div class="template-card" data-template-id="${template.id}" data-template-name="${template.name.toLowerCase()}" data-template-category="${category.title.toLowerCase()}" data-template-preview="${template.preview.toLowerCase()}" style="
+                            background: #ffffff;
+                            border: 2px solid #e6e9ec;
+                            border-radius: 8px;
+                            overflow: hidden;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                        " onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='#92003b'; this.style.boxShadow='0 8px 20px rgba(146, 0, 59, 0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='#e6e9ec'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)'">
+                            <!-- Preview Thumbnail -->
+                            <div style="
+                                height: 160px;
+                                position: relative;
+                                overflow: hidden;
+                                border-bottom: 1px solid #e6e9ec;
+                            ">
+                                ${thumbnail}
+                                <div style="
+                                    position: absolute;
+                                    top: 10px;
+                                    right: 10px;
+                                    background: rgba(146, 0, 59, 0.95);
+                                    color: #ffffff;
+                                    padding: 4px 10px;
+                                    border-radius: 4px;
+                                    font-size: 10px;
+                                    font-weight: 700;
+                                    text-transform: uppercase;
+                                ">PRO</div>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div style="padding: 15px;">
+                                <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1e293b;">${template.name}</h4>
+                                <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; line-height: 1.5;">${template.preview}</p>
+                                <button style="
+                                    width: 100%;
+                                    background: #92003b;
+                                    color: #ffffff;
+                                    border: none;
+                                    padding: 8px 16px;
+                                    border-radius: 4px;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    gap: 6px;
+                                " onmouseover="this.style.background='#d5006d'" onmouseout="this.style.background='#92003b'">
+                                    <i class="dashicons dashicons-download" style="font-size: 16px;"></i>
+                                    Insert Template
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                modalHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modalHTML += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add to body
+            $('body').append(modalHTML);
+            
+            // Bind close button
+            $('.probuilder-templates-close, .probuilder-templates-modal-overlay').on('click', function(e) {
+                if (e.target === this) {
+                    $('.probuilder-templates-modal-overlay').remove();
+                }
+            });
+            
+            // Bind search functionality
+            $('#template-search').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    // Show all templates and categories
+                    $('.template-card').show();
+                    $('.template-category').show();
+                } else {
+                    // Hide all first
+                    $('.template-card').hide();
+                    
+                    // Show matching templates
+                    $('.template-card').each(function() {
+                        const $card = $(this);
+                        const name = $card.data('template-name') || '';
+                        const category = $card.data('template-category') || '';
+                        const preview = $card.data('template-preview') || '';
+                        
+                        if (name.includes(searchTerm) || category.includes(searchTerm) || preview.includes(searchTerm)) {
+                            $card.show();
+                        }
+                    });
+                    
+                    // Hide categories with no visible templates
+                    $('.template-category').each(function() {
+                        const $category = $(this);
+                        const visibleCards = $category.find('.template-card:visible').length;
+                        
+                        if (visibleCards > 0) {
+                            $category.show();
+                        } else {
+                            $category.hide();
+                        }
+                    });
+                }
+            });
+            
+            // Bind template card clicks
+            $('.template-card').on('click', function() {
+                const templateId = $(this).data('template-id');
+                console.log('Template selected:', templateId);
+                
+                // Close modal
+                $('.probuilder-templates-modal-overlay').remove();
+                
+                // Import template
+                self.importTemplate(templateId);
+            });
+        },
+        
+        /**
+         * Import template data
+         */
+        importTemplate: function(templateId) {
+            const templateData = this.getTemplateData(templateId);
+            
+            if (!templateData || templateData.length === 0) {
+                alert('Template data not found for: ' + templateId);
+                return;
+            }
+            
+            console.log('Importing template:', templateId, 'with', templateData.length, 'elements');
+            
+            // Add each element from template
+            templateData.forEach((elementData, index) => {
+                setTimeout(() => {
+                    const widget = this.widgets.find(w => w.name === elementData.widgetType);
+                    if (widget) {
+                        const element = {
+                            id: 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                            widgetType: elementData.widgetType,
+                            settings: Object.assign({}, this.getDefaultSettings(widget), elementData.settings || {}),
+                            children: elementData.children || []
+                        };
+                        
+                        this.elements.push(element);
+                        this.renderElement(element);
+                    }
+                }, index * 50); // Slight delay for smooth rendering
+            });
+            
+            // Update empty state after all elements added
+            setTimeout(() => {
+                this.updateEmptyState();
+                this.makeContainersDroppable();
+                
+                // Select first element
+                if (this.elements.length > 0) {
+                    setTimeout(() => {
+                        this.selectElement(this.elements[this.elements.length - templateData.length]);
+                    }, 100);
+                }
+                
+                console.log('✅ Template imported successfully!');
+            }, templateData.length * 50 + 100);
+        },
+        
+        /**
+         * Get template data
+         */
+        getTemplateData: function(templateId) {
+            const templates = {
+                // Hero Templates
+                'hero-1': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'gradient',
+                            background_gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            min_height: 500,
+                            padding: { top: 80, right: 40, bottom: 80, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Build Amazing Websites',
+                                    html_tag: 'h1',
+                                    font_size: 48,
+                                    color: '#ffffff',
+                                    align: 'center',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Create beautiful, professional websites with our powerful page builder. No coding required.',
+                                    color: '#ffffff',
+                                    font_size: 18,
+                                    text_align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'button',
+                                settings: {
+                                    text: 'Get Started',
+                                    align: 'center',
+                                    size: 'large',
+                                    bg_color: '#ffffff',
+                                    text_color: '#667eea'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'hero-2': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'color',
+                            background_color: '#1e293b',
+                            min_height: 450,
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Welcome to Our Platform',
+                                    html_tag: 'h1',
+                                    font_size: 42,
+                                    color: '#ffffff',
+                                    align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Discover the best solution for your business needs.',
+                                    color: '#cbd5e1',
+                                    font_size: 16,
+                                    text_align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'button',
+                                settings: {
+                                    text: 'Learn More',
+                                    align: 'center',
+                                    bg_color: '#92003b'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'features-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Our Features',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 40, right: 20, bottom: 40, left: 20 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-rocket',
+                                    title: 'Fast Performance',
+                                    description: 'Lightning-fast load times and optimized performance.'
+                                }
+                            },
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-shield',
+                                    title: 'Secure & Safe',
+                                    description: 'Enterprise-level security to protect your data.'
+                                }
+                            },
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-heart',
+                                    title: 'Easy to Use',
+                                    description: 'Intuitive interface that anyone can master.'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'pricing-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Choose Your Plan',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 25,
+                            background_color: '#f8f9fa',
+                            padding: { top: 50, right: 30, bottom: 50, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Basic',
+                                    price: '9',
+                                    period: 'per month',
+                                    features: [
+                                        { text: '10 GB Storage' },
+                                        { text: '5 Users' },
+                                        { text: 'Email Support' }
+                                    ],
+                                    button_text: 'Get Started'
+                                }
+                            },
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Pro',
+                                    price: '29',
+                                    period: 'per month',
+                                    featured: 'yes',
+                                    features: [
+                                        { text: '100 GB Storage' },
+                                        { text: 'Unlimited Users' },
+                                        { text: 'Priority Support' },
+                                        { text: 'Advanced Features' }
+                                    ],
+                                    button_text: 'Get Started'
+                                }
+                            },
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Enterprise',
+                                    price: '99',
+                                    period: 'per month',
+                                    features: [
+                                        { text: 'Unlimited Storage' },
+                                        { text: 'Unlimited Users' },
+                                        { text: '24/7 Support' },
+                                        { text: 'Custom Solutions' }
+                                    ],
+                                    button_text: 'Contact Sales'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'page-landing': [
+                    // Hero Section
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'gradient',
+                            background_gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            min_height: 600,
+                            padding: { top: 100, right: 40, bottom: 100, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Build Your Dream Website Today',
+                                    html_tag: 'h1',
+                                    font_size: 56,
+                                    color: '#ffffff',
+                                    align: 'center',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'The easiest way to create professional, stunning websites without any coding knowledge. Start building in minutes!',
+                                    color: '#ffffff',
+                                    font_size: 20,
+                                    text_align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'spacer',
+                                settings: { height: 30 }
+                            },
+                            {
+                                widgetType: 'button',
+                                settings: {
+                                    text: 'Start Free Trial',
+                                    align: 'center',
+                                    size: 'large',
+                                    bg_color: '#ffffff',
+                                    text_color: '#667eea'
+                                }
+                            }
+                        ]
+                    },
+                    // Features Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Powerful Features',
+                            html_tag: 'h2',
+                            font_size: 42,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: 'Everything you need to build amazing websites',
+                            font_size: 18,
+                            text_align: 'center',
+                            color: '#64748b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-rocket',
+                                    title: 'Lightning Fast',
+                                    description: 'Build pages at incredible speed with our intuitive drag-and-drop interface',
+                                    icon_size: 48,
+                                    icon_color: '#667eea'
+                                }
+                            },
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-paint-brush',
+                                    title: 'Beautiful Designs',
+                                    description: 'Access hundreds of pre-made templates and design elements',
+                                    icon_size: 48,
+                                    icon_color: '#667eea'
+                                }
+                            },
+                            {
+                                widgetType: 'icon-box',
+                                settings: {
+                                    icon: 'fa fa-mobile',
+                                    title: 'Mobile Ready',
+                                    description: 'Fully responsive designs that look perfect on all devices',
+                                    icon_size: 48,
+                                    icon_color: '#667eea'
+                                }
+                            }
+                        ]
+                    },
+                    // Stats Counter
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 30,
+                            background_color: '#f8f9fa',
+                            padding: { top: 60, right: 30, bottom: 60, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '10000',
+                                    title: 'Happy Customers',
+                                    suffix: '+'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '50000',
+                                    title: 'Websites Created',
+                                    suffix: '+'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '99',
+                                    title: 'Satisfaction Rate',
+                                    suffix: '%'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '24',
+                                    title: 'Support Available',
+                                    suffix: '/7'
+                                }
+                            }
+                        ]
+                    },
+                    // Pricing Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Choose Your Plan',
+                            html_tag: 'h2',
+                            font_size: 42,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: 'Select the perfect plan for your needs',
+                            font_size: 18,
+                            text_align: 'center',
+                            color: '#64748b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Starter',
+                                    price: '0',
+                                    period: 'forever',
+                                    features: [
+                                        { text: '5 Pages' },
+                                        { text: 'Basic Templates' },
+                                        { text: 'Email Support' }
+                                    ],
+                                    button_text: 'Get Started Free'
+                                }
+                            },
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Professional',
+                                    price: '29',
+                                    period: 'per month',
+                                    featured: 'yes',
+                                    features: [
+                                        { text: 'Unlimited Pages' },
+                                        { text: 'All Templates' },
+                                        { text: 'Priority Support' },
+                                        { text: 'Advanced Widgets' }
+                                    ],
+                                    button_text: 'Start Free Trial'
+                                }
+                            },
+                            {
+                                widgetType: 'pricing-table',
+                                settings: {
+                                    title: 'Agency',
+                                    price: '99',
+                                    period: 'per month',
+                                    features: [
+                                        { text: 'Everything in Pro' },
+                                        { text: 'White Label' },
+                                        { text: '24/7 Support' },
+                                        { text: 'Client Management' }
+                                    ],
+                                    button_text: 'Contact Sales'
+                                }
+                            }
+                        ]
+                    },
+                    // Testimonials
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'What Our Customers Say',
+                            html_tag: 'h2',
+                            font_size: 42,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'testimonial',
+                                settings: {
+                                    name: 'Sarah Johnson',
+                                    position: 'CEO, TechCorp',
+                                    content: 'This page builder has completely transformed our workflow. We can now create stunning websites in a fraction of the time!',
+                                    rating: 5
+                                }
+                            },
+                            {
+                                widgetType: 'testimonial',
+                                settings: {
+                                    name: 'Michael Chen',
+                                    position: 'Designer',
+                                    content: 'The design flexibility is incredible. I can bring any vision to life without touching code.',
+                                    rating: 5
+                                }
+                            },
+                            {
+                                widgetType: 'testimonial',
+                                settings: {
+                                    name: 'Emily Davis',
+                                    position: 'Marketing Director',
+                                    content: 'Our conversion rates increased by 40% after redesigning our landing pages with this tool!',
+                                    rating: 5
+                                }
+                            }
+                        ]
+                    },
+                    // Final CTA
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'call-to-action',
+                        settings: {
+                            title: 'Ready to Transform Your Website?',
+                            description: 'Join over 10,000 businesses creating stunning websites with our page builder',
+                            button_text: 'Start Building Now',
+                            bg_color: '#92003b'
+                        }
+                    }
+                ],
+                
+                'page-about': [
+                    // Hero/Title
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#f8f9fa',
+                            min_height: 250,
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'About Our Company',
+                                    html_tag: 'h1',
+                                    font_size: 48,
+                                    align: 'center',
+                                    color: '#1e293b'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Building the future of web design, one page at a time',
+                                    font_size: 18,
+                                    text_align: 'center',
+                                    color: '#64748b'
+                                }
+                            }
+                        ]
+                    },
+                    // Story Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '2',
+                            column_gap: 50,
+                            padding: { top: 20, right: 40, bottom: 20, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'image',
+                                settings: {
+                                    url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600',
+                                    align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'container',
+                                settings: {
+                                    columns: '1'
+                                },
+                                children: [
+                                    {
+                                        widgetType: 'heading',
+                                        settings: {
+                                            title: 'Our Story',
+                                            html_tag: 'h2',
+                                            font_size: 36,
+                                            color: '#1e293b'
+                                        }
+                                    },
+                                    {
+                                        widgetType: 'text',
+                                        settings: {
+                                            content: '<p>Founded in 2020, we started with a simple mission: make professional web design accessible to everyone.</p><p>Today, we serve over 10,000 customers worldwide, helping them create stunning websites without writing a single line of code.</p><p>Our team is passionate about innovation, design excellence, and customer success.</p>'
+                                        }
+                                    },
+                                    {
+                                        widgetType: 'button',
+                                        settings: {
+                                            text: 'Learn More',
+                                            bg_color: '#92003b'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    // Values Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Our Core Values',
+                            html_tag: 'h2',
+                            font_size: 38,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-lightbulb',
+                                    title: 'Innovation',
+                                    description: 'We constantly push boundaries to deliver cutting-edge solutions',
+                                    layout: 'vertical',
+                                    icon_size: 80
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-users',
+                                    title: 'Customer First',
+                                    description: 'Your success is our success. We put customers at the heart of everything',
+                                    layout: 'vertical',
+                                    icon_size: 80
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-star',
+                                    title: 'Excellence',
+                                    description: 'We strive for perfection in every detail of our products',
+                                    layout: 'vertical',
+                                    icon_size: 80
+                                }
+                            }
+                        ]
+                    },
+                    // Team Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Meet Our Team',
+                            html_tag: 'h2',
+                            font_size: 38,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: 'The talented people behind our success',
+                            font_size: 16,
+                            text_align: 'center',
+                            color: '#64748b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 25,
+                            padding: { top: 20, right: 20, bottom: 20, left: 20 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'John Smith',
+                                    position: 'CEO & Founder',
+                                    layout: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'Sarah Johnson',
+                                    position: 'CTO',
+                                    layout: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'Mike Davis',
+                                    position: 'Head of Design',
+                                    layout: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'Lisa Chen',
+                                    position: 'Lead Developer',
+                                    layout: 'center'
+                                }
+                            }
+                        ]
+                    },
+                    // Stats
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 30,
+                            background_color: '#1e293b',
+                            padding: { top: 60, right: 30, bottom: 60, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '5',
+                                    title: 'Years in Business',
+                                    suffix: '+',
+                                    number_color: '#ffffff',
+                                    title_color: '#cbd5e1'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '150',
+                                    title: 'Team Members',
+                                    suffix: '+',
+                                    number_color: '#ffffff',
+                                    title_color: '#cbd5e1'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '1000',
+                                    title: 'Projects Completed',
+                                    suffix: '+',
+                                    number_color: '#ffffff',
+                                    title_color: '#cbd5e1'
+                                }
+                            },
+                            {
+                                widgetType: 'counter',
+                                settings: {
+                                    number: '50',
+                                    title: 'Countries',
+                                    suffix: '+',
+                                    number_color: '#ffffff',
+                                    title_color: '#cbd5e1'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'page-services': [
+                    // Hero
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'gradient',
+                            background_gradient: 'linear-gradient(135deg, #92003b 0%, #d5006d 100%)',
+                            min_height: 400,
+                            padding: { top: 80, right: 40, bottom: 80, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Our Services',
+                                    html_tag: 'h1',
+                                    font_size: 52,
+                                    color: '#ffffff',
+                                    align: 'center',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Professional solutions tailored to your business needs',
+                                    color: '#ffffff',
+                                    font_size: 20,
+                                    text_align: 'center'
+                                }
+                            }
+                        ]
+                    },
+                    // Services Grid
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'What We Offer',
+                            html_tag: 'h2',
+                            font_size: 38,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-code',
+                                    title: 'Web Development',
+                                    description: 'Custom website development using the latest technologies and best practices',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-paint-brush',
+                                    title: 'UI/UX Design',
+                                    description: 'Beautiful, user-friendly interface designs that convert visitors',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-chart-line',
+                                    title: 'Digital Marketing',
+                                    description: 'Grow your business with data-driven marketing strategies',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            }
+                        ]
+                    },
+                    // Second Row of Services
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 30 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-search',
+                                    title: 'SEO Optimization',
+                                    description: 'Rank higher on search engines and drive organic traffic',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-shield',
+                                    title: 'Security & Maintenance',
+                                    description: 'Keep your website secure and running smoothly 24/7',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'icon',
+                                    icon: 'fa fa-headset',
+                                    title: 'Support & Training',
+                                    description: 'Expert support and comprehensive training for your team',
+                                    button_text: 'Learn More',
+                                    layout: 'vertical',
+                                    icon_size: 70
+                                }
+                            }
+                        ]
+                    },
+                    // Process Section
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#f8f9fa',
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Our Process',
+                                    html_tag: 'h2',
+                                    font_size: 38,
+                                    align: 'center',
+                                    color: '#1e293b'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Simple, streamlined, and effective',
+                                    font_size: 16,
+                                    text_align: 'center',
+                                    color: '#64748b'
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 25,
+                            background_color: '#f8f9fa',
+                            padding: { top: 20, right: 30, bottom: 40, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'number',
+                                    number: '01',
+                                    title: 'Consultation',
+                                    description: 'We discuss your goals and requirements',
+                                    layout: 'vertical'
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'number',
+                                    number: '02',
+                                    title: 'Planning',
+                                    description: 'We create a detailed project roadmap',
+                                    layout: 'vertical'
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'number',
+                                    number: '03',
+                                    title: 'Development',
+                                    description: 'We bring your vision to life',
+                                    layout: 'vertical'
+                                }
+                            },
+                            {
+                                widgetType: 'info-box',
+                                settings: {
+                                    icon_type: 'number',
+                                    number: '04',
+                                    title: 'Launch',
+                                    description: 'We deploy and support your project',
+                                    layout: 'vertical'
+                                }
+                            }
+                        ]
+                    },
+                    // CTA
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'call-to-action',
+                        settings: {
+                            title: 'Ready to Start Your Project?',
+                            description: 'Contact us today for a free consultation',
+                            button_text: 'Get in Touch',
+                            bg_color: '#667eea'
+                        }
+                    }
+                ],
+                
+                'page-portfolio': [
+                    // Hero
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#0f172a',
+                            min_height: 300,
+                            padding: { top: 70, right: 40, bottom: 70, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Our Portfolio',
+                                    html_tag: 'h1',
+                                    font_size: 52,
+                                    align: 'center',
+                                    color: '#ffffff',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Explore our latest creative projects and success stories',
+                                    font_size: 18,
+                                    text_align: 'center',
+                                    color: '#cbd5e1'
+                                }
+                            }
+                        ]
+                    },
+                    // Categories
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: '<p style="text-align: center; font-size: 14px; color: #64748b; margin: 0;"><strong style="color: #92003b;">Filter:</strong> <a href="#" style="margin: 0 10px;">All</a> | <a href="#" style="margin: 0 10px;">Web Design</a> | <a href="#" style="margin: 0 10px;">Branding</a> | <a href="#" style="margin: 0 10px;">Mobile Apps</a></p>'
+                        }
+                    },
+                    // Gallery
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'gallery',
+                        settings: {
+                            columns: '3',
+                            gap: 20
+                        }
+                    },
+                    // Client Logos
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Trusted By Leading Brands',
+                            html_tag: 'h2',
+                            font_size: 32,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 30 }
+                    },
+                    {
+                        widgetType: 'logo-grid',
+                        settings: {
+                            columns: '6'
+                        }
+                    },
+                    // CTA
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'call-to-action',
+                        settings: {
+                            title: 'Have a Project in Mind?',
+                            description: 'Let\'s work together to bring your vision to life',
+                            button_text: 'Start a Project',
+                            bg_color: '#1e293b'
+                        }
+                    }
+                ],
+                
+                'page-shop': [
+                    // Hero Banner
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'gradient',
+                            background_gradient: 'linear-gradient(135deg, #92003b 0%, #d5006d 100%)',
+                            min_height: 350,
+                            padding: { top: 70, right: 40, bottom: 70, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Shop Our Collection',
+                                    html_tag: 'h1',
+                                    font_size: 52,
+                                    color: '#ffffff',
+                                    align: 'center',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Premium quality products at amazing prices',
+                                    color: '#ffffff',
+                                    font_size: 20,
+                                    text_align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'spacer',
+                                settings: { height: 20 }
+                            },
+                            {
+                                widgetType: 'button',
+                                settings: {
+                                    text: 'Shop Now',
+                                    align: 'center',
+                                    size: 'large',
+                                    bg_color: '#ffffff',
+                                    text_color: '#92003b'
+                                }
+                            }
+                        ]
+                    },
+                    // Featured Categories
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Shop by Category',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 30 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 20,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Electronics',
+                                    description: 'Latest gadgets',
+                                    button_text: 'Browse'
+                                }
+                            },
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Fashion',
+                                    description: 'Trending styles',
+                                    button_text: 'Browse'
+                                }
+                            },
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Home & Living',
+                                    description: 'Decor items',
+                                    button_text: 'Browse'
+                                }
+                            },
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Sports',
+                                    description: 'Fitness gear',
+                                    button_text: 'Browse'
+                                }
+                            }
+                        ]
+                    },
+                    // Featured Products
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 60 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Featured Products',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 30 }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: '<p style="text-align: center; color: #64748b;">This section would display WooCommerce products. Install WooCommerce to show your products here.</p>'
+                        }
+                    },
+                    // Newsletter
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#f8f9fa',
+                            padding: { top: 50, right: 40, bottom: 50, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Get Exclusive Deals',
+                                    html_tag: 'h2',
+                                    font_size: 32,
+                                    align: 'center',
+                                    color: '#1e293b'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Subscribe to our newsletter for special offers and updates',
+                                    font_size: 16,
+                                    text_align: 'center',
+                                    color: '#64748b'
+                                }
+                            },
+                            {
+                                widgetType: 'spacer',
+                                settings: { height: 20 }
+                            },
+                            {
+                                widgetType: 'newsletter',
+                                settings: {
+                                    placeholder: 'Enter your email address',
+                                    button_text: 'Subscribe'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'page-blog': [
+                    // Hero
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#f8f9fa',
+                            min_height: 250,
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Our Blog',
+                                    html_tag: 'h1',
+                                    font_size: 52,
+                                    align: 'center',
+                                    color: '#1e293b',
+                                    font_weight: 700
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Insights, tips, and stories from our team',
+                                    font_size: 18,
+                                    text_align: 'center',
+                                    color: '#64748b'
+                                }
+                            }
+                        ]
+                    },
+                    // Categories
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: '<p style="text-align: center; font-size: 14px; color: #64748b;"><strong style="color: #92003b;">Categories:</strong> <a href="#" style="margin: 0 8px;">All</a> | <a href="#" style="margin: 0 8px;">Design</a> | <a href="#" style="margin: 0 8px;">Development</a> | <a href="#" style="margin: 0 8px;">Marketing</a> | <a href="#" style="margin: 0 8px;">Business</a></p>'
+                        }
+                    },
+                    // Featured Post
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 50 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Featured Article',
+                            html_tag: 'h2',
+                            font_size: 28,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 20 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            padding: { top: 20, right: 40, bottom: 20, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'image',
+                                settings: {
+                                    url: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200',
+                                    align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: '10 Tips for Better Web Design',
+                                    html_tag: 'h3',
+                                    font_size: 32,
+                                    color: '#1e293b'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<p>Discover the essential principles and best practices that will take your web design skills to the next level. From typography to color theory, we cover everything you need to know.</p>'
+                                }
+                            },
+                            {
+                                widgetType: 'button',
+                                settings: {
+                                    text: 'Read More',
+                                    bg_color: '#92003b'
+                                }
+                            }
+                        ]
+                    },
+                    // Recent Posts
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Recent Posts',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center',
+                            color: '#1e293b'
+                        }
+                    },
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 40 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            padding: { top: 20, right: 30, bottom: 20, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Getting Started with ProBuilder',
+                                    description: 'A complete guide for beginners',
+                                    button_text: 'Read Article'
+                                }
+                            },
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Advanced Design Techniques',
+                                    description: 'Pro tips and tricks',
+                                    button_text: 'Read Article'
+                                }
+                            },
+                            {
+                                widgetType: 'image-box',
+                                settings: {
+                                    title: 'Performance Optimization',
+                                    description: 'Speed up your website',
+                                    button_text: 'Read Article'
+                                }
+                            }
+                        ]
+                    },
+                    // Newsletter
+                    {
+                        widgetType: 'spacer',
+                        settings: { height: 80 }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_color: '#92003b',
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Never Miss an Update',
+                                    html_tag: 'h2',
+                                    font_size: 36,
+                                    align: 'center',
+                                    color: '#ffffff'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: 'Get the latest articles delivered to your inbox',
+                                    font_size: 16,
+                                    text_align: 'center',
+                                    color: '#ffffff'
+                                }
+                            },
+                            {
+                                widgetType: 'spacer',
+                                settings: { height: 20 }
+                            },
+                            {
+                                widgetType: 'newsletter',
+                                settings: {
+                                    placeholder: 'Your email address',
+                                    button_text: 'Subscribe Now'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'hero-3': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '2',
+                            column_gap: 40,
+                            padding: { top: 60, right: 40, bottom: 60, left: 40 },
+                            min_height: 450
+                        },
+                        children: [
+                            {
+                                widgetType: 'image',
+                                settings: {
+                                    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600',
+                                    align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'container',
+                                settings: {
+                                    columns: '1'
+                                },
+                                children: [
+                                    {
+                                        widgetType: 'heading',
+                                        settings: {
+                                            title: 'Innovative Solutions',
+                                            html_tag: 'h2',
+                                            font_size: 38
+                                        }
+                                    },
+                                    {
+                                        widgetType: 'text',
+                                        settings: {
+                                            content: 'We provide cutting-edge technology solutions that help your business grow and succeed in the digital age.'
+                                        }
+                                    },
+                                    {
+                                        widgetType: 'button',
+                                        settings: {
+                                            text: 'Learn More',
+                                            bg_color: '#92003b'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                
+                'features-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Why Choose Us',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'feature-list',
+                        settings: {
+                            features: [
+                                { icon: 'fa fa-check-circle', title: 'Premium Quality', description: 'Top-notch products and services' },
+                                { icon: 'fa fa-check-circle', title: '24/7 Support', description: 'Always here when you need us' },
+                                { icon: 'fa fa-check-circle', title: 'Money Back Guarantee', description: '30-day refund policy' }
+                            ]
+                        }
+                    }
+                ],
+                
+                'features-3': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Key Features',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'icon-list',
+                        settings: {
+                            items: [
+                                { text: 'Drag & Drop Builder' },
+                                { text: 'Mobile Responsive' },
+                                { text: 'SEO Optimized' },
+                                { text: 'Fast Loading' },
+                                { text: 'Regular Updates' }
+                            ]
+                        }
+                    }
+                ],
+                
+                'testimonial-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'What Our Customers Say',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'testimonial',
+                        settings: {
+                            name: 'Jane Cooper',
+                            position: 'CEO, TechCorp',
+                            content: 'This page builder has transformed how we create websites. It\'s intuitive, powerful, and saves us countless hours.',
+                            rating: 5
+                        }
+                    }
+                ],
+                
+                'testimonial-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Client Testimonials',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '2',
+                            column_gap: 30,
+                            padding: { top: 40, right: 20, bottom: 40, left: 20 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'testimonial',
+                                settings: {
+                                    name: 'Robert Fox',
+                                    position: 'Marketing Director',
+                                    content: 'Outstanding tool! Easy to use and produces amazing results.',
+                                    rating: 5
+                                }
+                            },
+                            {
+                                widgetType: 'testimonial',
+                                settings: {
+                                    name: 'Emily Watson',
+                                    position: 'Designer',
+                                    content: 'Love the flexibility and design options. Highly recommended!',
+                                    rating: 5
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'cta-1': [
+                    {
+                        widgetType: 'call-to-action',
+                        settings: {
+                            title: 'Start Building Today',
+                            description: 'Join over 10,000 users creating amazing websites',
+                            button_text: 'Get Started Now',
+                            bg_color: '#92003b'
+                        }
+                    }
+                ],
+                
+                'cta-2': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '1',
+                            background_type: 'color',
+                            background_color: '#1e293b',
+                            padding: { top: 50, right: 40, bottom: 50, left: 40 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'heading',
+                                settings: {
+                                    title: 'Subscribe to Our Newsletter',
+                                    html_tag: 'h2',
+                                    font_size: 32,
+                                    color: '#ffffff',
+                                    align: 'center'
+                                }
+                            },
+                            {
+                                widgetType: 'newsletter',
+                                settings: {
+                                    placeholder: 'Enter your email',
+                                    button_text: 'Subscribe'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'team-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Our Team',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 25,
+                            padding: { top: 40, right: 20, bottom: 40, left: 20 }
+                        },
+                        children: [
+                            { widgetType: 'team-member', settings: { name: 'Alex Morgan', position: 'CEO', layout: 'center' } },
+                            { widgetType: 'team-member', settings: { name: 'Sam Wilson', position: 'Designer', layout: 'center' } },
+                            { widgetType: 'team-member', settings: { name: 'Chris Lee', position: 'Developer', layout: 'center' } },
+                            { widgetType: 'team-member', settings: { name: 'Jordan Taylor', position: 'Marketer', layout: 'center' } }
+                        ]
+                    }
+                ],
+                
+                'team-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Meet the Team',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '2',
+                            column_gap: 30,
+                            padding: { top: 40, right: 30, bottom: 40, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'Jessica Brown',
+                                    position: 'Lead Designer',
+                                    bio: 'Creative designer with 10+ years of experience',
+                                    layout: 'left'
+                                }
+                            },
+                            {
+                                widgetType: 'team-member',
+                                settings: {
+                                    name: 'David Miller',
+                                    position: 'Senior Developer',
+                                    bio: 'Full-stack developer specializing in modern web apps',
+                                    layout: 'left'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'gallery-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Photo Gallery',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'gallery',
+                        settings: {
+                            columns: '3',
+                            gap: 15
+                        }
+                    }
+                ],
+                
+                'gallery-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Our Work',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'gallery',
+                        settings: {
+                            columns: '4',
+                            gap: 10
+                        }
+                    }
+                ],
+                
+                'contact-1': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Get in Touch',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'contact-form',
+                        settings: {
+                            show_labels: 'yes'
+                        }
+                    }
+                ],
+                
+                'contact-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Contact Us',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '2',
+                            column_gap: 40,
+                            padding: { top: 40, right: 30, bottom: 40, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'contact-form',
+                                settings: {
+                                    show_labels: 'yes'
+                                }
+                            },
+                            {
+                                widgetType: 'map',
+                                settings: {
+                                    address: 'New York, NY, USA',
+                                    height: 400
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'pricing-2': [
+                    {
+                        widgetType: 'heading',
+                        settings: {
+                            title: 'Pricing Comparison',
+                            html_tag: 'h2',
+                            font_size: 36,
+                            align: 'center'
+                        }
+                    },
+                    {
+                        widgetType: 'text',
+                        settings: {
+                            content: '<p style="text-align: center;">Detailed comparison of all our plans and features</p>'
+                        }
+                    }
+                ],
+                
+                'footer-1': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '3',
+                            column_gap: 30,
+                            background_color: '#1e293b',
+                            padding: { top: 50, right: 30, bottom: 30, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">About</h4><p style="color: #cbd5e1; font-size: 14px;">We create amazing websites.</p>',
+                                    color: '#ffffff'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Quick Links</h4><ul style="color: #cbd5e1; font-size: 14px;"><li>Home</li><li>Services</li><li>Contact</li></ul>',
+                                    color: '#ffffff'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Contact</h4><p style="color: #cbd5e1; font-size: 14px;">Email: info@example.com</p>',
+                                    color: '#ffffff'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                
+                'footer-2': [
+                    {
+                        widgetType: 'container',
+                        settings: {
+                            columns: '4',
+                            column_gap: 25,
+                            background_color: '#0f172a',
+                            padding: { top: 50, right: 30, bottom: 30, left: 30 }
+                        },
+                        children: [
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Company</h4><ul style="color: #94a3b8; font-size: 13px; list-style: none; padding: 0;"><li>About</li><li>Team</li><li>Careers</li></ul>'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Products</h4><ul style="color: #94a3b8; font-size: 13px; list-style: none; padding: 0;"><li>Features</li><li>Pricing</li><li>FAQ</li></ul>'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Resources</h4><ul style="color: #94a3b8; font-size: 13px; list-style: none; padding: 0;"><li>Blog</li><li>Docs</li><li>Support</li></ul>'
+                                }
+                            },
+                            {
+                                widgetType: 'text',
+                                settings: {
+                                    content: '<h4 style="color: white;">Legal</h4><ul style="color: #94a3b8; font-size: 13px; list-style: none; padding: 0;"><li>Privacy</li><li>Terms</li><li>Cookies</li></ul>'
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            return templates[templateId] || [];
         },
         
         /**

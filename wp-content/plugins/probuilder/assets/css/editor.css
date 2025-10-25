@@ -5,6 +5,18 @@
 /* Import Roboto Font */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap');
 
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.02);
+    }
+}
+
 /* Reset & Base */
 * {
     box-sizing: border-box;
@@ -556,7 +568,7 @@ body:not(.admin-bar) .probuilder-editor-main {
 /* Add Element Section - Always visible */
 .probuilder-add-element-section {
     text-align: center;
-    padding: 30px 0;
+    padding: 12px 0;
     opacity: 0.7;
     transition: opacity 0.2s;
 }
@@ -567,36 +579,38 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 .probuilder-add-element-btn {
     background: transparent;
-    border: 2px dashed #d4d4d8;
+    border: 1px dashed #d4d4d8;
     color: #71717a;
-    padding: 18px 35px;
-    border-radius: 4px;
+    padding: 6px 14px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.3px;
 }
 
 .probuilder-add-element-btn:hover {
     background: #fef1f6;
     border-color: #92003b;
     color: #92003b;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
 }
 
 .probuilder-add-element-btn .dashicons {
-    font-size: 20px;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
 }
 
 /* Add element between elements */
 .probuilder-add-section-between {
     text-align: center;
-    padding: 15px 0;
+    padding: 10px 0;
     opacity: 0;
     transition: opacity 0.2s;
     position: relative;
@@ -611,14 +625,14 @@ body:not(.admin-bar) .probuilder-editor-main {
     background: #ffffff;
     border: 1px solid #92003b;
     color: #92003b;
-    padding: 8px 20px;
-    border-radius: 20px;
+    padding: 6px 16px;
+    border-radius: 16px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     transition: all 0.2s;
 }
 
@@ -636,45 +650,45 @@ body:not(.admin-bar) .probuilder-editor-main {
     transform: translate(-50%, -50%);
     text-align: center;
     width: 100%;
-    max-width: 600px;
+    max-width: 400px;
     color: #a1a1aa;
 }
 
 .probuilder-empty-state .dashicons {
-    font-size: 120px;
-    width: 120px;
-    height: 120px;
+    font-size: 60px;
+    width: 60px;
+    height: 60px;
     opacity: 0.2;
     color: #92003b;
-    margin: 0 auto 30px;
+    margin: 0 auto 20px;
     display: block;
 }
 
 .probuilder-empty-state h3 {
-    font-size: 32px;
-    margin: 0 0 20px;
+    font-size: 20px;
+    margin: 0 0 12px;
     color: #1e293b;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
 }
 
 .probuilder-empty-state p {
-    font-size: 16px;
-    margin: 0 0 40px;
-    line-height: 1.6;
+    font-size: 13px;
+    margin: 0 0 25px;
+    line-height: 1.5;
     color: #64748b;
     padding: 0 20px;
 }
 
 .probuilder-empty-state .probuilder-btn {
-    font-size: 16px;
-    padding: 14px 32px;
-    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.2);
+    font-size: 13px;
+    padding: 10px 20px;
+    box-shadow: 0 2px 8px rgba(146, 0, 59, 0.15);
 }
 
 .probuilder-empty-state .probuilder-btn:hover {
-    box-shadow: 0 6px 20px rgba(146, 0, 59, 0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.25);
+    transform: translateY(-1px);
 }
 
 /* Elements - Elementor Style */
@@ -685,8 +699,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     transition: all 0.15s;
     position: relative;
     background: #ffffff;
-    cursor: move;
-    cursor: grab;
+    cursor: default;
 }
 
 .probuilder-element:hover {
@@ -713,7 +726,7 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-element:active {
-    cursor: grabbing;
+    cursor: default;
 }
 
 .probuilder-element.selected {
@@ -749,8 +762,7 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-element-drag {
-    cursor: move;
-    cursor: grab;
+    cursor: pointer;
     display: flex;
     align-items: center;
     padding: 4px 8px;
@@ -767,7 +779,7 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-element-drag:active {
-    cursor: grabbing;
+    cursor: pointer;
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -850,10 +862,66 @@ body:not(.admin-bar) .probuilder-editor-main {
     height: 14px;
 }
 
+/* Show edit button */
+.probuilder-element-actions .probuilder-element-edit {
+    display: flex;
+    background: #007cba;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.probuilder-element-actions .probuilder-element-edit:hover {
+    background: #0096dd;
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
 .probuilder-element-preview {
     padding: 0;
     background: #ffffff;
     min-height: 70px;
+}
+
+/* Add Below Button - Middle of bottom border */
+.probuilder-element-add-below {
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.probuilder-element:hover .probuilder-element-add-below {
+    opacity: 1;
+}
+
+.probuilder-add-below-btn {
+    background: #92003b;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(146, 0, 59, 0.3);
+}
+
+.probuilder-add-below-btn:hover {
+    background: #d5006d;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.5);
+}
+
+.probuilder-add-below-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
 }
 
 .probuilder-element-placeholder {

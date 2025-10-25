@@ -218,7 +218,7 @@
                 <!-- Add Element Button - Always visible between elements -->
                 <div class="probuilder-add-element-section" id="probuilder-add-bottom">
                     <button class="probuilder-add-element-btn" title="Add New Element">
-                        <i class="dashicons dashicons-plus-alt"></i>
+                        <i class="dashicons dashicons-plus-alt2"></i>
                         <span>Add Element</span>
                     </button>
                 </div>
@@ -226,11 +226,11 @@
             
             <!-- Empty State (shown when no elements) -->
             <div id="probuilder-empty-state" class="probuilder-empty-state">
-                <i class="dashicons dashicons-plus-alt"></i>
+                <i class="dashicons dashicons-welcome-add-page"></i>
                 <h3><?php esc_html_e('Start Building Your Page', 'probuilder'); ?></h3>
                 <p><?php esc_html_e('Drag widgets from the left panel or click below to add your first element', 'probuilder'); ?></p>
                 <button class="probuilder-btn probuilder-btn-primary" id="probuilder-add-first-element">
-                    <i class="dashicons dashicons-plus"></i>
+                    <i class="dashicons dashicons-plus-alt2"></i>
                     <?php esc_html_e('Add Element', 'probuilder'); ?>
                 </button>
             </div>

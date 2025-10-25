@@ -117,6 +117,77 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
             ],
         ]);
         
+        $this->add_control('enable_rows', [
+            'label' => __('Enable Multiple Rows', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'no',
+            'description' => __('Allow adding multiple rows to this container', 'probuilder'),
+        ]);
+        
+        $this->add_control('rows', [
+            'label' => __('Rows', 'probuilder'),
+            'type' => 'repeater',
+            'default' => [
+                [
+                    'row_columns' => '2',
+                    'row_columns_tablet' => '2',
+                    'row_columns_mobile' => '1',
+                    'row_gap' => 20,
+                ],
+            ],
+            'fields' => [
+                [
+                    'name' => 'row_columns',
+                    'label' => __('Columns (Desktop)', 'probuilder'),
+                    'type' => 'select',
+                    'default' => '2',
+                    'options' => [
+                        '1' => __('1 Column', 'probuilder'),
+                        '2' => __('2 Columns', 'probuilder'),
+                        '3' => __('3 Columns', 'probuilder'),
+                        '4' => __('4 Columns', 'probuilder'),
+                        '5' => __('5 Columns', 'probuilder'),
+                        '6' => __('6 Columns', 'probuilder'),
+                    ],
+                ],
+                [
+                    'name' => 'row_columns_tablet',
+                    'label' => __('Columns (Tablet)', 'probuilder'),
+                    'type' => 'select',
+                    'default' => '2',
+                    'options' => [
+                        '1' => __('1 Column', 'probuilder'),
+                        '2' => __('2 Columns', 'probuilder'),
+                        '3' => __('3 Columns', 'probuilder'),
+                        '4' => __('4 Columns', 'probuilder'),
+                    ],
+                ],
+                [
+                    'name' => 'row_columns_mobile',
+                    'label' => __('Columns (Mobile)', 'probuilder'),
+                    'type' => 'select',
+                    'default' => '1',
+                    'options' => [
+                        '1' => __('1 Column', 'probuilder'),
+                        '2' => __('2 Columns', 'probuilder'),
+                    ],
+                ],
+                [
+                    'name' => 'row_gap',
+                    'label' => __('Row Gap', 'probuilder'),
+                    'type' => 'slider',
+                    'default' => 20,
+                    'range' => [
+                        'px' => ['min' => 0, 'max' => 100],
+                    ],
+                ],
+            ],
+            'condition' => [
+                'enable_rows' => 'yes',
+            ],
+            'title_field' => 'Row {{_index}}',
+        ]);
+        
         $this->end_controls_section();
         
         $this->start_controls_section('section_background', [
@@ -210,6 +281,8 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         $content_width = $this->get_settings('content_width', 1140);
         $min_height = $this->get_settings('min_height', 100);
         $content_position = $this->get_settings('content_position', 'top');
+        $enable_rows = $this->get_settings('enable_rows', 'no');
+        $rows = $this->get_settings('rows', []);
         
         // Generate unique ID for this container
         $container_id = 'probuilder-container-' . uniqid();
@@ -276,49 +349,117 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         // Output responsive CSS
         ?>
         <style>
+            #<?php echo $container_id; ?> .probuilder-container-row {
+                display: block;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            #<?php echo $container_id; ?> .probuilder-container-row:last-child {
+                margin-bottom: 0;
+            }
+            
             #<?php echo $container_id; ?> .probuilder-container-columns {
                 display: grid;
-                grid-template-columns: repeat(<?php echo esc_attr($columns); ?>, 1fr);
-                gap: <?php echo esc_attr($column_gap); ?>px;
                 width: 100%;
             }
             
-            /* Tablet (768px - 1024px) */
-            @media (max-width: 1024px) {
+            <?php if ($enable_rows === 'yes' && !empty($rows)): ?>
+                <?php foreach ($rows as $index => $row): ?>
+                    #<?php echo $container_id; ?> .probuilder-row-<?php echo $index; ?> .probuilder-container-columns {
+                        grid-template-columns: repeat(<?php echo esc_attr($row['row_columns']); ?>, 1fr);
+                        gap: <?php echo esc_attr($row['row_gap']); ?>px;
+                    }
+                    
+                    /* Tablet (768px - 1024px) */
+                    @media (max-width: 1024px) {
+                        #<?php echo $container_id; ?> .probuilder-row-<?php echo $index; ?> .probuilder-container-columns {
+                            grid-template-columns: repeat(<?php echo esc_attr($row['row_columns_tablet']); ?>, 1fr);
+                        }
+                    }
+                    
+                    /* Mobile (< 768px) */
+                    @media (max-width: 767px) {
+                        #<?php echo $container_id; ?> .probuilder-row-<?php echo $index; ?> .probuilder-container-columns {
+                            grid-template-columns: repeat(<?php echo esc_attr($row['row_columns_mobile']); ?>, 1fr);
+                        }
+                    }
+                <?php endforeach; ?>
+            <?php else: ?>
                 #<?php echo $container_id; ?> .probuilder-container-columns {
-                    grid-template-columns: repeat(<?php echo esc_attr($columns_tablet); ?>, 1fr);
+                    grid-template-columns: repeat(<?php echo esc_attr($columns); ?>, 1fr);
+                    gap: <?php echo esc_attr($column_gap); ?>px;
                 }
-            }
-            
-            /* Mobile (< 768px) */
-            @media (max-width: 767px) {
-                #<?php echo $container_id; ?> .probuilder-container-columns {
-                    grid-template-columns: repeat(<?php echo esc_attr($columns_mobile); ?>, 1fr);
+                
+                /* Tablet (768px - 1024px) */
+                @media (max-width: 1024px) {
+                    #<?php echo $container_id; ?> .probuilder-container-columns {
+                        grid-template-columns: repeat(<?php echo esc_attr($columns_tablet); ?>, 1fr);
+                    }
                 }
-            }
+                
+                /* Mobile (< 768px) */
+                @media (max-width: 767px) {
+                    #<?php echo $container_id; ?> .probuilder-container-columns {
+                        grid-template-columns: repeat(<?php echo esc_attr($columns_mobile); ?>, 1fr);
+                    }
+                }
+            <?php endif; ?>
         </style>
         <?php
         
-        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '">';
+        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '" data-enable-rows="' . esc_attr($enable_rows) . '">';
         
-        echo '<div class="probuilder-container-columns">';
-        
-        // Render children in columns
-        $children = $this->get_settings('_children', []);
-        if (!empty($children)) {
-            foreach ($children as $child) {
-                echo '<div class="probuilder-column">';
-                ProBuilder_Frontend::instance()->render_element($child);
+        if ($enable_rows === 'yes' && !empty($rows)) {
+            // Render multiple rows
+            foreach ($rows as $index => $row) {
+                echo '<div class="probuilder-container-row probuilder-row-' . $index . '">';
+                echo '<div class="probuilder-container-columns">';
+                
+                // Render children for this row
+                $children = $this->get_settings('_children', []);
+                $row_children = isset($children[$index]) ? $children[$index] : [];
+                
+                if (!empty($row_children)) {
+                    foreach ($row_children as $child) {
+                        echo '<div class="probuilder-column">';
+                        ProBuilder_Frontend::instance()->render_element($child);
+                        echo '</div>';
+                    }
+                } else {
+                    // Show empty column placeholders
+                    for ($i = 0; $i < $row['row_columns']; $i++) {
+                        echo '<div class="probuilder-column" style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
+                    }
+                }
+                
+                echo '</div>';
                 echo '</div>';
             }
         } else {
-            // Show empty column placeholders in editor
-            for ($i = 0; $i < $columns; $i++) {
-                echo '<div class="probuilder-column" style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
+            // Render single row (original behavior)
+            echo '<div class="probuilder-container-row probuilder-row-0">';
+            echo '<div class="probuilder-container-columns">';
+            
+            // Render children in columns
+            $children = $this->get_settings('_children', []);
+            if (!empty($children)) {
+                foreach ($children as $child) {
+                    echo '<div class="probuilder-column">';
+                    ProBuilder_Frontend::instance()->render_element($child);
+                    echo '</div>';
+                }
+            } else {
+                // Show empty column placeholders in editor
+                for ($i = 0; $i < $columns; $i++) {
+                    echo '<div class="probuilder-column" style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
+                }
             }
+            
+            echo '</div>';
+            echo '</div>';
         }
         
-        echo '</div>';
         echo '</div>';
     }
 }

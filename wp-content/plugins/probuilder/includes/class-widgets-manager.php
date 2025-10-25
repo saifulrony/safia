@@ -77,6 +77,11 @@ class ProBuilder_Widgets_Manager {
             'ProBuilder_Widget_WP_Header',
             'ProBuilder_Widget_WP_Sidebar',
             'ProBuilder_Widget_WP_Footer',
+            'ProBuilder_Widget_Form_Builder',
+            'ProBuilder_Widget_Slider',
+            'ProBuilder_Widget_Blog_Posts',
+            'ProBuilder_Widget_FAQ',
+            'ProBuilder_Widget_Timeline',
         ];
         
         foreach ($widget_classes as $class) {

@@ -1,0 +1,88 @@
+═══════════════════════════════════════════════════════════
+    DRAG CURSOR REMOVED! 🖱️
+═══════════════════════════════════════════════════════════
+
+✅ WHAT CHANGED:
+
+Removed the drag/grab cursor that appeared when hovering
+over elements. Now shows default cursor instead.
+
+═══════════════════════════════════════════════════════════
+
+🎯 CURSOR CHANGES:
+═══════════════════════════════════════════════════════════
+
+BEFORE:
+  • Element hover: grab cursor (✋)
+  • Element active: grabbing cursor (✊)
+  • Drag handle: grab/grabbing cursor
+  
+AFTER:
+  • Element hover: default cursor (→)
+  • Element active: default cursor (→)
+  • Drag handle: pointer cursor (👆)
+
+═══════════════════════════════════════════════════════════
+
+🔧 CSS CHANGES:
+═══════════════════════════════════════════════════════════
+
+.probuilder-element
+  cursor: grab → cursor: default
+
+.probuilder-element:active
+  cursor: grabbing → cursor: default
+
+.probuilder-element-drag
+  cursor: grab → cursor: pointer
+
+.probuilder-element-drag:active
+  cursor: grabbing → cursor: pointer
+
+═══════════════════════════════════════════════════════════
+
+✅ RESULT:
+═══════════════════════════════════════════════════════════
+
+CLEANER INTERACTION:
+
+  ✓ No more grab cursor on hover
+  ✓ Default cursor on elements
+  ✓ Pointer cursor on drag handle icon
+  ✓ Cleaner, more standard UX
+
+═══════════════════════════════════════════════════════════
+
+📁 FILE MODIFIED:
+═══════════════════════════════════════════════════════════
+
+✓ assets/css/editor.css
+  - Changed element cursor to default
+  - Changed drag handle cursor to pointer
+  - Removed all grab/grabbing cursors
+
+═══════════════════════════════════════════════════════════
+
+🚀 TESTING:
+═══════════════════════════════════════════════════════════
+
+1. Clear cache (Ctrl + Shift + R)
+2. Open ProBuilder editor
+3. Hover over elements
+   ✓ Default cursor (no grab hand)
+4. Hover over drag icon
+   ✓ Pointer cursor
+
+═══════════════════════════════════════════════════════════
+
+✅ STATUS:
+═══════════════════════════════════════════════════════════
+
+✅ Drag cursor removed
+✅ Default cursor on elements
+✅ Pointer cursor on drag handle
+✅ No CSS errors
+✅ Working perfectly
+
+═══════════════════════════════════════════════════════════
+
