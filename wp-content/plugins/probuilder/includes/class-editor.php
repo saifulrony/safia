@@ -144,7 +144,10 @@ class ProBuilder_Editor {
         wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], time());
         wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], time());
         wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], time());
+        wp_enqueue_style('probuilder-navigator', PROBUILDER_URL . 'assets/css/navigator.css', ['probuilder-editor'], time());
+        wp_enqueue_style('probuilder-history-panel', PROBUILDER_URL . 'assets/css/history-panel.css', ['probuilder-editor'], time());
         wp_enqueue_style('probuilder-icons', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', [], '6.4.0');
+        wp_enqueue_style('animate-css', 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css', [], '4.1.1');
         
         // Enqueue scripts - Force reload
         wp_enqueue_media();
@@ -155,6 +158,8 @@ class ProBuilder_Editor {
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], time(), true);
         wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], time(), true);
+        wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], time(), true);
+        wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], time(), true);
         
         // Localize script with all data
         wp_localize_script('probuilder-editor-js', 'ProBuilderEditor', [

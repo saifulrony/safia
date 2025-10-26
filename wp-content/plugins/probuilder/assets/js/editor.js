@@ -98,6 +98,7 @@
             this.initSidebarToggles();
             this.updateEmptyState();
             this.updatePanelResponsiveness();
+            this.loadTemplates();
             this.showSettingsPlaceholder(); // Show initial placeholder
             
             console.log('ProBuilder initialized successfully!');
@@ -747,6 +748,235 @@
                     console.error('Failed to parse saved data:', e);
                 }
             }
+        },
+        
+        /**
+         * Load Templates Library
+         */
+        loadTemplates: function() {
+            const self = this;
+            const $templatesContainer = $('.probuilder-tab-content[data-tab="templates"]');
+            
+            console.log('Loading templates from library...');
+            
+            $.ajax({
+                url: ProBuilderEditor.ajaxurl || ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_get_templates'
+                },
+                success: function(response) {
+                    console.log('Templates response:', response);
+                    
+                    if (response.success && response.data) {
+                        self.renderTemplates(response.data.prebuilt || []);
+                    } else {
+                        $templatesContainer.html(`
+                            <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                                <i class="dashicons dashicons-warning" style="font-size: 48px; margin-bottom: 20px;"></i>
+                                <h3 style="font-size: 16px; margin: 0 0 10px 0;">Failed to Load Templates</h3>
+                                <p style="font-size: 13px; margin: 0;">Please refresh the page and try again</p>
+                            </div>
+                        `);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Templates load error:', error);
+                    $templatesContainer.html(`
+                        <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                            <i class="dashicons dashicons-warning" style="font-size: 48px; margin-bottom: 20px;"></i>
+                            <h3 style="font-size: 16px; margin: 0 0 10px 0;">Error Loading Templates</h3>
+                            <p style="font-size: 13px; margin: 0;">${error}</p>
+                        </div>
+                    `);
+                }
+            });
+        },
+        
+        /**
+         * Clear Canvas - Remove all elements
+         */
+        clearCanvas: function() {
+            console.log('🗑️ Clearing canvas elements...');
+            
+            // Clear elements array
+            this.elements = [];
+            
+            // Clear selected element
+            this.selectedElement = null;
+            
+            // Re-render canvas (which will show empty state)
+            this.renderElements();
+            
+            // Clear properties panel
+            $('.probuilder-properties-content').html(`
+                <div style="text-align: center; padding: 60px 20px; color: #a1a1aa;">
+                    <i class="dashicons dashicons-admin-page" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                    <h3 style="font-size: 16px; color: #71717a; margin: 0 0 10px 0;">No Element Selected</h3>
+                    <p style="font-size: 13px; margin: 0;">Select an element to edit its properties</p>
+                </div>
+            `);
+            
+            // Save history state
+            this.saveHistory();
+            
+            console.log('✅ Canvas cleared, ready for template');
+        },
+        
+        /**
+         * Render Templates in UI
+         */
+        renderTemplates: function(templates) {
+            const $templatesContainer = $('.probuilder-tab-content[data-tab="templates"]');
+            const self = this;
+            
+            console.log('=== TEMPLATES DEBUG ===');
+            console.log('Total templates received:', templates ? templates.length : 0);
+            console.log('Templates array:', templates);
+            
+            if (!templates || templates.length === 0) {
+                $templatesContainer.html(`
+                    <div style="text-align: center; padding: 60px 20px; color: #a1a1aa;">
+                        <i class="dashicons dashicons-admin-page" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h3 style="font-size: 16px; color: #71717a; margin: 0 0 10px 0;">No Templates Found</h3>
+                        <p style="font-size: 13px; margin: 0;">Templates will appear here once created</p>
+                    </div>
+                `);
+                return;
+            }
+            
+            console.log('Rendering', templates.length, 'templates');
+            
+            // Log each template
+            templates.forEach((template, index) => {
+                console.log(`Template ${index + 1}:`, template.name, '(ID:', template.id + ')');
+            });
+            
+            let templatesHTML = `
+                <div style="padding: 15px 20px; background: #f0f9ff; border-left: 4px solid #0284c7; margin-bottom: 20px;">
+                    <strong style="color: #0c4a6e;">📋 ${templates.length} Templates Available</strong>
+                    <p style="margin: 5px 0 0; font-size: 12px; color: #475569;">Showing all full page and section templates</p>
+                </div>
+                <div class="probuilder-templates-grid" style="padding: 0 20px 20px;">
+            `;
+            
+            templates.forEach(function(template) {
+                const thumbnail = template.thumbnail || 'data:image/svg+xml;base64,' + btoa('<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="200" fill="#f3f4f6"/><text x="150" y="100" text-anchor="middle" fill="#9ca3af" font-size="16">Template</text></svg>');
+                
+                templatesHTML += `
+                    <div class="probuilder-template-item" data-template-id="${template.id}" style="
+                        background: #fff;
+                        border: 1px solid #e5e7eb;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        margin-bottom: 15px;
+                    " onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+                        <div class="probuilder-template-thumbnail" style="
+                            width: 100%;
+                            height: 150px;
+                            background: url('${thumbnail}') center/cover;
+                            border-bottom: 1px solid #e5e7eb;
+                        "></div>
+                        <div class="probuilder-template-info" style="padding: 12px 15px;">
+                            <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: 600; color: #1f2937;">${template.name}</h4>
+                            <p style="margin: 0; font-size: 12px; color: #6b7280;">${template.category || 'Full Page'}</p>
+                        </div>
+                        <div class="probuilder-template-actions" style="padding: 0 15px 12px; display: flex; gap: 8px;">
+                            <button class="probuilder-template-insert" data-template-id="${template.id}" style="
+                                flex: 1;
+                                background: #0073aa;
+                                color: #fff;
+                                border: none;
+                                padding: 8px 12px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 12px;
+                                font-weight: 600;
+                                transition: background 0.2s;
+                            " onmouseover="this.style.background='#005a87'" onmouseout="this.style.background='#0073aa'">
+                                <i class="dashicons dashicons-plus-alt2" style="font-size: 14px; vertical-align: middle;"></i>
+                                Insert
+                            </button>
+                            <button class="probuilder-template-preview" data-template-id="${template.id}" style="
+                                background: #f3f4f6;
+                                color: #374151;
+                                border: 1px solid #d1d5db;
+                                padding: 8px 12px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 12px;
+                                font-weight: 600;
+                            ">
+                                <i class="dashicons dashicons-visibility" style="font-size: 14px; vertical-align: middle;"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            templatesHTML += '</div></div>';
+            
+            console.log('Templates HTML generated, inserting into DOM...');
+            $templatesContainer.html(templatesHTML);
+            console.log('Templates inserted successfully!');
+            
+            // Bind insert handlers
+            $('.probuilder-template-insert').on('click', function(e) {
+                e.stopPropagation();
+                const templateId = $(this).data('template-id');
+                const template = templates.find(t => t.id === templateId);
+                
+                if (template && template.data) {
+                    console.log('Inserting template:', template.name);
+                    console.log('Template data:', template.data);
+                    
+                    // Clear existing canvas first
+                    self.clearCanvas();
+                    
+                    // Import template data
+                    if (Array.isArray(template.data)) {
+                        template.data.forEach(function(element) {
+                            console.log('Adding element:', element);
+                            if (element.widgetType) {
+                                self.addElement(element.widgetType, element.settings || {});
+                            }
+                        });
+                    } else {
+                        if (template.data.widgetType) {
+                            self.addElement(template.data.widgetType, template.data.settings || {});
+                        }
+                    }
+                    
+                    // Show success message
+                    self.showToast('✓ Template inserted successfully!');
+                    
+                    // Switch back to widgets tab
+                    $('.probuilder-tab-btn[data-tab="widgets"]').click();
+                } else {
+                    console.error('Template not found or no data:', templateId);
+                    self.showToast('❌ Error: Template not found');
+                }
+            });
+            
+            // Bind preview handlers
+            $('.probuilder-template-preview').on('click', function(e) {
+                e.stopPropagation();
+                const templateId = $(this).data('template-id');
+                const template = templates.find(t => t.id === templateId);
+                
+                if (template) {
+                    console.log('Previewing template:', template.name);
+                    self.showToast('👁 Preview: ' + template.name);
+                    
+                    // You can add a modal preview here later
+                    alert('Preview: ' + template.name + '\n\nThis template contains ' + 
+                          (Array.isArray(template.data) ? template.data.length : 1) + ' elements.');
+                }
+            });
+            
+            console.log('Templates rendered successfully');
         },
         
         /**
@@ -4705,6 +4935,747 @@
                     tlTimelineHTML += `</div>`;
                     return tlTimelineHTML;
                     
+                // NEW WIDGETS
+                case 'portfolio':
+                    const portfolioItems = settings.items || [
+                        {title: 'Project 1', image: 'https://via.placeholder.com/400x300/93003c/ffffff?text=Project+1', category: 'Design'},
+                        {title: 'Project 2', image: 'https://via.placeholder.com/400x300/0073aa/ffffff?text=Project+2', category: 'Development'},
+                        {title: 'Project 3', image: 'https://via.placeholder.com/400x300/4caf50/ffffff?text=Project+3', category: 'Branding'}
+                    ];
+                    const portfolioColumns = settings.columns || '3';
+                    let portfolioHTML = `<div style="display:grid;grid-template-columns:repeat(${portfolioColumns},1fr);gap:20px">`;
+                    portfolioItems.forEach(item => {
+                        portfolioHTML += `
+                            <div style="position:relative;overflow:hidden;border-radius:8px;cursor:pointer">
+                                <img src="${item.image || 'https://via.placeholder.com/400x300'}" style="width:100%;height:200px;object-fit:cover;display:block">
+                                <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;opacity:0;transition:opacity 0.3s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                                    <h3 style="margin:0 0 8px;font-size:20px;color:#fff">${item.title || 'Project'}</h3>
+                                    <p style="margin:0;color:#ccc;font-size:14px">${item.category || 'Category'}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    portfolioHTML += '</div>';
+                    return portfolioHTML;
+                
+                case 'reviews':
+                    const reviewItems = settings.reviews || [
+                        {name: 'John Doe', rating: 5, review: 'Excellent service!'},
+                        {name: 'Jane Smith', rating: 5, review: 'Highly recommended!'}
+                    ];
+                    const reviewColumns = settings.columns || '2';
+                    let reviewsHTML = `<div style="display:grid;grid-template-columns:repeat(${reviewColumns},1fr);gap:20px">`;
+                    reviewItems.forEach(review => {
+                        const stars = '★'.repeat(review.rating || 5) + '☆'.repeat(5 - (review.rating || 5));
+                        reviewsHTML += `
+                            <div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                                <div style="color:#ffc107;font-size:18px;margin-bottom:10px">${stars}</div>
+                                <h4 style="margin:0 0 10px;font-size:18px">${review.name || 'Customer'}</h4>
+                                <p style="margin:0;color:#666;line-height:1.6">${review.review || 'Great experience!'}</p>
+                            </div>
+                        `;
+                    });
+                    reviewsHTML += '</div>';
+                    return reviewsHTML;
+                
+                case 'hotspot':
+                    const hotspotImage = settings.image || 'https://via.placeholder.com/800x600/93003c/ffffff?text=Hotspot+Image';
+                    const hotspots = settings.hotspots || [{x_position: 30, y_position: 30, title: 'Hotspot 1', content: 'Info'}];
+                    let hotspotHTML = `<div style="position:relative;display:inline-block;max-width:100%">
+                        <img src="${hotspotImage}" style="width:100%;height:auto;display:block">`;
+                    hotspots.forEach(spot => {
+                        hotspotHTML += `<div style="position:absolute;left:${spot.x_position || 50}%;top:${spot.y_position || 50}%;transform:translate(-50%,-50%)">
+                            <span style="display:block;width:20px;height:20px;background:#0073aa;border-radius:50%;animation:pulse 2s infinite"></span>
+                        </div>`;
+                    });
+                    hotspotHTML += '</div><style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}</style>';
+                    return hotspotHTML;
+                
+                case 'loop-builder':
+                    return `<div style="display:grid;grid-template-columns:repeat(${settings.columns || 3},1fr);gap:20px">
+                        ${[1,2,3].map(i => `
+                            <div style="border:1px solid #eee;border-radius:8px;overflow:hidden">
+                                <div style="background:#f0f0f0;height:150px;display:flex;align-items:center;justify-content:center;color:#999">Post ${i}</div>
+                                <div style="padding:15px">
+                                    <h3 style="margin:0 0 10px;font-size:18px">Dynamic Post ${i}</h3>
+                                    <p style="margin:0;color:#666;font-size:14px">Post excerpt will appear here...</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                
+                case 'lottie':
+                    const lottieWidth = settings.width || 300;
+                    const lottieLoop = settings.loop !== false;
+                    const lottieAutoplay = settings.autoplay !== false;
+                    const lottieUrl = settings.animation_url || 'https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json';
+                    
+                    return `<div style="text-align:center;padding:40px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px">
+                        <div style="width:${lottieWidth}px;max-width:100%;margin:0 auto;background:#ffffff;border-radius:8px;padding:30px;box-shadow:0 10px 30px rgba(0,0,0,0.2)">
+                            <div style="position:relative;width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                                <svg width="100%" height="100%" viewBox="0 0 200 200" style="animation:lottieRotate 3s linear infinite">
+                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#667eea" stroke-width="8" stroke-dasharray="50 30" style="animation:lottieDash 2s linear infinite"/>
+                                    <circle cx="100" cy="100" r="60" fill="none" stroke="#fa709a" stroke-width="6" stroke-dasharray="40 20" style="animation:lottieDash 2.5s linear infinite reverse"/>
+                                    <circle cx="100" cy="100" r="40" fill="none" stroke="#4facfe" stroke-width="4" stroke-dasharray="30 10" style="animation:lottieDash 3s linear infinite"/>
+                                    <path d="M 100 60 L 120 100 L 100 140 L 80 100 Z" fill="#fee140" style="animation:lottieScale 2s ease-in-out infinite"/>
+                                </svg>
+                                <style>
+                                    @keyframes lottieRotate {
+                                        from { transform: rotate(0deg); }
+                                        to { transform: rotate(360deg); }
+                                    }
+                                    @keyframes lottieDash {
+                                        from { stroke-dashoffset: 0; }
+                                        to { stroke-dashoffset: 100; }
+                                    }
+                                    @keyframes lottieScale {
+                                        0%, 100% { transform: scale(1); opacity: 1; }
+                                        50% { transform: scale(1.2); opacity: 0.8; }
+                                    }
+                                </style>
+                            </div>
+                            <div style="margin-top:20px;padding-top:20px;border-top:2px solid #f0f0f0">
+                                <div style="display:flex;justify-content:center;gap:15px;margin-bottom:10px">
+                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${lottieLoop ? '#10b981' : '#e5e7eb'};color:${lottieLoop ? '#fff' : '#666'};border-radius:20px;font-size:12px;font-weight:600">
+                                        <i class="fa fa-repeat"></i> ${lottieLoop ? 'Loop ON' : 'Loop OFF'}
+                                    </span>
+                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${lottieAutoplay ? '#3b82f6' : '#e5e7eb'};color:${lottieAutoplay ? '#fff' : '#666'};border-radius:20px;font-size:12px;font-weight:600">
+                                        <i class="fa fa-play"></i> ${lottieAutoplay ? 'Autoplay ON' : 'Autoplay OFF'}
+                                    </span>
+                                </div>
+                                <p style="margin:10px 0 0;color:#666;font-size:13px;font-weight:500">
+                                    <i class="fa fa-film" style="color:#667eea;margin-right:5px"></i>
+                                    Lottie Animation
+                                </p>
+                                <p style="margin:5px 0 0;color:#999;font-size:11px">
+                                    ${lottieWidth}px × ${lottieLoop ? 'Infinite' : 'Once'} × ${lottieAutoplay ? 'Auto' : 'Manual'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>`;
+                
+                case 'mega-menu':
+                case 'menu':
+                    const menuLayout = settings.layout || 'horizontal';
+                    const menuItems = ['Home', 'About', 'Services', 'Contact'];
+                    const menuStyle = menuLayout === 'horizontal' ? 'flex-direction:row' : 'flex-direction:column';
+                    return `<nav style="display:flex;${menuStyle};gap:20px;list-style:none;padding:0;margin:0">
+                        ${menuItems.map(item => `<div style="padding:10px 15px;color:#333;cursor:pointer">${item}</div>`).join('')}
+                    </nav>`;
+                
+                case 'search-form':
+                    return `<div style="display:flex;gap:0;max-width:600px">
+                        <input type="text" placeholder="${settings.placeholder || 'Search...'}" style="flex:1;padding:12px 15px;border:1px solid #ddd;border-radius:4px 0 0 4px;font-size:16px">
+                        <button style="background:${settings.button_color || '#0073aa'};color:#fff;border:none;padding:12px 24px;border-radius:0 4px 4px 0;cursor:pointer;font-weight:600">${settings.button_text || 'Search'}</button>
+                    </div>`;
+                
+                case 'breadcrumbs':
+                    return `<nav style="font-size:14px;color:#666">
+                        <a href="#" style="color:#0073aa;text-decoration:none">Home</a>
+                        <span style="color:#999;margin:0 8px">${settings.separator || '/'}</span>
+                        <a href="#" style="color:#0073aa;text-decoration:none">Category</a>
+                        <span style="color:#999;margin:0 8px">${settings.separator || '/'}</span>
+                        <span style="color:#666">Current Page</span>
+                    </nav>`;
+                
+                case 'author-box':
+                    return `<div style="background:#f9f9f9;border:1px solid #eee;padding:30px;border-radius:8px;display:flex;gap:20px;align-items:center">
+                        <div style="width:80px;height:80px;border-radius:50%;background:#ddd;flex-shrink:0"></div>
+                        <div style="flex:1">
+                            <h3 style="margin:0 0 10px;font-size:24px">Author Name</h3>
+                            <p style="margin:0 0 15px;color:#666">Author biography will appear here...</p>
+                            <a href="#" style="color:#0073aa;text-decoration:none;font-weight:600">View All Posts →</a>
+                        </div>
+                    </div>`;
+                
+                case 'post-navigation':
+                    return `<div style="display:flex;gap:20px">
+                        <div style="flex:1;background:#f9f9f9;padding:20px;border-radius:8px">
+                            <div style="color:#0073aa;font-size:12px;margin-bottom:5px">← Previous</div>
+                            <h4 style="margin:0;font-size:16px">Previous Post Title</h4>
+                        </div>
+                        <div style="flex:1;background:#f9f9f9;padding:20px;border-radius:8px;text-align:right">
+                            <div style="color:#0073aa;font-size:12px;margin-bottom:5px">Next →</div>
+                            <h4 style="margin:0;font-size:16px">Next Post Title</h4>
+                        </div>
+                    </div>`;
+                
+                case 'share-buttons':
+                    const networks = {
+                        facebook: {color: '#1877f2', icon: 'fa fa-facebook-f'},
+                        twitter: {color: '#1da1f2', icon: 'fa fa-twitter'},
+                        linkedin: {color: '#0077b5', icon: 'fa fa-linkedin-in'},
+                        pinterest: {color: '#bd081c', icon: 'fa fa-pinterest-p'}
+                    };
+                    let shareHTML = '<div style="display:flex;gap:10px">';
+                    Object.keys(networks).forEach(network => {
+                        shareHTML += `<div style="width:40px;height:40px;background:${networks[network].color};color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center"><i class="${networks[network].icon}"></i></div>`;
+                    });
+                    shareHTML += '</div>';
+                    return shareHTML;
+                
+                case 'price-list':
+                    const priceItems = settings.items || [{title: 'Service 1', price: '$50', description: 'Description'}];
+                    return priceItems.map(item => `
+                        <div style="display:flex;justify-content:space-between;padding:20px 0;border-bottom:1px solid #eee">
+                            <div><h4 style="margin:0 0 8px;font-size:18px">${item.title || 'Service'}</h4>
+                            <p style="margin:0;color:#666;font-size:14px">${item.description || ''}</p></div>
+                            <div style="font-size:20px;font-weight:700;color:#0073aa">${item.price || '$50'}</div>
+                        </div>
+                    `).join('');
+                
+                case 'login':
+                    return `<div style="max-width:400px;padding:30px;background:#f9f9f9;border-radius:8px">
+                        <h3 style="margin:0 0 20px">Login</h3>
+                        <input type="text" placeholder="Username" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:4px;margin-bottom:15px">
+                        <input type="password" placeholder="Password" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:4px;margin-bottom:15px">
+                        <button style="width:100%;background:#0073aa;color:#fff;border:none;padding:12px;border-radius:4px;cursor:pointer;font-weight:600">Login</button>
+                    </div>`;
+                
+                case 'sitemap':
+                    return `<div style="display:grid;grid-template-columns:repeat(${settings.columns || 3},1fr);gap:30px">
+                        <div><h3 style="margin:0 0 15px">Pages</h3><ul style="list-style:none;padding:0;line-height:2"><li><a href="#" style="color:#0073aa">Home</a></li><li><a href="#" style="color:#0073aa">About</a></li><li><a href="#" style="color:#0073aa">Contact</a></li></ul></div>
+                        <div><h3 style="margin:0 0 15px">Posts</h3><ul style="list-style:none;padding:0;line-height:2"><li><a href="#" style="color:#0073aa">Recent Post 1</a></li><li><a href="#" style="color:#0073aa">Recent Post 2</a></li><li><a href="#" style="color:#0073aa">Recent Post 3</a></li></ul></div>
+                    </div>`;
+                
+                case 'table-of-contents':
+                    return `<div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                        <h4 style="margin:0 0 15px;font-size:18px">${settings.title || 'Table of Contents'}</h4>
+                        <ol style="margin:0;padding-left:25px;line-height:2">
+                            <li><a href="#" style="color:#0073aa;text-decoration:none">Section 1</a></li>
+                            <li><a href="#" style="color:#0073aa;text-decoration:none">Section 2</a></li>
+                            <li><a href="#" style="color:#0073aa;text-decoration:none">Section 3</a></li>
+                        </ol>
+                    </div>`;
+                
+                case 'icon':
+                    const iconSize = settings.size || 50;
+                    const iconColor = settings.color || '#0073aa';
+                    const iconAlign = settings.align || 'center';
+                    const iconClass = settings.icon || 'fa fa-star';
+                    return `<div style="text-align:${iconAlign}"><i class="${iconClass}" style="font-size:${iconSize}px;color:${iconColor}"></i></div>`;
+                
+                case 'category-list':
+                    const showCount = settings.show_count !== false;
+                    return `<div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                        <h4 style="margin:0 0 15px;font-size:18px;color:#333">Categories</h4>
+                        <ul style="list-style:none;padding:0;margin:0">
+                            <li style="padding:8px 0;border-bottom:1px solid #eee"><a href="#" style="color:#0073aa;text-decoration:none">Design</a>${showCount ? ' <span style="color:#999">(12)</span>' : ''}</li>
+                            <li style="padding:8px 0;border-bottom:1px solid #eee"><a href="#" style="color:#0073aa;text-decoration:none">Development</a>${showCount ? ' <span style="color:#999">(8)</span>' : ''}</li>
+                            <li style="padding:8px 0;border-bottom:1px solid #eee"><a href="#" style="color:#0073aa;text-decoration:none">Marketing</a>${showCount ? ' <span style="color:#999">(5)</span>' : ''}</li>
+                            <li style="padding:8px 0;border-bottom:1px solid #eee"><a href="#" style="color:#0073aa;text-decoration:none">Business</a>${showCount ? ' <span style="color:#999">(15)</span>' : ''}</li>
+                        </ul>
+                    </div>`;
+                
+                case 'tag-cloud':
+                    const tagColor = settings.color || '#0073aa';
+                    const tags = [
+                        {name: 'WordPress', size: 20}, {name: 'Design', size: 16}, {name: 'Development', size: 18},
+                        {name: 'Tutorial', size: 14}, {name: 'Guide', size: 16}, {name: 'Tips', size: 15},
+                        {name: 'SEO', size: 17}, {name: 'Marketing', size: 14}, {name: 'Business', size: 19}
+                    ];
+                    return `<div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                        <h4 style="margin:0 0 15px;font-size:18px;color:#333">Popular Tags</h4>
+                        <div style="display:flex;flex-wrap:wrap;gap:10px">
+                            ${tags.map(tag => `<a href="#" style="color:${tagColor};font-size:${tag.size}px;text-decoration:none;transition:opacity 0.3s" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">${tag.name}</a>`).join('')}
+                        </div>
+                    </div>`;
+                
+                case 'archive-title':
+                    const archiveTag = settings.tag || 'h1';
+                    const archiveColor = settings.color || '#333';
+                    return `<${archiveTag} style="color:${archiveColor};margin:0;font-size:36px;font-weight:700">Archive: Category Name</${archiveTag}>`;
+                
+                case 'site-logo':
+                    const siteLogoWidth = settings.width || 150;
+                    const siteLogoImage = settings.logo || 'https://via.placeholder.com/300x100/93003c/ffffff?text=Site+Logo';
+                    const siteLogoLink = settings.link !== false;
+                    const siteLogoHTML = `<img src="${siteLogoImage}" alt="Site Logo" style="width:${siteLogoWidth}px;height:auto;display:block">`;
+                    return siteLogoLink ? `<a href="#">${siteLogoHTML}</a>` : siteLogoHTML;
+                
+                case 'recent-posts':
+                    const recentLimit = settings.limit || 5;
+                    const recentShowImage = settings.show_image !== false;
+                    const recentShowDate = settings.show_date !== false;
+                    return `<div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                        <h4 style="margin:0 0 15px;font-size:18px;color:#333">Recent Posts</h4>
+                        ${[1,2,3].map(i => `
+                            <div style="display:flex;gap:10px;margin-bottom:15px;align-items:center">
+                                ${recentShowImage ? '<div style="width:60px;height:60px;background:#ddd;border-radius:4px;flex-shrink:0"></div>' : ''}
+                                <div>
+                                    <a href="#" style="color:#333;text-decoration:none;font-weight:600;display:block;margin-bottom:4px">Recent Post ${i}</a>
+                                    ${recentShowDate ? '<div style="font-size:12px;color:#999">October 25, 2025</div>' : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                
+                case 'post-excerpt':
+                    const excerptLength = settings.length || 55;
+                    const excerptShowMore = settings.show_more !== false;
+                    const excerptMoreText = settings.more_text || 'Read More';
+                    return `<div style="color:#666;line-height:1.6;font-size:16px">
+                        <p style="margin:0">This is a sample post excerpt that will display the first ${excerptLength} words of the post content. It provides a preview of the article...</p>
+                        ${excerptShowMore ? `<a href="#" style="color:#0073aa;text-decoration:none;font-weight:600;margin-top:10px;display:inline-block">${excerptMoreText} →</a>` : ''}
+                    </div>`;
+                
+                case 'post-title':
+                    const postTitleTag = settings.tag || 'h1';
+                    const postTitleColor = settings.color || '#333';
+                    const postTitleSize = settings.size || 36;
+                    return `<${postTitleTag} style="color:${postTitleColor};font-size:${postTitleSize}px;margin:0;font-weight:700">Post Title Will Appear Here</${postTitleTag}>`;
+                
+                case 'post-featured-image':
+                    const featuredImageSize = settings.size || 'full';
+                    const featuredBorderRadius = settings.border_radius || 0;
+                    const featuredLink = settings.link !== false;
+                    const featuredImageHTML = `<img src="https://via.placeholder.com/800x600/93003c/ffffff?text=Featured+Image" alt="Featured Image" style="width:100%;height:auto;border-radius:${featuredBorderRadius}px;display:block">`;
+                    return featuredLink ? `<a href="#">${featuredImageHTML}</a>` : featuredImageHTML;
+                
+                case 'post-date':
+                    const dateFormat = settings.format || 'F j, Y';
+                    const dateShowIcon = settings.show_icon !== false;
+                    const dateColor = settings.color || '#666';
+                    return `<div style="color:${dateColor};font-size:14px;display:flex;align-items:center;gap:8px">
+                        ${dateShowIcon ? '<i class="fa fa-calendar-alt"></i>' : ''}
+                        <span>October 25, 2025</span>
+                    </div>`;
+                
+                case 'post-author':
+                    const authorShowAvatar = settings.show_avatar !== false;
+                    const authorAvatarSize = settings.avatar_size || 32;
+                    const authorLink = settings.link !== false;
+                    return `<div style="display:flex;align-items:center;gap:10px">
+                        ${authorShowAvatar ? `<div style="width:${authorAvatarSize}px;height:${authorAvatarSize}px;background:#ddd;border-radius:50%"></div>` : ''}
+                        ${authorLink ? '<a href="#" style="color:#333;text-decoration:none;font-weight:500">Author Name</a>' : '<span style="color:#333;font-weight:500">Author Name</span>'}
+                    </div>`;
+                
+                case 'post-comments':
+                    const commentsShowCount = settings.show_count !== false;
+                    return `<div style="background:#f9f9f9;padding:20px;border-radius:8px">
+                        ${commentsShowCount ? '<h3 style="margin:0 0 20px;font-size:24px;color:#333">5 Comments</h3>' : ''}
+                        <div style="border-left:3px solid #0073aa;padding-left:15px;margin-bottom:20px">
+                            <div style="display:flex;gap:10px;margin-bottom:10px">
+                                <div style="width:40px;height:40px;background:#ddd;border-radius:50%;flex-shrink:0"></div>
+                                <div>
+                                    <strong style="color:#333">John Doe</strong>
+                                    <p style="margin:5px 0 0;color:#666;font-size:14px">This is a sample comment on the post.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="border:1px solid #ddd;border-radius:4px;padding:15px">
+                            <textarea placeholder="Leave a comment..." style="width:100%;border:1px solid #ddd;border-radius:4px;padding:10px;font-size:14px;min-height:80px"></textarea>
+                            <button style="background:#0073aa;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;margin-top:10px">Post Comment</button>
+                        </div>
+                    </div>`;
+                
+                case 'progress-tracker':
+                    const trackerSteps = settings.steps || [
+                        {title: 'Step 1', complete: true},
+                        {title: 'Step 2', complete: true},
+                        {title: 'Step 3', complete: false}
+                    ];
+                    const trackerOrientation = settings.orientation || 'horizontal';
+                    const trackerActiveColor = settings.active_color || '#4caf50';
+                    const trackerInactiveColor = settings.inactive_color || '#cccccc';
+                    
+                    if (trackerOrientation === 'horizontal') {
+                        return `<div style="display:flex;align-items:center;gap:10px">
+                            ${trackerSteps.map((step, i) => `
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div style="display:flex;flex-direction:column;align-items:center">
+                                        <div style="width:40px;height:40px;border-radius:50%;background:${step.complete ? trackerActiveColor : trackerInactiveColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${i+1}</div>
+                                        <span style="margin-top:8px;font-size:14px;color:#333">${step.title || 'Step ' + (i+1)}</span>
+                                    </div>
+                                    ${i < trackerSteps.length - 1 ? `<div style="flex:1;min-width:50px;height:2px;background:${step.complete ? trackerActiveColor : trackerInactiveColor}"></div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>`;
+                    } else {
+                        return `<div style="display:flex;flex-direction:column;gap:10px">
+                            ${trackerSteps.map((step, i) => `
+                                <div style="display:flex;flex-direction:column;gap:10px">
+                                    <div style="display:flex;align-items:center;gap:10px">
+                                        <div style="width:40px;height:40px;border-radius:50%;background:${step.complete ? trackerActiveColor : trackerInactiveColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${i+1}</div>
+                                        <span style="font-size:14px;color:#333">${step.title || 'Step ' + (i+1)}</span>
+                                    </div>
+                                    ${i < trackerSteps.length - 1 ? `<div style="width:2px;height:30px;background:${step.complete ? trackerActiveColor : trackerInactiveColor};margin-left:19px"></div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>`;
+                    }
+                
+                case 'reading-progress':
+                    const progressPosition = settings.position || 'top';
+                    const progressHeight = settings.height || 4;
+                    const progressColor = settings.color || '#0073aa';
+                    const progressBg = settings.background || '#eeeeee';
+                    return `<div style="background:#f5f5f5;padding:30px;border-radius:8px;text-align:center">
+                        <div style="background:${progressBg};height:${progressHeight}px;border-radius:${progressHeight}px;overflow:hidden;margin-bottom:15px">
+                            <div style="width:60%;height:100%;background:${progressColor};transition:width 0.3s"></div>
+                        </div>
+                        <p style="margin:0;color:#666;font-size:14px">
+                            <i class="fa fa-scroll" style="color:${progressColor};margin-right:8px"></i>
+                            Reading Progress Bar (Fixed ${progressPosition === 'top' ? 'Top' : 'Top'})
+                        </p>
+                        <small style="color:#999">Scrolls with page progress</small>
+                    </div>`;
+                
+                case 'code-highlight':
+                    const codeLanguage = settings.language || 'javascript';
+                    const codeTheme = settings.theme || 'dark';
+                    const codeShowNumbers = settings.show_line_numbers !== false;
+                    const codeSample = settings.code || 'function hello() {\n  console.log("Hello World");\n}';
+                    const codeLines = codeSample.split('\\n');
+                    const codeBg = codeTheme === 'dark' ? '#2d2d2d' : '#f5f5f5';
+                    const codeColor = codeTheme === 'dark' ? '#f8f8f2' : '#333';
+                    return `<div style="background:${codeBg};color:${codeColor};padding:20px;border-radius:8px;font-family:monospace;font-size:14px;overflow-x:auto">
+                        <div style="margin-bottom:8px;color:#999;font-size:12px;text-transform:uppercase">${codeLanguage}</div>
+                        ${codeShowNumbers ? codeLines.map((line, i) => `<div><span style="color:#6c6c6c;margin-right:15px;user-select:none">${i+1}</span>${line}</div>`).join('') : codeSample}
+                    </div>`;
+                
+                case 'back-to-top':
+                    const backPosition = settings.position || 'bottom-right';
+                    const backSize = settings.size || 50;
+                    const backButtonColor = settings.button_color || '#0073aa';
+                    const backIconColor = settings.icon_color || '#ffffff';
+                    const posStyle = backPosition === 'bottom-right' ? 'bottom:20px;right:20px' : 
+                                    backPosition === 'bottom-left' ? 'bottom:20px;left:20px' : 
+                                    backPosition === 'top-right' ? 'top:20px;right:20px' : 'top:20px;left:20px';
+                    return `<div style="background:#f5f5f5;padding:40px;border-radius:8px;position:relative;min-height:200px">
+                        <p style="margin:0 0 100px;color:#666;text-align:center">Scroll down to see button...</p>
+                        <div style="position:absolute;${posStyle};width:${backSize}px;height:${backSize}px;background:${backButtonColor};color:${backIconColor};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.2);cursor:pointer;font-size:24px;font-weight:bold">↑</div>
+                        <p style="margin:0;color:#999;font-size:12px;text-align:center">Back to Top Button (${backPosition})</p>
+                    </div>`;
+                
+                case 'text-path':
+                    const pathText = settings.text || 'Curved Text Path';
+                    const pathType = settings.path || 'curve';
+                    const pathColor = settings.color || '#333';
+                    const pathSize = settings.size || 24;
+                    return `<div style="text-align:center;padding:30px;background:#f9f9f9;border-radius:8px">
+                        <svg viewBox="0 0 500 150" style="width:100%;max-width:500px;height:auto">
+                            <defs>
+                                <path id="curve-path" d="M 50,100 Q 250,50 450,100" fill="transparent"/>
+                            </defs>
+                            <text fill="${pathColor}" font-size="${pathSize}" font-weight="600">
+                                <textPath href="#curve-path" startOffset="50%" text-anchor="middle">
+                                    ${pathText}
+                                </textPath>
+                            </text>
+                        </svg>
+                        <p style="margin:10px 0 0;color:#999;font-size:12px">Text follows a curved path</p>
+                    </div>`;
+                
+                case 'scroll-snap':
+                    const snapSections = settings.sections || [
+                        {title: 'Section 1', content: 'Content 1', bg: '#f5f5f5'},
+                        {title: 'Section 2', content: 'Content 2', bg: '#e5e5e5'}
+                    ];
+                    return `<div style="border:2px dashed #ddd;border-radius:8px;padding:20px;background:#fafafa">
+                        <div style="text-align:center;margin-bottom:20px">
+                            <i class="fa fa-layer-group" style="font-size:32px;color:#93003c;margin-bottom:10px"></i>
+                            <h4 style="margin:0 0 5px;font-size:18px">Scroll Snap Container</h4>
+                            <small style="color:#999">${snapSections.length} full-height sections</small>
+                        </div>
+                        ${snapSections.map((section, i) => `
+                            <div style="background:${section.bg || '#f5f5f5'};padding:20px;border-radius:6px;margin-bottom:10px;border-left:4px solid #0073aa">
+                                <h5 style="margin:0 0 8px;font-size:16px">${section.title || 'Section ' + (i+1)}</h5>
+                                <p style="margin:0;color:#666;font-size:14px">${section.content || 'Section content'}</p>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                
+                case 'sticky-video':
+                    const videoUrl = settings.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+                    const stickyVideoPosition = settings.sticky_position || 'bottom-right';
+                    return `<div style="background:#f5f5f5;padding:40px;border-radius:8px;position:relative;min-height:250px">
+                        <p style="margin:0 0 150px;color:#666;text-align:center">
+                            <i class="fa fa-video" style="font-size:48px;color:#93003c;display:block;margin-bottom:15px"></i>
+                            Sticky Video Player
+                        </p>
+                        <div style="position:absolute;bottom:20px;right:20px;width:300px;background:#000;border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+                            <div style="position:relative;padding-bottom:56.25%;background:#333">
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:48px">▶</div>
+                            </div>
+                            <div style="padding:8px;background:#222;color:#fff;font-size:11px;text-align:center">Video will stick on scroll (${stickyVideoPosition})</div>
+                        </div>
+                    </div>`;
+                
+                case 'offcanvas':
+                    const offcanvasPosition = settings.position || 'right';
+                    const offcanvasTrigger = settings.trigger_text || '☰ Menu';
+                    const offcanvasWidth = settings.panel_width || 300;
+                    const offcanvasBg = settings.panel_bg || '#ffffff';
+                    return `<div style="padding:30px;background:#f5f5f5;border-radius:8px">
+                        <button style="background:#0073aa;color:#fff;border:none;padding:12px 24px;border-radius:4px;cursor:pointer;font-weight:600;font-size:16px">
+                            ${offcanvasTrigger}
+                        </button>
+                        <div style="margin-top:20px;padding:20px;background:${offcanvasBg};border:2px solid #ddd;border-radius:8px;position:relative">
+                            <button style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;color:#999">×</button>
+                            <h4 style="margin:0 0 15px;font-size:18px">Offcanvas Panel Preview</h4>
+                            <p style="margin:0;color:#666;font-size:14px;line-height:1.6">Panel slides in from ${offcanvasPosition}</p>
+                            <p style="margin:10px 0 0;color:#999;font-size:12px">Width: ${offcanvasWidth}px</p>
+                        </div>
+                    </div>`;
+                
+                case 'paypal-button':
+                    const paypalAmount = settings.amount || 10;
+                    const paypalCurrency = settings.currency || 'USD';
+                    const paypalButtonText = settings.button_text || 'Buy Now';
+                    return `<div style="text-align:center;padding:30px;background:#f9f9f9;border-radius:8px">
+                        <div style="margin-bottom:20px">
+                            <i class="fa fa-paypal" style="font-size:48px;color:#0070ba"></i>
+                        </div>
+                        <button style="background:#0070ba;color:#fff;border:none;padding:12px 30px;border-radius:4px;cursor:pointer;font-size:16px;font-weight:600;box-shadow:0 2px 5px rgba(0,112,186,0.3)">
+                            <i class="fa fa-paypal" style="margin-right:8px"></i>
+                            ${paypalButtonText}
+                        </button>
+                        <p style="margin:15px 0 0;color:#666;font-size:14px">Amount: $${paypalAmount} ${paypalCurrency}</p>
+                    </div>`;
+                
+                case 'stripe-button':
+                    const stripeAmount = settings.amount || 1000;
+                    const stripeCurrency = settings.currency || 'usd';
+                    const stripeButtonText = settings.button_text || 'Pay with Stripe';
+                    const stripeDisplayAmount = (stripeAmount / 100).toFixed(2);
+                    return `<div style="text-align:center;padding:30px;background:#f9f9f9;border-radius:8px">
+                        <div style="margin-bottom:20px">
+                            <i class="fa fa-stripe-s" style="font-size:48px;color:#635bff"></i>
+                        </div>
+                        <button style="background:#635bff;color:#fff;border:none;padding:12px 30px;border-radius:4px;cursor:pointer;font-size:16px;font-weight:600;box-shadow:0 2px 5px rgba(99,91,255,0.3)">
+                            <i class="fa fa-lock" style="margin-right:8px"></i>
+                            ${stripeButtonText}
+                        </button>
+                        <p style="margin:15px 0 0;color:#666;font-size:14px">Amount: $${stripeDisplayAmount} ${stripeCurrency.toUpperCase()}</p>
+                        <small style="color:#999;font-size:12px">Secure payment processing</small>
+                    </div>`;
+                
+                case 'custom-css':
+                    const customCssCode = settings.css_code || '.my-class { color: red; }';
+                    return `<div style="background:#2d2d2d;color:#f8f8f2;padding:20px;border-radius:8px;font-family:monospace;font-size:14px">
+                        <div style="margin-bottom:10px;color:#6c92c7;font-weight:600">
+                            <i class="fa fa-css3-alt" style="margin-right:8px;color:#2965f1"></i>
+                            Custom CSS
+                        </div>
+                        <pre style="margin:0;color:#98c379;line-height:1.6">${customCssCode.substring(0, 200)}</pre>
+                        <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.1);border-radius:4px;font-size:12px;color:#abb2bf">
+                            <i class="fa fa-info-circle" style="margin-right:5px"></i>
+                            CSS will be applied to the page
+                        </div>
+                    </div>`;
+                
+                case 'facebook-embed':
+                    const facebookType = settings.type || 'post';
+                    const facebookUrl = settings.url || 'https://www.facebook.com/...';
+                    return `<div style="background:#f5f5f5;padding:30px;border-radius:8px;text-align:center">
+                        <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;max-width:500px;margin:0 auto">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px">
+                                <i class="fa fa-facebook" style="font-size:32px;color:#1877f2"></i>
+                                <div style="text-align:left">
+                                    <strong style="color:#333;display:block">Facebook ${facebookType === 'post' ? 'Post' : facebookType === 'page' ? 'Page' : 'Video'}</strong>
+                                    <small style="color:#999">Embedded content</small>
+                                </div>
+                            </div>
+                            <div style="background:#f0f2f5;height:200px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#999">
+                                <div>
+                                    <i class="fa fa-facebook-f" style="font-size:48px;margin-bottom:10px;display:block"></i>
+                                    Facebook ${facebookType.charAt(0).toUpperCase() + facebookType.slice(1)} Preview
+                                </div>
+                            </div>
+                            <div style="margin-top:15px;padding:10px;background:#f0f2f5;border-radius:4px;font-size:12px;color:#666">
+                                <i class="fa fa-link" style="margin-right:5px"></i>
+                                Embed URL configured
+                            </div>
+                        </div>
+                    </div>`;
+                
+                case 'twitter-embed':
+                    const twitterTheme = settings.theme || 'light';
+                    const twitterBg = twitterTheme === 'dark' ? '#15202b' : '#ffffff';
+                    const twitterTextColor = twitterTheme === 'dark' ? '#ffffff' : '#14171a';
+                    return `<div style="background:#f5f5f5;padding:30px;border-radius:8px;text-align:center">
+                        <div style="background:${twitterBg};border:1px solid ${twitterTheme === 'dark' ? '#38444d' : '#e1e8ed'};border-radius:12px;padding:20px;max-width:550px;margin:0 auto;text-align:left">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px">
+                                <div style="width:48px;height:48px;background:#1da1f2;border-radius:50%;display:flex;align-items:center;justify-content:center">
+                                    <i class="fa fa-twitter" style="font-size:24px;color:#fff"></i>
+                                </div>
+                                <div>
+                                    <strong style="color:${twitterTextColor};display:block">Twitter User</strong>
+                                    <small style="color:#8899a6">@username</small>
+                                </div>
+                            </div>
+                            <p style="margin:0 0 15px;color:${twitterTextColor};line-height:1.5">This is a sample tweet that will be embedded. Twitter/X content will display here with the ${twitterTheme} theme. 🐦</p>
+                            <div style="color:#8899a6;font-size:13px">
+                                <i class="fa fa-clock" style="margin-right:5px"></i>
+                                Oct 25, 2025
+                            </div>
+                        </div>
+                    </div>`;
+                
+                case 'instagram-feed':
+                    const instaColumns = settings.columns || 3;
+                    const instaLimit = settings.limit || 6;
+                    return `<div style="padding:20px;background:#f9f9f9;border-radius:8px">
+                        <div style="text-align:center;margin-bottom:20px">
+                            <i class="fa fa-instagram" style="font-size:32px;color:#e4405f;margin-bottom:10px"></i>
+                            <h4 style="margin:0;font-size:18px;color:#333">Instagram Feed</h4>
+                            <small style="color:#999">@${settings.username || 'username'}</small>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(${instaColumns},1fr);gap:10px">
+                            ${Array(Math.min(instaLimit, 6)).fill(0).map((_, i) => `
+                                <div style="aspect-ratio:1;background:linear-gradient(135deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px">
+                                    <i class="fa fa-camera"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p style="text-align:center;margin-top:15px;font-size:12px;color:#999">
+                            <i class="fa fa-info-circle"></i> Connect Instagram API to display photos
+                        </p>
+                    </div>`;
+                
+                case 'animated-text':
+                    const animText = settings.text || 'Animated Text';
+                    const animType = settings.animation || 'typing';
+                    const animTextColor = settings.color || '#0073aa';
+                    const animTextSize = settings.size || 36;
+                    let animPreview = '';
+                    
+                    if (animType === 'typing') {
+                        animPreview = `<h2 style="color:${animTextColor};font-size:${animTextSize}px;margin:0;font-weight:700;border-right:3px solid ${animTextColor}">${animText}</h2>`;
+                    } else if (animType === 'wave') {
+                        animPreview = `<h2 style="color:${animTextColor};font-size:${animTextSize}px;margin:0;font-weight:700">${animText}</h2>`;
+                    } else if (animType === 'glitch') {
+                        animPreview = `<h2 style="color:${animTextColor};font-size:${animTextSize}px;margin:0;font-weight:700;text-shadow:2px 2px ${animTextColor}">${animText}</h2>`;
+                    } else if (animType === 'neon') {
+                        animPreview = `<h2 style="color:${animTextColor};font-size:${animTextSize}px;margin:0;font-weight:700;text-shadow:0 0 10px ${animTextColor},0 0 20px ${animTextColor}">${animText}</h2>`;
+                    }
+                    
+                    return `<div style="background:#2d2d2d;padding:40px;border-radius:8px;text-align:center">
+                        ${animPreview}
+                        <p style="margin:15px 0 0;color:#999;font-size:12px">Animation: ${animType}</p>
+                    </div>`;
+                
+                case 'notification':
+                    const notifMessage = settings.message || 'Important announcement!';
+                    const notifType = settings.type || 'info';
+                    const notifDismissible = settings.dismissible !== false;
+                    const notifColors = {
+                        info: {bg: '#2196f3', icon: 'fa fa-info-circle'},
+                        success: {bg: '#4caf50', icon: 'fa fa-check-circle'},
+                        warning: {bg: '#ff9800', icon: 'fa fa-exclamation-triangle'},
+                        error: {bg: '#f44336', icon: 'fa fa-times-circle'}
+                    };
+                    const notifColor = notifColors[notifType];
+                    return `<div style="background:${notifColor.bg};color:#fff;padding:15px 20px;border-radius:8px;position:relative;text-align:center">
+                        <i class="${notifColor.icon}" style="margin-right:10px;font-size:18px"></i>
+                        <strong>${notifMessage}</strong>
+                        ${notifDismissible ? '<button style="position:absolute;right:15px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>' : ''}
+                        <div style="margin-top:10px;font-size:11px;opacity:0.8">
+                            <i class="fa fa-info-circle"></i> Fixed ${settings.position || 'top'} notification bar
+                        </div>
+                    </div>`;
+                
+                case 'image-comparison':
+                    const beforeImage = settings.before_image || 'https://via.placeholder.com/800x600/666/fff?text=Before';
+                    const afterImage = settings.after_image || 'https://via.placeholder.com/800x600/0073aa/fff?text=After';
+                    const comparisonPosition = settings.position || 50;
+                    return `<div style="position:relative;overflow:hidden;border-radius:8px;background:#f5f5f5">
+                        <div style="position:relative;height:400px;background:url('${beforeImage}') center/cover">
+                            <div style="position:absolute;top:0;left:0;height:100%;width:${comparisonPosition}%;overflow:hidden;background:url('${afterImage}') center/cover"></div>
+                            <div style="position:absolute;top:0;left:${comparisonPosition}%;width:4px;height:100%;background:#fff;box-shadow:0 0 10px rgba(0,0,0,0.5)">
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.3)">
+                                    <i class="fa fa-arrows-alt-h" style="color:#333"></i>
+                                </div>
+                            </div>
+                            <div style="position:absolute;top:20px;left:20px;background:rgba(0,0,0,0.7);color:#fff;padding:8px 15px;border-radius:4px;font-size:12px;font-weight:600">BEFORE</div>
+                            <div style="position:absolute;top:20px;right:20px;background:rgba(0,115,170,0.9);color:#fff;padding:8px 15px;border-radius:4px;font-size:12px;font-weight:600">AFTER</div>
+                        </div>
+                        <p style="text-align:center;margin:15px 0 0;color:#666;font-size:12px">
+                            <i class="fa fa-arrows-alt-h"></i> Drag slider to compare
+                        </p>
+                    </div>`;
+                
+                case 'parallax-image':
+                    const parallaxImage = settings.image || 'https://via.placeholder.com/1200x800/93003c/ffffff?text=Parallax+Background';
+                    const parallaxHeight = settings.height || 400;
+                    const parallaxSpeed = settings.speed || 0.5;
+                    return `<div style="position:relative;overflow:hidden;height:${parallaxHeight}px;border-radius:8px">
+                        <div style="background:url('${parallaxImage}') center/cover;height:150%;width:100%;position:absolute;top:-25%"></div>
+                        <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.5)">
+                            <div style="text-align:center">
+                                <i class="fa fa-mountain" style="font-size:48px;margin-bottom:15px;display:block"></i>
+                                <h3 style="margin:0 0 10px;font-size:28px;font-weight:700">Parallax Image</h3>
+                                <p style="margin:0;font-size:14px">Speed: ${parallaxSpeed}x · Height: ${parallaxHeight}px</p>
+                            </div>
+                        </div>
+                    </div>`;
+                
+                case 'calendly':
+                    const calendlyUrl = settings.url || 'your-calendly-link';
+                    const calendlyType = settings.type || 'inline';
+                    const calendlyButtonText = settings.button_text || 'Schedule a Meeting';
+                    
+                    if (calendlyType === 'popup') {
+                        return `<div style="text-align:center;padding:40px;background:#f5f8fa;border-radius:8px">
+                            <div style="margin-bottom:20px">
+                                <i class="fa fa-calendar-alt" style="font-size:48px;color:#006bff"></i>
+                            </div>
+                            <h3 style="margin:0 0 10px;font-size:22px;color:#333">Book a Time</h3>
+                            <p style="margin:0 0 20px;color:#666;font-size:14px">Click button to open scheduling popup</p>
+                            <button style="background:#006bff;color:#fff;border:none;padding:15px 40px;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,107,255,0.3)">
+                                <i class="fa fa-calendar-check" style="margin-right:8px"></i>
+                                ${calendlyButtonText}
+                            </button>
+                            <p style="margin:15px 0 0;font-size:11px;color:#999">
+                                <i class="fa fa-info-circle"></i> Calendly popup mode
+                            </p>
+                        </div>`;
+                    } else {
+                        // Inline calendar view
+                        const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM'];
+                        return `<div style="background:#fff;border:1px solid #e1e4e8;border-radius:8px;overflow:hidden;max-width:800px;margin:0 auto">
+                            <div style="background:#006bff;color:#fff;padding:20px;text-align:center">
+                                <i class="fa fa-calendar-alt" style="font-size:32px;margin-bottom:10px"></i>
+                                <h3 style="margin:0 0 5px;font-size:22px">Schedule a Meeting</h3>
+                                <p style="margin:0;font-size:14px;opacity:0.9">Select a convenient time</p>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+                                <div style="padding:20px;border-right:1px solid #e1e4e8">
+                                    <h4 style="margin:0 0 15px;font-size:16px;color:#333">
+                                        <i class="fa fa-calendar" style="margin-right:8px;color:#006bff"></i>
+                                        Select Date
+                                    </h4>
+                                    <div style="background:#f5f8fa;padding:15px;border-radius:6px;text-align:center">
+                                        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:10px">OCTOBER 2025</div>
+                                        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;font-size:12px">
+                                            ${[25,26,27,28,29,30,31].map(day => 
+                                                `<div style="padding:8px;background:${day === 25 ? '#006bff' : '#fff'};color:${day === 25 ? '#fff' : '#333'};border-radius:4px;cursor:pointer;font-weight:${day === 25 ? '700' : '400'}">${day}</div>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="padding:20px">
+                                    <h4 style="margin:0 0 15px;font-size:16px;color:#333">
+                                        <i class="fa fa-clock" style="margin-right:8px;color:#006bff"></i>
+                                        Available Times
+                                    </h4>
+                                    <div style="display:flex;flex-direction:column;gap:8px">
+                                        ${timeSlots.map((time, idx) => `
+                                            <div style="padding:12px 15px;background:${idx === 1 ? '#e8f3ff' : '#f5f8fa'};border:1px solid ${idx === 1 ? '#006bff' : 'transparent'};border-radius:6px;cursor:pointer;text-align:center;font-size:14px;font-weight:${idx === 1 ? '600' : '400'};color:#333">
+                                                ${time}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:15px 20px;background:#f5f8fa;border-top:1px solid #e1e4e8;text-align:center;font-size:12px;color:#666">
+                                <i class="fa fa-globe" style="margin-right:5px"></i>
+                                Powered by Calendly · ${calendlyUrl}
+                            </div>
+                        </div>`;
+                    }
+                
                 default:
                     return `<div style="padding: 25px; background: #f8f9fa; text-align: center; border: 1px solid #e6e9ec; border-radius: 3px; color: #6d7882;"><i class="${widget.icon}" style="font-size: 32px; color: #93003c; margin-bottom: 10px;"></i><br><strong>${widget.title}</strong><br><small style="color: #a4afb7;">Click edit to customize</small></div>`;
             }
@@ -7251,94 +8222,167 @@
         showTemplatesModal: function() {
             const self = this;
             
-            // Define template categories and templates
-            const templateCategories = {
-                'pages': {
-                    title: 'Full Page Templates',
-                    icon: 'dashicons-welcome-widgets-menus',
-                    templates: [
-                        { id: 'page-landing', name: 'Landing Page', preview: 'Complete landing page with hero, features, pricing, and CTA' },
-                        { id: 'page-about', name: 'About Page', preview: 'Professional about page with team section and company info' },
-                        { id: 'page-services', name: 'Services Page', preview: 'Services showcase with pricing and contact form' },
-                        { id: 'page-portfolio', name: 'Portfolio Page', preview: 'Portfolio gallery with project showcase' },
-                        { id: 'page-shop', name: 'Shop Homepage', preview: 'E-commerce homepage with products and promotions' },
-                        { id: 'page-blog', name: 'Blog Homepage', preview: 'Blog layout with featured posts and sidebar' }
-                    ]
-                },
-                'hero': {
-                    title: 'Hero Sections',
-                    icon: 'dashicons-welcome-view-site',
-                    templates: [
-                        { id: 'hero-1', name: 'Hero with Image', preview: 'Hero section with large background image and CTA' },
-                        { id: 'hero-2', name: 'Hero Centered', preview: 'Centered hero with text and button' },
-                        { id: 'hero-3', name: 'Hero Split', preview: 'Split layout with image and content' }
-                    ]
-                },
-                'features': {
-                    title: 'Features',
-                    icon: 'dashicons-star-filled',
-                    templates: [
-                        { id: 'features-1', name: '3 Column Features', preview: 'Three column feature grid' },
-                        { id: 'features-2', name: 'Icon Features', preview: 'Features with large icons' },
-                        { id: 'features-3', name: 'Feature List', preview: 'List style features' }
-                    ]
-                },
-                'pricing': {
-                    title: 'Pricing Tables',
-                    icon: 'dashicons-cart',
-                    templates: [
-                        { id: 'pricing-1', name: '3 Pricing Plans', preview: 'Three pricing tables' },
-                        { id: 'pricing-2', name: 'Comparison Table', preview: 'Detailed comparison pricing' }
-                    ]
-                },
-                'testimonials': {
-                    title: 'Testimonials',
-                    icon: 'dashicons-format-quote',
-                    templates: [
-                        { id: 'testimonial-1', name: 'Testimonial Carousel', preview: 'Sliding testimonials' },
-                        { id: 'testimonial-2', name: 'Testimonial Grid', preview: 'Grid layout testimonials' }
-                    ]
-                },
-                'cta': {
-                    title: 'Call to Action',
-                    icon: 'dashicons-megaphone',
-                    templates: [
-                        { id: 'cta-1', name: 'Simple CTA', preview: 'Clean call to action' },
-                        { id: 'cta-2', name: 'CTA with Form', preview: 'CTA with newsletter signup' }
-                    ]
-                },
-                'team': {
-                    title: 'Team Sections',
-                    icon: 'dashicons-groups',
-                    templates: [
-                        { id: 'team-1', name: 'Team Grid', preview: '4 column team members' },
-                        { id: 'team-2', name: 'Team Cards', preview: 'Card style team display' }
-                    ]
-                },
-                'gallery': {
-                    title: 'Galleries',
-                    icon: 'dashicons-format-gallery',
-                    templates: [
-                        { id: 'gallery-1', name: 'Photo Gallery', preview: 'Masonry photo gallery' },
-                        { id: 'gallery-2', name: 'Portfolio Grid', preview: 'Portfolio style gallery' }
-                    ]
-                },
-                'contact': {
-                    title: 'Contact Sections',
-                    icon: 'dashicons-email',
-                    templates: [
-                        { id: 'contact-1', name: 'Contact Form', preview: 'Simple contact section' },
-                        { id: 'contact-2', name: 'Contact with Map', preview: 'Contact form with map' }
-                    ]
-                },
-                'footer': {
-                    title: 'Footers',
-                    icon: 'dashicons-align-full-width',
-                    templates: [
-                        { id: 'footer-1', name: 'Simple Footer', preview: 'Clean footer with links' },
-                        { id: 'footer-2', name: 'Footer with Widgets', preview: 'Multi-column footer' }
-                    ]
+            console.log('=== LOADING TEMPLATES MODAL ===');
+            
+            // Show loading state
+            const loadingHTML = `
+                <div class="probuilder-templates-modal-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.85);
+                    z-index: 999999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    backdrop-filter: blur(3px);
+                ">
+                    <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 48px; color: #92003b; margin-bottom: 20px;">
+                            <i class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></i>
+                        </div>
+                        <h3 style="margin: 0; color: #1e293b;">Loading Templates...</h3>
+                        <p style="margin: 10px 0 0; color: #64748b; font-size: 14px;">Please wait</p>
+                    </div>
+                </div>
+                <style>
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
+                </style>
+            `;
+            
+            $('body').append(loadingHTML);
+            
+            // Load templates from backend
+            $.ajax({
+                url: ProBuilderEditor.ajaxurl || ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_get_templates'
+                },
+                timeout: 15000, // 15 second timeout
+                success: function(response) {
+                    console.log('✓ Templates loaded successfully');
+                    console.log('Response:', response);
+                    
+                    // Remove loading
+                    $('.probuilder-templates-modal-overlay').remove();
+                    
+                    if (response.success && response.data) {
+                        const allTemplates = response.data.prebuilt || [];
+                        console.log('✓ Total templates:', allTemplates.length);
+                        
+                        // Group templates by category
+                        const templatesByCategory = {};
+                        
+                        allTemplates.forEach(template => {
+                            const cat = template.category || 'other';
+                            if (!templatesByCategory[cat]) {
+                                templatesByCategory[cat] = [];
+                            }
+                            templatesByCategory[cat].push(template);
+                        });
+                        
+                        console.log('✓ Templates grouped by category:', Object.keys(templatesByCategory));
+                        
+                        // Build modal with real templates
+                        self.buildTemplatesModal(templatesByCategory, allTemplates);
+                    } else {
+                        console.error('❌ Failed to load templates');
+                        self.showErrorModal('Failed to load templates. Please refresh and try again.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('❌ AJAX Error:', status, error);
+                    console.error('Response:', xhr.responseText);
+                    $('.probuilder-templates-modal-overlay').remove();
+                    
+                    let errorMsg = 'Error loading templates';
+                    if (status === 'timeout') {
+                        errorMsg = 'Templates loading timed out. Please try again.';
+                    } else if (xhr.responseText) {
+                        errorMsg = 'Server error: ' + xhr.responseText.substring(0, 100);
+                    }
+                    
+                    self.showErrorModal(errorMsg);
+                }
+            });
+        },
+        
+        /**
+         * Show error modal
+         */
+        showErrorModal: function(errorMessage) {
+            const errorHTML = `
+                <div class="probuilder-templates-modal-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.85);
+                    z-index: 999999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    backdrop-filter: blur(3px);
+                ">
+                    <div style="
+                        background: white;
+                        padding: 40px;
+                        border-radius: 12px;
+                        text-align: center;
+                        max-width: 500px;
+                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+                    ">
+                        <div style="font-size: 64px; color: #dc2626; margin-bottom: 20px;">
+                            <i class="dashicons dashicons-warning"></i>
+                        </div>
+                        <h3 style="margin: 0 0 15px; color: #1e293b; font-size: 20px;">Error Loading Templates</h3>
+                        <p style="margin: 0 0 25px; color: #64748b; font-size: 14px; line-height: 1.6;">${errorMessage}</p>
+                        <button onclick="jQuery('.probuilder-templates-modal-overlay').remove();" style="
+                            background: #92003b;
+                            color: white;
+                            border: none;
+                            padding: 12px 30px;
+                            border-radius: 6px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.background='#d5006d'" onmouseout="this.style.background='#92003b'">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            $('body').append(errorHTML);
+        },
+        
+        /**
+         * Build templates modal UI
+         */
+        buildTemplatesModal: function(templatesByCategory, allTemplates) {
+            const self = this;
+            
+            // Category metadata
+            const categoryMeta = {
+                'pages': { title: 'Full Page Templates', icon: 'dashicons-welcome-widgets-menus' },
+                'hero': { title: 'Hero Sections', icon: 'dashicons-welcome-view-site' },
+                'features': { title: 'Features', icon: 'dashicons-star-filled' },
+                'pricing': { title: 'Pricing Tables', icon: 'dashicons-cart' },
+                'testimonials': { title: 'Testimonials', icon: 'dashicons-format-quote' },
+                'cta': { title: 'Call to Action', icon: 'dashicons-megaphone' },
+                'team': { title: 'Team Sections', icon: 'dashicons-groups' },
+                'gallery': { title: 'Galleries', icon: 'dashicons-format-gallery' },
+                'contact': { title: 'Contact Sections', icon: 'dashicons-email' },
+                'footer': { title: 'Footers', icon: 'dashicons-align-full-width' },
+                'other': { title: 'Other Templates', icon: 'dashicons-admin-page' }
             };
             
             // Build modal HTML
@@ -7380,7 +8424,7 @@
                                 <i class="dashicons dashicons-layout" style="color: #ffffff; font-size: 32px;"></i>
                                 <div>
                                     <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">Template Library</h2>
-                                    <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.8);">Choose a pre-designed template to get started quickly</p>
+                                    <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.8);">✨ ${allTemplates.length} Professional Templates Available</p>
                                 </div>
                             </div>
                             <button class="probuilder-templates-close" style="
@@ -7433,8 +8477,9 @@
             `;
             
             // Add each category
-            Object.keys(templateCategories).forEach(categoryKey => {
-                const category = templateCategories[categoryKey];
+            Object.keys(templatesByCategory).forEach(categoryKey => {
+                const categoryTemplates = templatesByCategory[categoryKey];
+                const catMeta = categoryMeta[categoryKey] || { title: categoryKey, icon: 'dashicons-admin-page' };
                 
                 modalHTML += `
                     <div class="template-category" style="margin-bottom: 40px;">
@@ -7446,8 +8491,8 @@
                             padding-bottom: 12px;
                             border-bottom: 2px solid #92003b;
                         ">
-                            <i class="dashicons ${category.icon}" style="font-size: 24px; color: #92003b;"></i>
-                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">${category.title}</h3>
+                            <i class="dashicons ${catMeta.icon}" style="font-size: 24px; color: #92003b;"></i>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">${catMeta.title}</h3>
                             <span style="
                                 background: #92003b;
                                 color: #ffffff;
@@ -7455,7 +8500,7 @@
                                 border-radius: 12px;
                                 font-size: 11px;
                                 font-weight: 600;
-                            ">${category.templates.length}</span>
+                            ">${categoryTemplates.length}</span>
                         </div>
                         
                         <div style="
@@ -7466,11 +8511,11 @@
                 `;
                 
                 // Add templates
-                category.templates.forEach(template => {
-                    const thumbnail = self.generateTemplateThumbnail(template.id);
+                categoryTemplates.forEach(template => {
+                    const thumbnail = template.thumbnail || 'data:image/svg+xml;base64,' + btoa(`<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="200" fill="#f3f4f6"/><text x="150" y="100" text-anchor="middle" fill="#9ca3af" font-size="16">Template</text></svg>`);
                     
                     modalHTML += `
-                        <div class="template-card" data-template-id="${template.id}" data-template-name="${template.name.toLowerCase()}" data-template-category="${category.title.toLowerCase()}" data-template-preview="${template.preview.toLowerCase()}" style="
+                        <div class="template-card" data-template-id="${template.id}" data-template-name="${template.name.toLowerCase()}" data-template-category="${catMeta.title.toLowerCase()}" style="
                             background: #ffffff;
                             border: 2px solid #e6e9ec;
                             border-radius: 8px;
@@ -7486,7 +8531,7 @@
                                 overflow: hidden;
                                 border-bottom: 1px solid #e6e9ec;
                             ">
-                                ${thumbnail}
+                                <img src="${thumbnail}" style="width: 100%; height: 100%; object-fit: cover;" />
                                 <div style="
                                     position: absolute;
                                     top: 10px;
@@ -7498,14 +8543,13 @@
                                     font-size: 10px;
                                     font-weight: 700;
                                     text-transform: uppercase;
-                                ">PRO</div>
+                                ">NEW</div>
                             </div>
                             
                             <!-- Content -->
                             <div style="padding: 15px;">
                                 <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1e293b;">${template.name}</h4>
-                                <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; line-height: 1.5;">${template.preview}</p>
-                                <button style="
+                                <button class="template-insert-btn" data-template-id="${template.id}" style="
                                     width: 100%;
                                     background: #92003b;
                                     color: #ffffff;
@@ -7589,16 +8633,85 @@
                 }
             });
             
-            // Bind template card clicks
-            $('.template-card').on('click', function() {
-                const templateId = $(this).data('template-id');
-                console.log('Template selected:', templateId);
+            // Bind template insert button clicks
+            $('.template-insert-btn').on('click', function(e) {
+                e.stopPropagation();
+                const $btn = $(this);
+                const templateId = $btn.data('template-id');
+                const template = allTemplates.find(t => t.id === templateId);
                 
-                // Close modal
-                $('.probuilder-templates-modal-overlay').remove();
+                console.log('=== INSERTING TEMPLATE ===');
+                console.log('Template ID:', templateId);
                 
-                // Import template
-                self.importTemplate(templateId);
+                if (!template) {
+                    console.error('❌ Template not found:', templateId);
+                    alert('Error: Template not found');
+                    return;
+                }
+                
+                // Show loading on button
+                const originalHTML = $btn.html();
+                $btn.html('<i class="dashicons dashicons-update" style="font-size: 16px; animation: spin 1s linear infinite;"></i> Loading...').prop('disabled', true);
+                
+                // Load template data from backend
+                $.ajax({
+                    url: ProBuilderEditor.ajaxurl || ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'probuilder_get_template_data',
+                        template_id: templateId
+                    },
+                    timeout: 30000, // 30 second timeout for large templates
+                    success: function(response) {
+                        console.log('✓ Template data loaded');
+                        
+                        if (response.success && response.data && response.data.data) {
+                            const templateData = response.data.data;
+                            console.log('Template elements:', Array.isArray(templateData) ? templateData.length : 1);
+                            
+                            // Close modal
+                            $('.probuilder-templates-modal-overlay').remove();
+                            
+                            // Clear existing canvas first
+                            console.log('Clearing canvas before inserting template...');
+                            self.clearCanvas();
+                            
+                            // Insert template elements
+                            if (Array.isArray(templateData)) {
+                                console.log('Inserting', templateData.length, 'elements...');
+                                templateData.forEach(function(element, index) {
+                                    console.log(`Inserting element ${index + 1}:`, element.widgetType);
+                                    if (element.widgetType) {
+                                        self.addElement(element.widgetType, element.settings || {});
+                                    }
+                                });
+                            } else {
+                                console.log('Inserting single element...');
+                                if (templateData.widgetType) {
+                                    self.addElement(templateData.widgetType, templateData.settings || {});
+                                }
+                            }
+                            
+                            // Show success message
+                            self.showToast('✓ Template inserted: ' + template.name);
+                        } else {
+                            console.error('❌ Invalid template data response');
+                            alert('Error: Could not load template data');
+                            $btn.html(originalHTML).prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ AJAX Error loading template data:', status, error);
+                        
+                        let errorMsg = 'Error loading template';
+                        if (status === 'timeout') {
+                            errorMsg = 'Template loading timed out. This template might be too large.';
+                        }
+                        
+                        alert(errorMsg);
+                        $btn.html(originalHTML).prop('disabled', false);
+                    }
+                });
             });
         },
         

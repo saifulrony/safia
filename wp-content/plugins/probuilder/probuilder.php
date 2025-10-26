@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ProBuilder - Elementor-Style Page Builder
  * Plugin URI: https://github.com/probuilder
- * Description: Professional Elementor-like drag & drop page builder with 20+ premium widgets, advanced controls, and responsive design modes. Build stunning pages visually!
- * Version: 1.2.0
+ * Description: Professional Elementor-like drag & drop page builder with 90+ premium widgets, advanced controls, and responsive design modes. Build stunning pages visually!
+ * Version: 3.0.0
  * Author: ProBuilder Team
  * Author URI: https://github.com/probuilder
  * License: GPL v2 or later
@@ -57,6 +57,8 @@ final class ProBuilder {
      */
     private function includes() {
         // Core classes
+        require_once PROBUILDER_PATH . 'includes/class-error-handler.php';
+        require_once PROBUILDER_PATH . 'includes/class-backup-manager.php';
         require_once PROBUILDER_PATH . 'includes/class-cache.php';
         require_once PROBUILDER_PATH . 'includes/class-assets-optimizer.php';
         require_once PROBUILDER_PATH . 'includes/class-base-widget.php';
@@ -67,6 +69,22 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-templates.php';
         require_once PROBUILDER_PATH . 'includes/class-templates-library.php';
         require_once PROBUILDER_PATH . 'includes/class-theme-integration.php';
+        
+        // Advanced Features
+        require_once PROBUILDER_PATH . 'includes/class-navigator.php';
+        require_once PROBUILDER_PATH . 'includes/class-history-panel.php';
+        require_once PROBUILDER_PATH . 'includes/class-global-styles.php';
+        require_once PROBUILDER_PATH . 'includes/class-popup-builder.php';
+        require_once PROBUILDER_PATH . 'includes/class-theme-builder.php';
+        require_once PROBUILDER_PATH . 'includes/class-dynamic-content.php';
+        require_once PROBUILDER_PATH . 'includes/class-global-widgets.php';
+        require_once PROBUILDER_PATH . 'includes/class-role-manager.php';
+        require_once PROBUILDER_PATH . 'includes/class-form-integrations.php';
+        require_once PROBUILDER_PATH . 'includes/class-shape-dividers.php';
+        require_once PROBUILDER_PATH . 'includes/class-motion-effects.php';
+        require_once PROBUILDER_PATH . 'includes/class-custom-fonts.php';
+        require_once PROBUILDER_PATH . 'includes/class-custom-breakpoints.php';
+        require_once PROBUILDER_PATH . 'includes/class-enhanced-animations.php';
         
         // Layout Widgets
         require_once PROBUILDER_PATH . 'widgets/container.php';
@@ -122,6 +140,75 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'widgets/blog-posts.php';
         require_once PROBUILDER_PATH . 'widgets/faq.php';
         require_once PROBUILDER_PATH . 'widgets/timeline.php';
+        require_once PROBUILDER_PATH . 'widgets/portfolio.php';
+        require_once PROBUILDER_PATH . 'widgets/reviews.php';
+        require_once PROBUILDER_PATH . 'widgets/hotspot.php';
+        require_once PROBUILDER_PATH . 'widgets/loop-builder.php';
+        
+        // WordPress Integration Widgets
+        require_once PROBUILDER_PATH . 'widgets/menu.php';
+        require_once PROBUILDER_PATH . 'widgets/search-form.php';
+        require_once PROBUILDER_PATH . 'widgets/breadcrumbs.php';
+        require_once PROBUILDER_PATH . 'widgets/author-box.php';
+        require_once PROBUILDER_PATH . 'widgets/post-navigation.php';
+        require_once PROBUILDER_PATH . 'widgets/share-buttons.php';
+        require_once PROBUILDER_PATH . 'widgets/price-list.php';
+        require_once PROBUILDER_PATH . 'widgets/login.php';
+        require_once PROBUILDER_PATH . 'widgets/sitemap.php';
+        require_once PROBUILDER_PATH . 'widgets/table-of-contents.php';
+        require_once PROBUILDER_PATH . 'widgets/icon.php';
+        require_once PROBUILDER_PATH . 'widgets/category-list.php';
+        require_once PROBUILDER_PATH . 'widgets/tag-cloud.php';
+        require_once PROBUILDER_PATH . 'widgets/archive-title.php';
+        require_once PROBUILDER_PATH . 'widgets/site-logo.php';
+        require_once PROBUILDER_PATH . 'widgets/recent-posts.php';
+        require_once PROBUILDER_PATH . 'widgets/post-excerpt.php';
+        require_once PROBUILDER_PATH . 'widgets/post-title.php';
+        require_once PROBUILDER_PATH . 'widgets/post-featured-image.php';
+        require_once PROBUILDER_PATH . 'widgets/post-date.php';
+        require_once PROBUILDER_PATH . 'widgets/post-author.php';
+        require_once PROBUILDER_PATH . 'widgets/post-comments.php';
+        
+        // Advanced/Media Widgets
+        require_once PROBUILDER_PATH . 'widgets/lottie.php';
+        require_once PROBUILDER_PATH . 'widgets/mega-menu.php';
+        require_once PROBUILDER_PATH . 'widgets/audio.php';
+        require_once PROBUILDER_PATH . 'widgets/progress-tracker.php';
+        require_once PROBUILDER_PATH . 'widgets/table.php';
+        require_once PROBUILDER_PATH . 'widgets/anchor.php';
+        require_once PROBUILDER_PATH . 'widgets/google-maps.php';
+        require_once PROBUILDER_PATH . 'widgets/reading-progress.php';
+        require_once PROBUILDER_PATH . 'widgets/code-highlight.php';
+        require_once PROBUILDER_PATH . 'widgets/back-to-top.php';
+        require_once PROBUILDER_PATH . 'widgets/sidebar.php';
+        require_once PROBUILDER_PATH . 'widgets/text-path.php';
+        require_once PROBUILDER_PATH . 'widgets/scroll-snap.php';
+        require_once PROBUILDER_PATH . 'widgets/sticky-video.php';
+        require_once PROBUILDER_PATH . 'widgets/offcanvas.php';
+        require_once PROBUILDER_PATH . 'widgets/paypal-button.php';
+        require_once PROBUILDER_PATH . 'widgets/stripe-button.php';
+        require_once PROBUILDER_PATH . 'widgets/custom-css.php';
+        require_once PROBUILDER_PATH . 'widgets/facebook-embed.php';
+        require_once PROBUILDER_PATH . 'widgets/twitter-embed.php';
+        require_once PROBUILDER_PATH . 'widgets/instagram-feed.php';
+        require_once PROBUILDER_PATH . 'widgets/animated-text.php';
+        require_once PROBUILDER_PATH . 'widgets/notification.php';
+        require_once PROBUILDER_PATH . 'widgets/image-comparison.php';
+        require_once PROBUILDER_PATH . 'widgets/parallax-image.php';
+        require_once PROBUILDER_PATH . 'widgets/calendly.php';
+        
+        // WooCommerce Widgets
+        if (class_exists('WooCommerce')) {
+            require_once PROBUILDER_PATH . 'widgets/woo-products.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-cart.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-categories.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-reviews.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-add-to-cart.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-related.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-breadcrumbs.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-rating.php';
+            require_once PROBUILDER_PATH . 'widgets/woo-meta.php';
+        }
     }
     
     /**
@@ -142,6 +229,12 @@ final class ProBuilder {
      * Initialize plugin
      */
     public function init() {
+        // Initialize error handler
+        ProBuilder_Error_Handler::instance();
+        
+        // Initialize backup manager
+        ProBuilder_Backup_Manager::instance();
+        
         // Initialize cache system
         ProBuilder_Cache::instance();
         
@@ -162,9 +255,26 @@ final class ProBuilder {
         
         // Initialize templates
         ProBuilder_Templates::instance();
+        ProBuilder_Templates_Library::instance();
         
         // Initialize theme integration
         ProBuilder_Theme_Integration::instance();
+        
+        // Initialize advanced features
+        ProBuilder_Navigator::instance();
+        ProBuilder_History_Panel::instance();
+        ProBuilder_Global_Styles::instance();
+        ProBuilder_Popup_Builder::instance();
+        ProBuilder_Theme_Builder::instance();
+        ProBuilder_Dynamic_Content::instance();
+        ProBuilder_Global_Widgets::instance();
+        ProBuilder_Role_Manager::instance();
+        ProBuilder_Form_Integrations::instance();
+        ProBuilder_Shape_Dividers::instance();
+        ProBuilder_Motion_Effects::instance();
+        ProBuilder_Custom_Fonts::instance();
+        ProBuilder_Custom_Breakpoints::instance();
+        ProBuilder_Enhanced_Animations::instance();
         
         // Load text domain
         load_plugin_textdomain('probuilder', false, dirname(plugin_basename(__FILE__)) . '/languages');

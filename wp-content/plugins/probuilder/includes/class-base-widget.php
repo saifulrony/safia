@@ -119,6 +119,48 @@ abstract class ProBuilder_Base_Widget {
     }
     
     /**
+     * Convenience method: Start style tab
+     * Shorthand for starting a style controls section
+     */
+    protected function start_style_tab($label = null) {
+        if ($label === null) {
+            $label = __('Style', 'probuilder');
+        }
+        $this->start_controls_section('section_style_' . uniqid(), [
+            'label' => $label,
+            'tab' => 'style'
+        ]);
+    }
+    
+    /**
+     * Convenience method: End style tab
+     * Alias for end_controls_section()
+     */
+    protected function end_style_tab() {
+        $this->end_controls_section();
+    }
+    
+    /**
+     * Convenience method: Start advanced tab
+     */
+    protected function start_advanced_tab($label = null) {
+        if ($label === null) {
+            $label = __('Advanced', 'probuilder');
+        }
+        $this->start_controls_section('section_advanced_' . uniqid(), [
+            'label' => $label,
+            'tab' => 'advanced'
+        ]);
+    }
+    
+    /**
+     * Convenience method: End advanced tab
+     */
+    protected function end_advanced_tab() {
+        $this->end_controls_section();
+    }
+    
+    /**
      * Render widget
      */
     public function render_widget($settings = []) {
