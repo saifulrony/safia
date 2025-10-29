@@ -2178,6 +2178,13 @@
             const originalPosition = $gridCell.css('position');
             const originalZIndex = $gridCell.css('z-index');
             
+            // Track final position during drag
+            let finalLeft = startLeft;
+            let finalTop = startTop;
+            let finalWidth = startWidth;
+            let finalHeight = startHeight;
+            let isResizing = false; // Track if user actually resized (moved mouse)
+            
             console.log('Start:', {width: startWidth, height: startHeight, area: originalArea});
             
             // Convert to absolute positioning for smooth resize
@@ -2215,37 +2222,54 @@
                 const deltaX = moveEvent.clientX - startX;
                 const deltaY = moveEvent.clientY - startY;
                 
+                // Mark that we're actually resizing (mouse moved)
+                if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                    isResizing = true;
+                }
+                
                 let newWidth = startWidth;
                 let newHeight = startHeight;
                 let newLeft = startLeft;
                 let newTop = startTop;
                 
                 if (direction === 'top') {
-                    // Resize from top side
-                    newHeight = Math.max(50, startHeight - deltaY);
+                    // Resize from top side - bottom edge stays fixed
+                    newHeight = Math.max(20, startHeight - deltaY);
                     newTop = startTop + (startHeight - newHeight);
                     $gridCell.css({
                         'height': newHeight + 'px',
                         'top': newTop + 'px'
                     });
+                    // Track final values
+                    finalHeight = newHeight;
+                    finalTop = newTop;
                 } else if (direction === 'bottom' || direction === 'both') {
-                    // Resize from bottom side
-                    newHeight = Math.max(50, startHeight + deltaY);
+                    // Resize from bottom side - top edge stays fixed
+                    newHeight = Math.max(20, startHeight + deltaY);
                     $gridCell.css('height', newHeight + 'px');
+                    // Track final values
+                    finalHeight = newHeight;
+                    finalTop = startTop; // Top doesn't move
                 }
                 
                 if (direction === 'left') {
-                    // Resize from left side
-                    newWidth = Math.max(50, startWidth - deltaX);
+                    // Resize from left side - right edge stays fixed
+                    newWidth = Math.max(20, startWidth - deltaX);
                     newLeft = startLeft + (startWidth - newWidth);
                     $gridCell.css({
                         'width': newWidth + 'px',
                         'left': newLeft + 'px'
                     });
+                    // Track final values
+                    finalWidth = newWidth;
+                    finalLeft = newLeft;
                 } else if (direction === 'right' || direction === 'both') {
-                    // Resize from right side
-                    newWidth = Math.max(50, startWidth + deltaX);
+                    // Resize from right side - left edge stays fixed
+                    newWidth = Math.max(20, startWidth + deltaX);
                     $gridCell.css('width', newWidth + 'px');
+                    // Track final values
+                    finalWidth = newWidth;
+                    finalLeft = startLeft; // Left doesn't move
                 }
                 
                 // Update indicator
@@ -2268,36 +2292,24 @@
                 $(document).off('.gridResize');
                 $indicator.remove();
                 
-                // Calculate final dimensions
-                const deltaX = upEvent.clientX - startX;
-                const deltaY = upEvent.clientY - startY;
+                // Use the tracked final dimensions from mousemove (already updated during drag)
+                // No need to recalculate - we have the exact values from the drag operation
                 
-                // Calculate final dimensions based on direction
-                let finalWidth = startWidth;
-                let finalHeight = startHeight;
-                
-                if (direction === 'right' || direction === 'both') {
-                    finalWidth = Math.max(50, startWidth + deltaX);
-                } else if (direction === 'left') {
-                    finalWidth = Math.max(50, startWidth - deltaX);
-                }
-                
-                if (direction === 'bottom' || direction === 'both') {
-                    finalHeight = Math.max(50, startHeight + deltaY);
-                } else if (direction === 'top') {
-                    finalHeight = Math.max(50, startHeight - deltaY);
-                }
-                
-                // Calculate scale factors
+                // Calculate scale factors for grid-area adjustments
                 const scaleX = finalWidth / startWidth;
                 const scaleY = finalHeight / startHeight;
                 
-                // Instead of using grid-area which forces snapping, use explicit width/height
-                // Store the exact pixel dimensions for flexible sizing
+                // Round to exact pixels for final application
                 const exactWidth = Math.round(finalWidth);
                 const exactHeight = Math.round(finalHeight);
                 
-                console.log('Setting exact dimensions:', {width: exactWidth, height: exactHeight});
+                console.log('Using tracked dimensions from drag:', {
+                    finalLeft,
+                    finalTop,
+                    exactWidth,
+                    exactHeight,
+                    direction
+                });
                 
                 // Parse original grid-area
                 const parts = originalArea.split('/').map(p => p.trim());
@@ -2327,28 +2339,30 @@
                     rowStart = rowEnd - newRowSpan;
                 }
                 
-                // Round the spans for CSS grid (grid-area requires integers)
-                colStart = Math.round(colStart);
-                colEnd = Math.round(colEnd);
-                rowStart = Math.round(rowStart);
-                rowEnd = Math.round(rowEnd);
+                // Keep original grid-area for reference
+                const finalArea = originalArea;
                 
-                const finalArea = `${rowStart} / ${colStart} / ${rowEnd} / ${colEnd}`;
+                console.log('Finalizing resize with tracked values:', {
+                    direction,
+                    finalLeft,
+                    finalTop,
+                    exactWidth,
+                    exactHeight,
+                    startLeft,
+                    startTop
+                });
                 
-                // FLEXIBLE MODE: Skip grid template adjustment to allow exact pixel sizing
-                // The explicit width/height on the cell will maintain the exact size you set
-                // Uncomment the line below if you want neighboring cells to adjust (responsive mode)
-                // self.adjustGridTemplateForResize(gridElement, cellIndex, direction, scaleX, scaleY);
-                
-                // Restore to grid positioning with explicit dimensions for flexibility
+                // Apply final position and dimensions
+                // Cell stays in absolute positioning with exact tracked values from drag
+                // No recalculation = no jump or weird effects
                 $gridCell.css({
-                    'position': '',
-                    'top': '',
-                    'left': '',
+                    'position': 'absolute',
+                    'left': Math.round(finalLeft) + 'px',
+                    'top': Math.round(finalTop) + 'px',
                     'width': exactWidth + 'px',
                     'height': exactHeight + 'px',
-                    'grid-area': finalArea,
-                    'z-index': '',
+                    'grid-area': 'unset',
+                    'z-index': '1',
                     'box-shadow': '',
                     'border-color': '',
                     'transition': ''
@@ -2360,6 +2374,18 @@
                 $gridCell.data('original-area', finalArea);
                 $gridCell.attr('data-original-area', finalArea);
                 
+                // Prevent click event from firing if we actually resized
+                if (isResizing) {
+                    setTimeout(function() {
+                        $(document).one('click.preventAfterResize', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                            return false;
+                        });
+                    }, 10);
+                }
+                
                 // Save to history
                 self.saveHistory();
                 
@@ -2369,7 +2395,8 @@
                     scaleX: scaleX.toFixed(2),
                     scaleY: scaleY.toFixed(2),
                     finalWidth: Math.round(finalWidth),
-                    finalHeight: Math.round(finalHeight)
+                    finalHeight: Math.round(finalHeight),
+                    isResizing: isResizing
                 });
             });
         },
@@ -2586,15 +2613,15 @@
                 
                 // Calculate new dimensions based on direction
                 if (direction === 'right' || direction === 'both') {
-                    newWidth = Math.max(50, startWidth + deltaX);
+                    newWidth = Math.max(20, startWidth + deltaX);
                 } else if (direction === 'left') {
-                    newWidth = Math.max(50, startWidth - deltaX);
+                    newWidth = Math.max(20, startWidth - deltaX);
                 }
                 
                 if (direction === 'bottom' || direction === 'both') {
-                    newHeight = Math.max(50, startHeight + deltaY);
+                    newHeight = Math.max(20, startHeight + deltaY);
                 } else if (direction === 'top') {
-                    newHeight = Math.max(50, startHeight - deltaY);
+                    newHeight = Math.max(20, startHeight - deltaY);
                 }
                 
                 // Apply the new dimensions to both element and preview
@@ -2630,15 +2657,15 @@
                 let finalHeight = startHeight;
                 
                 if (direction === 'right' || direction === 'both') {
-                    finalWidth = Math.max(50, startWidth + deltaX);
+                    finalWidth = Math.max(20, startWidth + deltaX);
                 } else if (direction === 'left') {
-                    finalWidth = Math.max(50, startWidth - deltaX);
+                    finalWidth = Math.max(20, startWidth - deltaX);
                 }
                 
                 if (direction === 'bottom' || direction === 'both') {
-                    finalHeight = Math.max(50, startHeight + deltaY);
+                    finalHeight = Math.max(20, startHeight + deltaY);
                 } else if (direction === 'top') {
-                    finalHeight = Math.max(50, startHeight - deltaY);
+                    finalHeight = Math.max(20, startHeight - deltaY);
                 }
                 
                 // Save to element settings and apply to both element and preview
@@ -3467,37 +3494,37 @@
                                     // Handle different resize directions
                                     switch(direction) {
                                         case 'right':
-                                            newWidth = Math.max(50, startWidth + deltaX);
+                                            newWidth = Math.max(20, startWidth + deltaX);
                                             break;
                                         case 'left':
-                                            newWidth = Math.max(50, startWidth - deltaX);
+                                            newWidth = Math.max(20, startWidth - deltaX);
                                             newLeft = startLeft + (startWidth - newWidth);
                                             break;
                                         case 'bottom':
-                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            newHeight = Math.max(20, startHeight + deltaY);
                                             break;
                                         case 'top':
-                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newHeight = Math.max(20, startHeight - deltaY);
                                             newTop = startTop + (startHeight - newHeight);
                                             break;
                                         case 'top-left':
-                                            newWidth = Math.max(50, startWidth - deltaX);
-                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newWidth = Math.max(20, startWidth - deltaX);
+                                            newHeight = Math.max(20, startHeight - deltaY);
                                             newLeft = startLeft + (startWidth - newWidth);
                                             newTop = startTop + (startHeight - newHeight);
                                             break;
                                         case 'top-right':
-                                            newWidth = Math.max(50, startWidth + deltaX);
-                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newWidth = Math.max(20, startWidth + deltaX);
+                                            newHeight = Math.max(20, startHeight - deltaY);
                                             newTop = startTop + (startHeight - newHeight);
                                             break;
                                         case 'bottom-right':
-                                            newWidth = Math.max(50, startWidth + deltaX);
-                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            newWidth = Math.max(20, startWidth + deltaX);
+                                            newHeight = Math.max(20, startHeight + deltaY);
                                             break;
                                         case 'bottom-left':
-                                            newWidth = Math.max(50, startWidth - deltaX);
-                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            newWidth = Math.max(20, startWidth - deltaX);
+                                            newHeight = Math.max(20, startHeight + deltaY);
                                             newLeft = startLeft + (startWidth - newWidth);
                                             break;
                                     }
@@ -4092,7 +4119,7 @@
                 case 'grid-layout':
                     const gridPattern = settings.grid_pattern || 'pattern-1';
                     const gridGap = settings.gap || 20;
-                    const gridMinHeight = settings.min_height || 150;
+                    const gridMinHeight = settings.min_height || 30;
                     const gridBgColor = settings.background_color || '#f8f9fa';
                     const gridBorderColor = settings.border_color || '#ddd';
                     const gridBorderWidth = settings.border_width || 1;
@@ -4130,7 +4157,7 @@
                                 position: relative;
                             }
                             #${gridId} .grid-cell {
-                                min-height: ${gridMinHeight}px;
+                                min-height: 0 !important;
                                 background: ${gridBgColor};
                                 border: ${gridBorderWidth}px solid ${gridBorderColor};
                                 border-radius: ${gridBorderRadius}px;
@@ -4234,23 +4261,23 @@
                                 opacity: 1 !important;
                             }
                             #${gridId} .grid-cell-empty-content {
-                                text-align: center;
-                                color: #999;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                width: 100%;
+                                height: 100%;
+                                padding: 0;
                                 pointer-events: auto;
                                 cursor: pointer;
-                                padding: 20px;
-                                border-radius: 4px;
-                                transition: all 0.3s ease;
+                                transition: opacity 0.2s ease;
                             }
                             
                             #${gridId} .grid-cell-empty-content:hover {
-                                background: rgba(0, 124, 186, 0.1);
-                                color: #007cba;
-                                transform: scale(1.05);
+                                opacity: 1;
                             }
                             
                             #${gridId} .grid-cell-empty-content:hover .dashicons {
-                                opacity: 0.6 !important;
+                                opacity: 0.4 !important;
                             }
                             #${gridId} .grid-cell-toolbar {
                                 position: absolute;
@@ -4373,6 +4400,11 @@
                                 transition: background 0.2s ease;
                             }
                             
+                            #${gridId} .probuilder-resizable-widget:hover .probuilder-nested-toolbar,
+                            #${gridId} .probuilder-nested-element:hover .probuilder-nested-toolbar {
+                                display: flex !important;
+                            }
+                            
                             #${gridId} .probuilder-nested-toolbar button:hover {
                                 background: rgba(255, 255, 255, 0.2);
                             }
@@ -4486,6 +4518,7 @@
                                         padding: 4px;
                                         border-radius: 3px;
                                         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                        pointer-events: auto;
                                     ">
                                         <button class="probuilder-nested-edit" title="Edit" style="
                                             background: #007cba;
@@ -4498,8 +4531,9 @@
                                             display: flex;
                                             align-items: center;
                                             justify-content: center;
+                                            pointer-events: auto;
                                         ">
-                                            <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
+                                            <i class="dashicons dashicons-edit" style="font-size: 12px; pointer-events: none;"></i>
                                         </button>
                                         <button class="probuilder-nested-delete" title="Delete" style="
                                             background: #dc2626;
@@ -4512,8 +4546,9 @@
                                             display: flex;
                                             align-items: center;
                                             justify-content: center;
+                                            pointer-events: auto;
                                         ">
-                                            <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
+                                            <i class="dashicons dashicons-trash" style="font-size: 12px; pointer-events: none;"></i>
                                         </button>
                                     </div>
                                     
@@ -4537,12 +4572,10 @@
                                 </div>
                             `;
                         } else {
-                            // Empty drop zone
+                            // Empty drop zone - minimal icon only
                             gridHTML += `
                                 <div class="grid-cell-empty-content">
-                                    <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3;"></i>
-                                    <div style="font-size: 12px; margin-top: 8px;">Cell ${index + 1}</div>
-                                    <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
+                                    <i class="dashicons dashicons-plus-alt2" style="font-size: 18px; opacity: 0.15; color: #999;"></i>
                                 </div>
                             `;
                         }
