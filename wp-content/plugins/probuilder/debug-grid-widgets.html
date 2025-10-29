@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Grid Widgets - Move/Delete Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status { font-size: 48px; margin: 20px 0; }
+        .ok { color: #4caf50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .instruction {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #1976d2; }
+        h2 { color: #333; border-bottom: 2px solid #2196f3; padding-bottom: 10px; }
+        ol { line-height: 2; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        td:first-child { font-weight: bold; width: 250px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Grid Widget Move/Delete Feature</h1>
+
+    <div class="box">
+        <h2>🎯 Testing Checklist</h2>
+        <div class="instruction">
+            <p><strong>Follow these steps IN ORDER:</strong></p>
+            <ol>
+                <li><strong>Clear Cache:</strong> Ctrl+Shift+R (or Cmd+Shift+R on Mac)</li>
+                <li><strong>Open ProBuilder Editor</strong></li>
+                <li><strong>Add a Grid Layout widget</strong> to the canvas</li>
+                <li><strong>Open Browser Console:</strong> Press F12</li>
+                <li><strong>Add widgets to grid cells:</strong> Click empty cells and add widgets</li>
+                <li><strong>Look for setup messages in console</strong></li>
+                <li><strong>Try the features below</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="box">
+        <h2>✅ Test 1: Check Version is Loaded</h2>
+        <p><strong>When you add widgets to grid cells, look for this in console:</strong></p>
+        <div class="code">🔧 Setting up delete button for: widget-xxx Button found: 1</div>
+        
+        <table>
+            <tr>
+                <td>✅ If you see "Button found: 1"</td>
+                <td>New code is loaded! Move to Test 2</td>
+            </tr>
+            <tr>
+                <td>❌ If you see "Button found: 0"</td>
+                <td>The toolbar HTML is not being generated correctly</td>
+            </tr>
+            <tr>
+                <td>❌ If you see nothing</td>
+                <td>Cache issue - clear cache and try again</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>🗑️ Test 2: Delete Widget</h2>
+        <div class="instruction">
+            <p><strong>Steps:</strong></p>
+            <ol>
+                <li><strong>Hover over a widget</strong> in a grid cell</li>
+                <li><strong>Look for toolbar</strong> (edit/delete buttons) in top-right corner</li>
+                <li><strong>Click trash icon</strong> (delete button)</li>
+                <li><strong>Check console for:</strong></li>
+            </ol>
+            <div class="code">🗑️ VERSION 4.0.0 - Delete nested element: widget-xxx
+✅ Widget deleted from grid cell 0</div>
+        </div>
+        
+        <table>
+            <tr>
+                <td>✅ Toolbar appears on hover</td>
+                <td>Good! Hover detection works</td>
+            </tr>
+            <tr>
+                <td>✅ Widget disappears on delete</td>
+                <td>Perfect! Delete works</td>
+            </tr>
+            <tr>
+                <td>❌ No toolbar appears</td>
+                <td>CSS issue or HTML not generated</td>
+            </tr>
+            <tr>
+                <td>❌ Toolbar appears but click doesn't work</td>
+                <td>Event handler not attached</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>🎯 Test 3: Move Widget</h2>
+        <div class="instruction">
+            <p><strong>Steps:</strong></p>
+            <ol>
+                <li><strong>Click and hold</strong> on a widget (not toolbar buttons)</li>
+                <li><strong>Drag the widget</strong> - you should see a clone following cursor</li>
+                <li><strong>Drag to another cell</strong> - cell should highlight blue</li>
+                <li><strong>Release mouse</strong> - widget should move</li>
+                <li><strong>Check console for:</strong></li>
+            </ol>
+            <div class="code">🎯 VERSION 4.0.0 - Starting drag of nested element: widget-xxx from cell: 0
+🎯 Moving widget from cell 0 to cell 2
+✅ Widget moved successfully</div>
+        </div>
+        
+        <table>
+            <tr>
+                <td>✅ Visual clone appears</td>
+                <td>Drag initialized correctly</td>
+            </tr>
+            <tr>
+                <td>✅ Cells highlight blue</td>
+                <td>Drop targets working</td>
+            </tr>
+            <tr>
+                <td>✅ Widget moves on release</td>
+                <td>Perfect! Move works</td>
+            </tr>
+            <tr>
+                <td>❌ Nothing happens on drag</td>
+                <td>Event handler not attached</td>
+            </tr>
+            <tr>
+                <td>❌ Can't grab widget</td>
+                <td>Check if clicking toolbar instead</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>🐛 Troubleshooting</h2>
+        
+        <h3>Issue 1: No toolbar appears when hovering</h3>
+        <div class="instruction">
+            <p><strong>Possible causes:</strong></p>
+            <ul>
+                <li>Toolbar HTML not generated in preview</li>
+                <li>CSS hiding the toolbar</li>
+                <li>Hover handler not attached</li>
+            </ul>
+            <p><strong>Check:</strong> Look at the HTML of a grid cell in browser DevTools</p>
+            <p><strong>Should contain:</strong> <code>&lt;div class="probuilder-nested-toolbar"&gt;</code></p>
+        </div>
+
+        <h3>Issue 2: Delete button doesn't work</h3>
+        <div class="instruction">
+            <p><strong>Look for in console:</strong></p>
+            <div class="code">🔧 Setting up delete button for: widget-xxx Button found: 0</div>
+            <p><strong>If "Button found: 0":</strong> The selector is wrong or HTML structure changed</p>
+            <p><strong>Solution:</strong> Check the HTML structure in DevTools</p>
+        </div>
+
+        <h3>Issue 3: Can't drag widgets</h3>
+        <div class="instruction">
+            <p><strong>Check:</strong></p>
+            <ul>
+                <li>Are you clicking the widget content (not toolbar buttons)?</li>
+                <li>Does console show the drag start message?</li>
+                <li>Is the nested element found? Check with: <code>$('.probuilder-nested-element').length</code> in console</li>
+            </ul>
+        </div>
+
+        <h3>Issue 4: "Still not working" (Cache)</h3>
+        <div class="instruction">
+            <p><strong>Nuclear cache clear:</strong></p>
+            <ol>
+                <li>Close ALL tabs with your site</li>
+                <li>Ctrl+Shift+Delete → Clear cache → All time</li>
+                <li>Close browser completely</li>
+                <li>Wait 10 seconds</li>
+                <li>Reopen browser</li>
+                <li>OR try Incognito mode (Ctrl+Shift+N)</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="box">
+        <h2>📋 Report Template</h2>
+        <div class="instruction">
+            <p><strong>If it's still not working, please tell me:</strong></p>
+            
+            <p><strong>1. Console Messages:</strong></p>
+            <div class="code">
+When adding widget to grid, what do you see?
+□ "🔧 Setting up delete button" - Yes / No
+□ If yes, what is "Button found:" value? ___
+
+When hovering over widget:
+□ Does toolbar appear? Yes / No
+□ If no toolbar, check HTML - does it contain "probuilder-nested-toolbar"? ___
+
+When clicking delete:
+□ Any console message? ___
+□ Does widget disappear? Yes / No
+
+When trying to drag:
+□ Any console message? ___
+□ Does visual clone appear? Yes / No
+□ Do cells highlight? Yes / No
+            </div>
+
+            <p><strong>2. Browser Info:</strong></p>
+            <div class="code">
+Browser: Chrome / Firefox / Edge / Safari / Other: ___
+Version: ___
+Incognito mode tested: Yes / No
+Cache cleared: Yes / No (How: ___)
+            </div>
+
+            <p><strong>3. HTML Structure:</strong></p>
+            <div class="code">
+Right-click on a widget in grid → Inspect
+Copy the HTML of the grid cell and paste it here
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        <h2>🔧 Quick Console Tests</h2>
+        <div class="instruction">
+            <p><strong>Run these in browser console (F12) while in ProBuilder editor:</strong></p>
+            
+            <div class="code">// Check if nested elements exist
+$('.probuilder-nested-element').length
+// Should return number > 0 if widgets are in grid
+
+// Check if delete buttons exist
+$('.probuilder-nested-delete').length
+// Should return number > 0 if toolbars are rendered
+
+// Check if drag handlers are attached
+$('.probuilder-nested-element').first().data('events')
+// Should show mousedown event
+
+// Manually trigger hover (to test toolbar)
+$('.probuilder-nested-element').first().trigger('mouseenter')
+// Toolbar should appear
+            </div>
+        </div>
+    </div>
+
+    <button onclick="window.print()">📄 Print This Page</button>
+    <button onclick="location.reload(true)">🔄 Reload (Hard Refresh)</button>
+
+</body>
+</html>
+

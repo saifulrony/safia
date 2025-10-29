@@ -240,7 +240,7 @@ class ProBuilder_Theme_Integration {
      * AJAX: Save template part
      */
     public function ajax_save_template_part() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('edit_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
@@ -288,7 +288,7 @@ class ProBuilder_Theme_Integration {
      * AJAX: Get template parts list
      */
     public function ajax_get_template_parts() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         $part_type = isset($_POST['part_type']) ? sanitize_text_field($_POST['part_type']) : '';
         

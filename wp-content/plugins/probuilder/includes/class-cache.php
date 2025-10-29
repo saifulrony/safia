@@ -307,7 +307,7 @@ class ProBuilder_Cache {
      * AJAX: Clear cache
      */
     public function ajax_clear_cache() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);

@@ -1,20 +1,30 @@
 <?php
 /**
- * Plugin Name: ProBuilder - Elementor-Style Page Builder
- * Plugin URI: https://github.com/probuilder
- * Description: Professional Elementor-like drag & drop page builder with 90+ premium widgets, advanced controls, and responsive design modes. Build stunning pages visually!
+ * Plugin Name: ProBuilder - Safia Edition
+ * Plugin URI: https://safia.com/probuilder
+ * Description: Professional Elementor-style drag & drop page builder with 90+ premium widgets, advanced controls, and responsive design modes. Build stunning pages visually! Licensed by Safia Technologies.
  * Version: 3.0.0
- * Author: ProBuilder Team
- * Author URI: https://github.com/probuilder
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Author: Safia Technologies
+ * Author URI: https://safia.com
+ * License: Proprietary License - Safia Technologies
+ * License URI: https://safia.com/license
  * Text Domain: probuilder
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * 
- * ProBuilder is a modern page builder plugin for WordPress.
- * Build beautiful pages with our Elementor-style interface.
+ * ProBuilder - Safia Edition
+ * Copyright (c) 2025 Safia Technologies. All rights reserved.
+ * 
+ * This plugin is licensed, not sold. Unauthorized copying, distribution,
+ * modification, or use is strictly prohibited and violates copyright law.
+ * 
+ * SECURITY FEATURES:
+ * - License Key Activation Required
+ * - Code Integrity Verification
+ * - Domain-Locked Licensing
+ * - Anti-Tampering Protection
+ * - Encrypted Communication
  */
 
 if (!defined('ABSPATH')) {
@@ -56,6 +66,10 @@ final class ProBuilder {
      * Include required files
      */
     private function includes() {
+        // Security & License (Load First!)
+        require_once PROBUILDER_PATH . 'includes/class-license-manager.php';
+        require_once PROBUILDER_PATH . 'includes/class-license-page.php';
+        
         // Core classes
         require_once PROBUILDER_PATH . 'includes/class-error-handler.php';
         require_once PROBUILDER_PATH . 'includes/class-backup-manager.php';
@@ -86,9 +100,57 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-custom-breakpoints.php';
         require_once PROBUILDER_PATH . 'includes/class-enhanced-animations.php';
         
+        // Auto-load all widget files
+        $this->load_widgets();
+    }
+    
+    /**
+     * Auto-load all widget files from widgets directory
+     */
+    private function load_widgets() {
+        $widgets_dir = PROBUILDER_PATH . 'widgets/';
+        
+        if (!is_dir($widgets_dir)) {
+            error_log('ProBuilder: Widgets directory not found: ' . $widgets_dir);
+            return;
+        }
+        
+        // Get all PHP files in widgets directory
+        $widget_files = glob($widgets_dir . '*.php');
+        
+        if (empty($widget_files)) {
+            error_log('ProBuilder: No widget files found in ' . $widgets_dir);
+            return;
+        }
+        
+        $loaded_count = 0;
+        $failed_widgets = [];
+        
+        foreach ($widget_files as $widget_file) {
+            try {
+                require_once $widget_file;
+                $loaded_count++;
+            } catch (Exception $e) {
+                $failed_widgets[] = basename($widget_file) . ': ' . $e->getMessage();
+                error_log('ProBuilder: Failed to load widget ' . basename($widget_file) . ': ' . $e->getMessage());
+            }
+        }
+        
+        error_log("ProBuilder: Loaded $loaded_count widget files");
+        
+        if (!empty($failed_widgets)) {
+            error_log('ProBuilder: Failed widgets: ' . implode(', ', $failed_widgets));
+        }
+    }
+    
+    /**
+     * Old includes method kept for reference - now using auto-loader
+     */
+    private function includes_old() {
         // Layout Widgets
         require_once PROBUILDER_PATH . 'widgets/container.php';
         require_once PROBUILDER_PATH . 'widgets/flexbox.php';
+        require_once PROBUILDER_PATH . 'widgets/grid-layout.php';
         
         // Basic Widgets
         require_once PROBUILDER_PATH . 'widgets/heading.php';
@@ -229,6 +291,10 @@ final class ProBuilder {
      * Initialize plugin
      */
     public function init() {
+        // Initialize license manager (FIRST!)
+        ProBuilder_License_Manager::instance();
+        ProBuilder_License_Page::instance();
+        
         // Initialize error handler
         ProBuilder_Error_Handler::instance();
         
@@ -317,17 +383,67 @@ final class ProBuilder {
      * Admin page
      */
     public function admin_page() {
+        $widgets_manager = ProBuilder_Widgets_Manager::instance();
+        $widgets = $widgets_manager->get_widgets();
+        $widgets_by_category = [
+            'layout' => [],
+            'basic' => [],
+            'advanced' => [],
+            'content' => []
+        ];
+        
+        foreach ($widgets as $widget) {
+            $category = $widget->get_category();
+            if (!isset($widgets_by_category[$category])) {
+                $widgets_by_category[$category] = [];
+            }
+            $widgets_by_category[$category][] = $widget;
+        }
+        
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('ProBuilder - Page Builder', 'probuilder') . '</h1>';
+        
+        // Widget Status Panel
+        echo '<div class="notice notice-info" style="margin: 20px 0; padding: 15px;">';
+        echo '<h3 style="margin-top: 0;"><span class="dashicons dashicons-info"></span> Widgets Status</h3>';
+        echo '<p><strong>' . count($widgets) . ' widgets loaded successfully!</strong></p>';
+        echo '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px;">';
+        
+        foreach ($widgets_by_category as $category => $cat_widgets) {
+            $icon_map = [
+                'layout' => 'dashicons-editor-table',
+                'basic' => 'dashicons-editor-paragraph',
+                'advanced' => 'dashicons-admin-settings',
+                'content' => 'dashicons-admin-page'
+            ];
+            $icon = isset($icon_map[$category]) ? $icon_map[$category] : 'dashicons-admin-generic';
+            
+            echo '<div style="background: #fff; padding: 15px; border-left: 4px solid #007cba; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+            echo '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
+            echo '<span class="dashicons ' . $icon . '" style="font-size: 24px; margin-right: 8px; color: #007cba;"></span>';
+            echo '<strong style="text-transform: capitalize;">' . esc_html($category) . '</strong>';
+            echo '</div>';
+            echo '<div style="font-size: 24px; font-weight: bold; color: #007cba;">' . count($cat_widgets) . '</div>';
+            echo '<div style="font-size: 12px; color: #666; margin-top: 5px;">';
+            foreach ($cat_widgets as $widget) {
+                echo '<div style="padding: 2px 0;">• ' . esc_html($widget->get_title()) . '</div>';
+            }
+            echo '</div>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        echo '</div>';
+        
         echo '<div class="probuilder-admin-welcome">';
         echo '<div class="probuilder-welcome-panel">';
         echo '<h2>' . esc_html__('Welcome to ProBuilder!', 'probuilder') . '</h2>';
         echo '<p>' . esc_html__('Create stunning pages with our powerful drag & drop builder.', 'probuilder') . '</p>';
         echo '<div class="probuilder-features">';
-        echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . esc_html__('20+ Premium Widgets', 'probuilder') . '</div>';
+        echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . count($widgets) . '+ Premium Widgets</div>';
         echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . esc_html__('Drag & Drop Interface', 'probuilder') . '</div>';
         echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . esc_html__('Fully Responsive', 'probuilder') . '</div>';
-        echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . esc_html__('Pre-made Templates', 'probuilder') . '</div>';
+        echo '<div class="feature"><span class="dashicons dashicons-yes"></span> ' . esc_html__('Grid Layout with Resizable Borders', 'probuilder') . '</div>';
         echo '</div>';
         echo '<a href="' . admin_url('post-new.php?post_type=page&probuilder=true') . '" class="button button-primary button-hero">' . esc_html__('Create New Page', 'probuilder') . '</a>';
         echo '</div>';

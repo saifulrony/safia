@@ -19,26 +19,56 @@
     wp_head(); 
     ?>
     <style>
-        /* CRITICAL: Force positioning with inline styles */
+        /* CRITICAL: Ensure both WP admin bar and ProBuilder header are visible WITHOUT overlap */
+        
+        /* WordPress Admin Bar - Always at very top */
         body.admin-bar #wpadminbar {
-            z-index: 99999 !important;
+            display: block !important;
+            visibility: visible !important;
+            z-index: 100000 !important;
             position: fixed !important;
             top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 32px !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
+        /* ProBuilder Header - Below admin bar */
         body.admin-bar .probuilder-editor-header {
             position: fixed !important;
-            top: 60px !important;
+            top: 32px !important; /* Exactly below admin bar */
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 99998 !important; /* Below admin bar */
+            height: 45px !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #e6e9ec !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+        }
+        
+        /* Main editor area - Below both bars */
+        body.admin-bar .probuilder-editor-main {
+            margin-top: 77px !important; /* 32px admin bar + 45px header */
+            height: calc(100vh - 77px) !important;
+            position: relative !important;
+        }
+        
+        /* When NO admin bar present */
+        body:not(.admin-bar) .probuilder-editor-header {
+            position: relative !important;
+            top: 31px !important;
             left: 0 !important;
             right: 0 !important;
             z-index: 99998 !important;
-            height: 45px !important;
-            background: #ffffff !important;
+            height: 35px !important;
+            padding: 21px 26px 21px 20px !important;
         }
         
-        body.admin-bar .probuilder-editor-main {
-            margin-top: 105px !important;
-            height: calc(100vh - 105px) !important;
+        body:not(.admin-bar) .probuilder-editor-main {
+            margin-top: 30px !important;
+            height: calc(100vh - 45px) !important;
         }
         
         /* Fallback styles if main CSS fails */
@@ -98,8 +128,8 @@
                 <i class="dashicons dashicons-layout"></i>
                 <span>ProBuilder</span>
             </div>
-            <div class="probuilder-page-title">
-                <?php echo esc_html(get_the_title()); ?>
+            <div class="probuilder-page-title" title="Click to edit page title" style="cursor: pointer;" onclick="ProBuilder.showPageSettings();">
+                <?php echo esc_html(get_the_title() ? get_the_title() : 'Untitled Page'); ?>
             </div>
             <div class="probuilder-responsive-controls">
                 <button class="probuilder-device-btn active" data-device="desktop" title="Desktop View">
@@ -124,6 +154,10 @@
         </div>
         
         <div class="probuilder-header-right">
+            <button id="probuilder-page-settings" class="probuilder-btn probuilder-btn-secondary">
+                <i class="dashicons dashicons-admin-generic"></i>
+                <?php esc_html_e('Page Settings', 'probuilder'); ?>
+            </button>
             <button id="probuilder-preview" class="probuilder-btn probuilder-btn-secondary">
                 <i class="dashicons dashicons-visibility"></i>
                 <?php esc_html_e('Preview', 'probuilder'); ?>
@@ -278,11 +312,10 @@
                     <!-- Elements will be added here -->
                 </div>
                 
-                <!-- Add Element Button - Always visible between elements -->
+                <!-- Add Element Button - Icon only, compact design -->
                 <div class="probuilder-add-element-section" id="probuilder-add-bottom">
                     <button class="probuilder-add-element-btn" title="Add New Element">
                         <i class="dashicons dashicons-plus-alt2"></i>
-                        <span>Add Element</span>
                     </button>
                 </div>
             </div>

@@ -162,23 +162,60 @@ body.probuilder-editor-body {
     padding-top: 0 !important;
 }
 
-/* Ensure admin bar is always on top */
+/* Ensure admin bar is always visible and on top */
 body.admin-bar #wpadminbar {
-    z-index: 99999 !important;
+    display: block !important;
+    visibility: visible !important;
+    z-index: 100000 !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    height: 32px !important;
 }
 
-/* If admin bar is visible */
+/* Admin bar adjustments - ProBuilder header goes below admin bar */
 body.admin-bar.probuilder-editor-body {
     padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+body.probuilder-editor-body.admin-bar {
+    margin-top: 0 !important;
+}
+
+body.admin-bar .probuilder-editor-header {
+    position: fixed !important;
+    top: 32px !important; /* Below admin bar */
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99998 !important; /* Below admin bar */
+    height: 45px !important;
+}
+
+body.admin-bar .probuilder-editor-main {
+    margin-top: 77px !important; /* 32px admin bar + 45px header */
+    height: calc(100vh - 77px) !important;
 }
 
 /* If no admin bar */
 body:not(.admin-bar).probuilder-editor-body {
     padding-top: 0 !important;
+}
+
+body:not(.admin-bar) .probuilder-editor-header {
+    position: relative !important;
+    top: 31px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99998 !important;
+    height: 35px !important;
+    padding: 21px 26px 21px 20px !important;
+}
+
+body:not(.admin-bar) .probuilder-editor-main {
+    margin-top: 30px !important;
+    height: calc(100vh - 45px) !important;
 }
 
 /* Editor Header - Elementor Style - Smaller and properly positioned */
@@ -193,23 +230,19 @@ body:not(.admin-bar).probuilder-editor-body {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
+    top: 0 !important; /* Always at top */
     border-bottom: 1px solid #e6e9ec;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 9999999 !important; /* Way above admin bar */
 }
 
-/* When admin bar is present - header goes below it */
-body.admin-bar .probuilder-editor-header {
-    top: 60px !important;
-    z-index: 99998 !important; /* Just below admin bar */
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
+/* When admin bar is present - header goes below it (duplicate removed - see line 181) */
 
 /* If no admin bar - header at the top */
 body:not(.admin-bar) .probuilder-editor-header {
     top: 0 !important;
-    z-index: 99998 !important;
+    z-index: 9999999 !important; /* Consistent high z-index */
     margin-top: 0px !important;
     padding-top: 0 !important;
 }
@@ -900,9 +933,9 @@ body:not(.admin-bar) .probuilder-editor-main {
 /* Canvas Area - More space in middle */
 .probuilder-canvas {
     flex: 1;
+    padding: 20px;
+    background: #f0f0f0;
     overflow-y: auto;
-    padding: 40px;
-    background: #e6e9ec;
     position: relative;
     /* This takes all remaining space between sidebars */
 }
@@ -978,33 +1011,34 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-add-element-btn {
-    background: transparent;
-    border: 1px dashed #d4d4d8;
-    color: #71717a;
-    padding: 6px 14px;
-    border-radius: 3px;
+    background: #344047;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(146, 0, 59, 0.3);
 }
 
 .probuilder-add-element-btn:hover {
-    background: #e6f3ff;
-    border-color: #344047;
-    color: #344047;
-    transform: translateY(-1px);
+    background: #d5006d;
+    border-color: #ffffff;
+    color: #ffffff;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.5);
 }
 
 .probuilder-add-element-btn .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 1;
 }
 
 /* Add element between elements */
@@ -1097,14 +1131,13 @@ body:not(.admin-bar) .probuilder-editor-main {
     border: 1px solid transparent;
     border-radius: 0;
     transition: all 0.15s;
-    position: relative;
+    position: relative !important;
     background: #ffffff;
     cursor: default;
 }
 
 .probuilder-element:hover {
-    outline: 2px solid #344047;
-    outline-offset: 0;
+    outline: none;
     z-index: 10;
 }
 
@@ -1130,10 +1163,164 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-element.selected {
-    outline: 2px solid #344047;
-    outline-offset: 0;
-    box-shadow: 0 0 0 4px rgba(52, 64, 71, 0.08);
+    outline: none;
     z-index: 10;
+}
+
+/* Ensure block content doesn't interfere with block operations */
+.probuilder-element-preview {
+    pointer-events: auto;
+    position: relative;
+}
+
+/* Widget Resize Handles - Elementor Style (Blue Dots) */
+.probuilder-element-resize-handles {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.probuilder-element:hover .probuilder-element-resize-handles,
+.probuilder-element.selected .probuilder-element-resize-handles,
+.probuilder-element.is-resizing .probuilder-element-resize-handles {
+    opacity: 1;
+}
+
+/* Elementor-style handles - small blue circles */
+.probuilder-widget-resize-handle {
+    position: absolute !important;
+    width: 6px;
+    height: 6px;
+    background: #1292ee;
+    border: 1px solid #ffffff;
+    border-radius: 50%;
+    pointer-events: auto !important;
+    z-index: 101;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+.probuilder-widget-resize-handle:hover {
+    background: #0073e6;
+    transform: scale(1.3);
+}
+
+/* Edge handles - middle of each side */
+.probuilder-resize-n {
+    top: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.probuilder-resize-s {
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.probuilder-resize-e {
+    right: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+.probuilder-resize-w {
+    left: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+/* Corner handles */
+.probuilder-resize-ne {
+    top: -3px;
+    right: -3px;
+    cursor: nesw-resize;
+}
+
+.probuilder-resize-se {
+    bottom: -3px;
+    right: -3px;
+    cursor: nwse-resize;
+}
+
+.probuilder-resize-sw {
+    bottom: -3px;
+    left: -3px;
+    cursor: nesw-resize;
+}
+
+.probuilder-resize-nw {
+    top: -3px;
+    left: -3px;
+    cursor: nwse-resize;
+}
+
+/* Visual feedback during resize */
+.probuilder-element.is-resizing .probuilder-widget-resize-handle {
+    background: #0073e6;
+    transform: scale(1.5);
+}
+
+/* Protect content inside elements from drag operations */
+.probuilder-element-preview * {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Allow interactions on specific interactive elements when editing */
+.probuilder-element.selected .probuilder-element-preview *,
+.probuilder-element-preview input,
+.probuilder-element-preview textarea,
+.probuilder-element-preview button,
+.probuilder-element-preview a {
+    pointer-events: auto;
+    user-select: auto;
+}
+
+/* Grid layout resize handles - ALWAYS interactive */
+.grid-resize-handle,
+.grid-resize-handle-top,
+.grid-resize-handle-right,
+.grid-resize-handle-bottom,
+.grid-resize-handle-corner,
+.grid-resize-handle-left {
+    pointer-events: auto !important;
+    user-select: none !important;
+    z-index: 100 !important;
+}
+
+/* Grid cells need to be positioned for handles to work */
+.grid-cell {
+    position: relative;
+    /* Allow explicit width/height to override grid template for flexible sizing */
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+/* Grid cell drag handle */
+.grid-cell-drag-handle {
+    pointer-events: auto !important;
+    z-index: 101 !important;
+    user-select: none !important;
+}
+
+/* Grid delete buttons */
+.grid-cell-delete,
+.grid-cell-delete-btn {
+    pointer-events: auto !important;
+    z-index: 101 !important;
 }
 
 /* Element Controls Bar */
@@ -1150,19 +1337,26 @@ body:not(.admin-bar) .probuilder-editor-main {
     top: -33px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 1001;
     box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.12);
     border-radius: 3px;
     width: auto;
     min-width: 200px;
+    pointer-events: auto;
 }
 
 .probuilder-element:hover .probuilder-element-controls {
     display: flex;
 }
 
+/* Ensure all control buttons can be clicked */
+.probuilder-element-controls * {
+    pointer-events: auto !important;
+    user-select: none !important;
+}
+
 .probuilder-element-drag {
-    cursor: pointer;
+    cursor: grab;
     display: flex;
     align-items: center;
     padding: 4px 8px;
@@ -1171,15 +1365,17 @@ body:not(.admin-bar) .probuilder-editor-main {
     margin-right: auto;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
 }
 
 .probuilder-element-drag:hover {
     background: rgba(255, 255, 255, 0.25);
     border-color: rgba(255, 255, 255, 0.4);
+    cursor: grab;
 }
 
 .probuilder-element-drag:active {
-    cursor: pointer;
+    cursor: grabbing;
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -1233,6 +1429,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     display: flex;
     gap: 3px;
     margin-left: auto;
+    pointer-events: auto;
 }
 
 .probuilder-element-actions button {
@@ -1248,6 +1445,9 @@ body:not(.admin-bar) .probuilder-editor-main {
     align-items: center;
     justify-content: center;
     min-width: 28px;
+    pointer-events: auto !important;
+    z-index: 1002;
+    position: relative;
 }
 
 .probuilder-element-actions button:hover {
@@ -1260,6 +1460,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     font-size: 14px;
     width: 14px;
     height: 14px;
+    pointer-events: none;
 }
 
 /* Show edit button */
@@ -1271,6 +1472,28 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 .probuilder-element-actions .probuilder-element-edit:hover {
     background: #0096dd;
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Delete button specific styling */
+.probuilder-element-actions .probuilder-element-delete {
+    background: #dc3545;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.probuilder-element-actions .probuilder-element-delete:hover {
+    background: #c82333;
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Duplicate button specific styling */
+.probuilder-element-actions .probuilder-element-duplicate {
+    background: #28a745;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.probuilder-element-actions .probuilder-element-duplicate:hover {
+    background: #218838;
     border-color: rgba(255, 255, 255, 0.7);
 }
 
@@ -1299,8 +1522,8 @@ body:not(.admin-bar) .probuilder-editor-main {
     background: #344047;
     border: 2px solid #ffffff;
     color: #ffffff;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;

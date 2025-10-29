@@ -31,6 +31,7 @@ class ProBuilder_Widgets_Manager {
             // Layout
             'ProBuilder_Widget_Container',
             'ProBuilder_Widget_Flexbox',
+            'ProBuilder_Widget_Grid_Layout',
             
             // Basic
             'ProBuilder_Widget_Heading',

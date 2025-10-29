@@ -11,9 +11,14 @@ get_header();
 $homepage_options = get_option('ecocommerce_pro_homepage_options', array());
 $general_options = get_option('ecocommerce_pro_general_options', array());
 
-// Check if using Elementor or other page builder
+// Check if using Elementor, ProBuilder, or other page builder
 $use_page_builder = false;
-if (function_exists('elementor_theme_do_location')) {
+
+// Check for ProBuilder first
+$probuilder_data = get_post_meta(get_the_ID(), '_probuilder_data', true);
+if (!empty($probuilder_data)) {
+    $use_page_builder = true;
+} elseif (function_exists('elementor_theme_do_location')) {
     $use_page_builder = get_post_meta(get_the_ID(), '_elementor_edit_mode', true) === 'builder';
 } elseif (class_exists('FLBuilderModel') && FLBuilderModel::is_builder_enabled()) {
     $use_page_builder = true;
@@ -27,10 +32,21 @@ if (function_exists('elementor_theme_do_location')) {
 if (have_posts()) :
     while (have_posts()) : the_post();
         
+        // Check if using ProBuilder
+        $is_probuilder = get_post_meta(get_the_ID(), '_probuilder_data', true);
+        
         // Check if using Elementor
         $is_elementor = get_post_meta(get_the_ID(), '_elementor_edit_mode', true) === 'builder';
         
-        if ($is_elementor) {
+        if ($is_probuilder) {
+            // ProBuilder page - call the_content() to trigger ProBuilder filter
+            ?>
+            <div class="page-content-wrapper">
+                <?php the_content(); ?>
+            </div>
+            <?php
+            $use_page_builder = true;
+        } elseif ($is_elementor) {
             // Elementor page - must call the_content()
             the_content();
             $use_page_builder = true;

@@ -32,10 +32,10 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
             ],
         ]);
         
-        $this->add_control('columns', [
-            'label' => __('Columns (Desktop)', 'probuilder'),
+        $this->add_control('columns_count', [
+            'label' => __('Number of Columns', 'probuilder'),
             'type' => 'select',
-            'default' => '1',
+            'default' => '2',
             'options' => [
                 '1' => __('1 Column', 'probuilder'),
                 '2' => __('2 Columns', 'probuilder'),
@@ -43,14 +43,15 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 '4' => __('4 Columns', 'probuilder'),
                 '5' => __('5 Columns', 'probuilder'),
                 '6' => __('6 Columns', 'probuilder'),
-                '7' => __('7 Columns', 'probuilder'),
-                '8' => __('8 Columns', 'probuilder'),
-                '9' => __('9 Columns', 'probuilder'),
-                '10' => __('10 Columns', 'probuilder'),
-                '11' => __('11 Columns', 'probuilder'),
-                '12' => __('12 Columns', 'probuilder'),
             ],
-            'description' => __('Number of columns on desktop (> 1024px)', 'probuilder'),
+            'description' => __('Drag column borders to resize', 'probuilder'),
+        ]);
+        
+        $this->add_control('column_widths', [
+            'label' => __('Column Widths', 'probuilder'),
+            'type' => 'hidden',
+            'default' => '50,50',
+            'description' => __('Auto-generated from drag interactions', 'probuilder'),
         ]);
         
         $this->add_control('columns_tablet', [
@@ -274,7 +275,8 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
     protected function render() {
         $settings = $this->get_settings();
         $layout = $this->get_settings('layout', 'boxed');
-        $columns = $this->get_settings('columns', '1');
+        $columns_count = $this->get_settings('columns_count', '2');
+        $column_widths = $this->get_settings('column_widths', '50,50');
         $columns_tablet = $this->get_settings('columns_tablet', '2');
         $columns_mobile = $this->get_settings('columns_mobile', '1');
         $column_gap = $this->get_settings('column_gap', 20);
@@ -283,6 +285,9 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         $content_position = $this->get_settings('content_position', 'top');
         $enable_rows = $this->get_settings('enable_rows', 'no');
         $rows = $this->get_settings('rows', []);
+        
+        // Parse column widths from drag interactions
+        $grid_template = $this->parse_column_widths($column_widths);
         
         // Generate unique ID for this container
         $container_id = 'probuilder-container-' . uniqid();
@@ -387,7 +392,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 <?php endforeach; ?>
             <?php else: ?>
                 #<?php echo $container_id; ?> .probuilder-container-columns {
-                    grid-template-columns: repeat(<?php echo esc_attr($columns); ?>, 1fr);
+                    grid-template-columns: <?php echo esc_attr($grid_template); ?>;
                     gap: <?php echo esc_attr($column_gap); ?>px;
                 }
                 
@@ -408,7 +413,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         </style>
         <?php
         
-        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '" data-enable-rows="' . esc_attr($enable_rows) . '">';
+        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns_count) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '" data-enable-rows="' . esc_attr($enable_rows) . '">';
         
         if ($enable_rows === 'yes' && !empty($rows)) {
             // Render multiple rows
@@ -451,7 +456,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 }
             } else {
                 // Show empty column placeholders in editor
-                for ($i = 0; $i < $columns; $i++) {
+                for ($i = 0; $i < $columns_count; $i++) {
                     echo '<div class="probuilder-column" style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
                 }
             }
@@ -461,6 +466,29 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         }
         
         echo '</div>';
+    }
+    
+    /**
+     * Parse column widths from drag interactions
+     */
+    private function parse_column_widths($column_widths) {
+        if (empty($column_widths)) {
+            return '1fr 1fr'; // Default 2 columns
+        }
+        
+        $widths = array_map('trim', explode(',', $column_widths));
+        $total = array_sum($widths);
+        
+        if ($total <= 0) {
+            return '1fr 1fr'; // Fallback
+        }
+        
+        $fr_widths = [];
+        foreach ($widths as $width) {
+            $fr_widths[] = ($width / $total) . 'fr';
+        }
+        
+        return implode(' ', $fr_widths);
     }
 }
 

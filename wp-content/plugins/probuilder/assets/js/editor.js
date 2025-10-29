@@ -85,6 +85,16 @@
             }
             
             this.loadSavedData();
+            
+            // CRITICAL: Ensure elements is always an array after loading
+            if (!Array.isArray(this.elements)) {
+                console.error('❌ CRITICAL: this.elements is not an array after loadSavedData!');
+                console.error('Type:', typeof this.elements);
+                console.error('Value:', this.elements);
+                this.elements = [];
+                console.log('✅ Reset to empty array');
+            }
+            
             this.renderWidgets();
             
             // Small delay to ensure widgets are in DOM before making them draggable
@@ -616,6 +626,12 @@
         pasteElement: function() {
             if (!this.copiedElement) return;
             
+            // Ensure elements is always an array
+            if (!Array.isArray(this.elements)) {
+                console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                this.elements = [];
+            }
+            
             // Clone with new ID
             const newElement = this.cloneElementData(this.copiedElement);
             this.elements.push(newElement);
@@ -632,6 +648,13 @@
          */
         duplicateElement: function() {
             if (!this.selectedElement) return;
+            
+            // Ensure elements is always an array
+            if (!Array.isArray(this.elements)) {
+                console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                this.elements = [];
+                return;
+            }
             
             const element = this.elements.find(el => el.id === this.selectedElement);
             if (element) {
@@ -703,6 +726,12 @@
                 return;
             }
             
+            // Ensure elements is always an array
+            if (!Array.isArray(this.elements)) {
+                console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                this.elements = [];
+            }
+            
             // Add template elements to current design
             templateData.forEach(elementData => {
                 // Generate new IDs to avoid conflicts
@@ -742,10 +771,24 @@
             const data = $('#probuilder-data').val();
             if (data && data !== '[]' && data !== '') {
                 try {
-                    this.elements = JSON.parse(data);
+                    const parsed = JSON.parse(data);
+                    // Ensure it's an array
+                    if (Array.isArray(parsed)) {
+                        this.elements = parsed;
+                    } else if (typeof parsed === 'object' && parsed !== null) {
+                        // If it's an object, try to convert to array
+                        this.elements = Object.values(parsed);
+                        console.warn('Converted object to array:', this.elements);
+                    } else {
+                        console.error('Invalid data format, expected array but got:', typeof parsed);
+                        this.elements = [];
+                    }
+                    
+                    console.log('✅ Loaded', this.elements.length, 'elements from saved data');
                     this.renderElements();
                 } catch (e) {
                     console.error('Failed to parse saved data:', e);
+                    this.elements = [];
                 }
             }
         },
@@ -930,10 +973,16 @@
                 
                 if (template && template.data) {
                     console.log('Inserting template:', template.name);
+                    console.log('Template type:', template.type);
                     console.log('Template data:', template.data);
                     
-                    // Clear existing canvas first
-                    self.clearCanvas();
+                    // Clear canvas ONLY for full-page templates
+                    if (template.type === 'page') {
+                        console.log('🗑️ Full page template - clearing canvas first');
+                        self.clearCanvas();
+                    } else {
+                        console.log('➕ Section template - adding to existing content');
+                    }
                     
                     // Import template data
                     if (Array.isArray(template.data)) {
@@ -950,7 +999,8 @@
                     }
                     
                     // Show success message
-                    self.showToast('✓ Template inserted successfully!');
+                    const action = template.type === 'page' ? 'inserted' : 'added';
+                    self.showToast('✓ Template ' + action + ' successfully!');
                     
                     // Switch back to widgets tab
                     $('.probuilder-tab-btn[data-tab="widgets"]').click();
@@ -1076,16 +1126,17 @@
             
             $previewArea.sortable({
                 items: '> .probuilder-element',
+                handle: '.probuilder-element-drag',
                 placeholder: 'probuilder-element-placeholder',
                 tolerance: 'pointer',
-                cursor: 'move',
-                opacity: 0.7,
-                distance: 15,
-                delay: 200,
+                cursor: 'grabbing',
+                opacity: 0.8,
+                distance: 10,
+                delay: 100,
                 revert: 150,
-                cancel: 'input, textarea, select, button, a, .probuilder-element-actions, .probuilder-add-below-btn',
+                cancel: 'input, textarea, select, .probuilder-element-actions button, .probuilder-add-below-btn',
                 start: function(event, ui) {
-                    console.log('🎯 Started dragging element');
+                    console.log('🎯 Started dragging element via handle');
                     ui.item.addClass('dragging-element');
                     ui.placeholder.height(ui.item.outerHeight());
                     $('body').css('cursor', 'grabbing');
@@ -1379,6 +1430,11 @@
                 self.savePage();
             });
             
+            // Page Settings button
+            $('#probuilder-page-settings').on('click', function() {
+                self.showPageSettings();
+            });
+            
             // Undo button
             $('#probuilder-undo').on('click', function() {
                 self.undo();
@@ -1391,7 +1447,7 @@
             
             // Preview button
             $('#probuilder-preview').on('click', function() {
-                const url = '<?php echo home_url(); ?>/?p=' + ProBuilderEditor.post_id + '&preview=true';
+                const url = ProBuilderEditor.home_url + '/?p=' + ProBuilderEditor.post_id + '&preview=true';
                 window.open(url, '_blank');
             });
             
@@ -1418,6 +1474,143 @@
             // Add element button at bottom
             $(document).on('click', '.probuilder-add-element-btn', function() {
                 self.showWidgetPicker(null);
+            });
+            
+            // Container column resize handles
+            $(document).on('mousedown', '.probuilder-resize-handle', function(e) {
+                e.preventDefault();
+                self.startColumnResize($(this), e);
+            });
+            
+            // Global grid cell resize handler (more reliable)
+            $(document).on('mousedown', '.grid-resize-handle', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                const $handle = $(this);
+                const cellIndex = $handle.data('cell-index');
+                const direction = $handle.data('direction');
+                const $gridElement = $handle.closest('.probuilder-element');
+                const gridId = $gridElement.data('id');
+                
+                console.log('🎯 Global grid resize handler:', {gridId, cellIndex, direction});
+                
+                // Find the grid element in our data
+                const gridElement = self.elements.find(e => e.id === gridId);
+                if (!gridElement) {
+                    console.error('❌ Grid element not found:', gridId);
+                    return;
+                }
+                
+                // Prevent any click events from bubbling
+                $(document).on('click.gridResizePrevent', function(clickEvent) {
+                    clickEvent.preventDefault();
+                    clickEvent.stopPropagation();
+                    $(document).off('click.gridResizePrevent');
+                });
+                
+                self.startGridCellResize(gridElement, cellIndex, direction, e);
+            });
+            
+            // Global delete handler for nested elements (more reliable)
+            $(document).on('click', '.probuilder-nested-delete', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                const $button = $(this);
+                const $nestedEl = $button.closest('.probuilder-nested-element');
+                const childId = $nestedEl.data('id');
+                const $gridCell = $nestedEl.closest('.grid-cell');
+                const cellIndex = parseInt($gridCell.data('cell-index'));
+                const $gridElement = $nestedEl.closest('.probuilder-element');
+                const gridId = $gridElement.data('id');
+                
+                console.log('🗑️ Global delete handler triggered:', {childId, cellIndex, gridId});
+                
+                // Find the grid element in our data
+                const gridElement = self.elements.find(e => e.id === gridId);
+                if (!gridElement) {
+                    console.error('❌ Grid element not found:', gridId);
+                    return;
+                }
+                
+                // Initialize children array if not exists
+                if (!gridElement.children) {
+                    gridElement.children = [];
+                }
+                
+                if (gridElement.children[cellIndex]) {
+                    console.log('🗑️ Removing widget from cell:', cellIndex);
+                    gridElement.children[cellIndex] = null;
+                    
+                    // Re-render the entire grid
+                    const $oldElement = $(`.probuilder-element[data-id="${gridId}"]`);
+                    const $parent = $oldElement.parent();
+                    const insertBefore = $oldElement.next()[0];
+                    
+                    $oldElement.remove();
+                    self.renderElement(gridElement, insertBefore);
+                    self.saveHistory();
+                    
+                    console.log('✅ Widget deleted from grid cell', cellIndex);
+                } else {
+                    console.warn('⚠️ No widget found in cell:', cellIndex);
+                }
+            });
+            
+            // Grid preset selection
+            $(document).on('click', '.probuilder-grid-preset-item', function() {
+                const $item = $(this);
+                const setting = $item.data('setting');
+                const pattern = $item.data('pattern');
+                
+                // Update selected state
+                $item.siblings('.probuilder-grid-preset-item').removeClass('selected');
+                $item.siblings('.probuilder-grid-preset-item').css({
+                    'border-color': '#ddd',
+                    'background': '#fff'
+                }).find('div:last-child').css({
+                    'color': '#666',
+                    'font-weight': '400'
+                });
+                
+                $item.addClass('selected');
+                $item.css({
+                    'border-color': '#007cba',
+                    'background': 'rgba(0,124,186,0.05)'
+                }).find('div:last-child').css({
+                    'color': '#007cba',
+                    'font-weight': '600'
+                });
+                
+                // Update the setting
+                if (self.selectedElement) {
+                    const elementToUpdate = self.selectedElement;
+                    elementToUpdate.settings[setting] = pattern;
+                    
+                    // For grid layouts, fully re-render to reattach all handlers
+                    if (elementToUpdate.widgetType === 'grid-layout') {
+                        const $oldElement = $(`.probuilder-element[data-id="${elementToUpdate.id}"]`);
+                        const insertBefore = $oldElement.next()[0];
+                        
+                        // Remove old element
+                        $oldElement.remove();
+                        
+                        // Render new element with all handlers
+                        self.renderElement(elementToUpdate, insertBefore);
+                        
+                        // Re-select the element to keep settings panel open
+                        setTimeout(function() {
+                            self.selectElement(elementToUpdate);
+                        }, 100);
+                        
+                        console.log('Grid pattern applied and element re-rendered:', pattern);
+                    } else {
+                        self.updateContainerWithChildren(elementToUpdate);
+                    }
+                    
+                    self.saveHistory();
+                }
             });
             
             // Add element between sections
@@ -1509,6 +1702,12 @@
             try {
                 console.log('Adding element:', widgetName);
                 
+                // Ensure elements is always an array
+                if (!Array.isArray(this.elements)) {
+                    console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                    this.elements = [];
+                }
+                
                 const widget = this.widgets.find(w => w.name === widgetName);
                 if (!widget) {
                     console.error('Widget not found:', widgetName);
@@ -1564,6 +1763,12 @@
         addElementAtPosition: function(widgetName, insertIndex, settings = {}) {
             try {
                 console.log('Adding element at position:', widgetName, 'at index:', insertIndex);
+                
+                // Ensure elements is always an array
+                if (!Array.isArray(this.elements)) {
+                    console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                    this.elements = [];
+                }
                 
                 const widget = this.widgets.find(w => w.name === widgetName);
                 if (!widget) {
@@ -1705,6 +1910,758 @@
                 alert('Error: ' + error.message);
                 return null;
             }
+        },
+        
+        /**
+         * Get grid patterns for visual selection
+         */
+        /**
+         * Get grid template data (columns, rows, areas)
+         */
+        getGridTemplateData: function(pattern) {
+            const templates = {
+                'pattern-1': {
+                    columns: 'repeat(4, 1fr)',
+                    rows: 'repeat(4, 150px)',
+                    areas: [
+                        '1 / 1 / 3 / 3',  // Large left
+                        '1 / 3 / 2 / 5',  // Top right
+                        '2 / 3 / 3 / 4',  // Mid right 1
+                        '2 / 4 / 3 / 5',  // Mid right 2
+                        '3 / 1 / 5 / 2',  // Bottom left 1
+                        '3 / 2 / 5 / 3',  // Bottom left 2
+                        '3 / 3 / 5 / 5',  // Bottom right
+                    ]
+                },
+                'pattern-2': {
+                    columns: 'repeat(6, 1fr)',
+                    rows: 'repeat(3, 200px)',
+                    areas: [
+                        '1 / 1 / 3 / 4',  // Large featured
+                        '1 / 4 / 2 / 7',  // Top right
+                        '2 / 4 / 3 / 5',  // Bottom right 1
+                        '2 / 5 / 3 / 6',  // Bottom right 2
+                        '2 / 6 / 3 / 7',  // Bottom right 3
+                        '3 / 1 / 4 / 3',  // Bottom left
+                        '3 / 3 / 4 / 5',  // Bottom center
+                        '3 / 5 / 4 / 7',  // Bottom right
+                    ]
+                },
+                'pattern-3': {
+                    columns: 'repeat(4, 1fr)',
+                    rows: 'repeat(5, 120px)',
+                    areas: [
+                        '1 / 1 / 3 / 2',  '1 / 2 / 2 / 3',  '1 / 3 / 3 / 4',  '1 / 4 / 2 / 5',
+                        '2 / 2 / 4 / 3',  '2 / 4 / 3 / 5',  '3 / 1 / 4 / 2',  '3 / 3 / 5 / 4',
+                        '3 / 4 / 5 / 5',  '4 / 1 / 6 / 2',  '4 / 2 / 5 / 3',  '5 / 3 / 6 / 5'
+                    ]
+                },
+                'pattern-4': {
+                    columns: 'repeat(12, 1fr)',
+                    rows: 'repeat(4, 150px)',
+                    areas: [
+                        '1 / 1 / 2 / 4',  '1 / 4 / 2 / 7',  '1 / 7 / 2 / 10', '1 / 10 / 2 / 13',
+                        '2 / 1 / 4 / 9',  '2 / 9 / 4 / 13', '4 / 1 / 5 / 7',  '4 / 7 / 5 / 13'
+                    ]
+                },
+                'pattern-5': {
+                    columns: 'repeat(5, 1fr)',
+                    rows: 'repeat(3, 180px)',
+                    areas: [
+                        '1 / 1 / 3 / 3',  '1 / 3 / 2 / 4',  '1 / 4 / 2 / 5',  '1 / 5 / 2 / 6',
+                        '2 / 3 / 3 / 6',  '3 / 1 / 4 / 2',  '3 / 2 / 4 / 3',  '3 / 3 / 4 / 4',
+                        '3 / 4 / 4 / 5',  '3 / 5 / 4 / 6'
+                    ]
+                },
+                'pattern-6': {
+                    columns: 'repeat(4, 1fr)',
+                    rows: 'repeat(4, 180px)',
+                    areas: [
+                        '1 / 1 / 3 / 3',  '1 / 3 / 2 / 4',  '1 / 4 / 2 / 5',  '2 / 3 / 3 / 4',
+                        '2 / 4 / 3 / 5',  '3 / 1 / 5 / 2',  '3 / 2 / 4 / 3',  '3 / 3 / 4 / 4',
+                        '3 / 4 / 4 / 5',  '4 / 2 / 5 / 5'
+                    ]
+                },
+                'pattern-7': {
+                    columns: 'repeat(6, 1fr)',
+                    rows: 'repeat(4, 150px)',
+                    areas: [
+                        '1 / 1 / 2 / 3',  '1 / 3 / 3 / 5',  '1 / 5 / 2 / 7',  '2 / 1 / 3 / 2',
+                        '2 / 2 / 3 / 3',  '2 / 5 / 4 / 7',  '3 / 1 / 5 / 3',  '3 / 3 / 4 / 5',
+                        '4 / 3 / 5 / 7'
+                    ]
+                },
+                'pattern-8': {
+                    columns: 'repeat(2, 1fr)',
+                    rows: 'repeat(6, 120px)',
+                    areas: [
+                        '1 / 1 / 4 / 2',  '1 / 2 / 2 / 3',  '2 / 2 / 3 / 3',  '3 / 2 / 4 / 3',
+                        '4 / 1 / 5 / 2',  '4 / 2 / 5 / 3',  '5 / 1 / 7 / 2',  '5 / 2 / 7 / 3'
+                    ]
+                },
+                'pattern-9': {
+                    columns: 'repeat(8, 1fr)',
+                    rows: 'repeat(5, 140px)',
+                    areas: [
+                        '1 / 1 / 3 / 5',  '1 / 5 / 2 / 9',  '2 / 5 / 3 / 7',  '2 / 7 / 3 / 9',
+                        '3 / 1 / 4 / 3',  '3 / 3 / 4 / 5',  '3 / 5 / 4 / 7',  '3 / 7 / 4 / 9',
+                        '4 / 1 / 6 / 4',  '4 / 4 / 5 / 6',  '4 / 6 / 5 / 8',  '4 / 8 / 5 / 9',
+                        '5 / 4 / 6 / 9'
+                    ]
+                },
+                'pattern-10': {
+                    columns: 'repeat(10, 1fr)',
+                    rows: 'repeat(6, 120px)',
+                    areas: [
+                        '1 / 1 / 3 / 4',   '1 / 4 / 2 / 6',   '1 / 6 / 3 / 8',   '1 / 8 / 2 / 11',
+                        '2 / 4 / 3 / 6',   '2 / 8 / 4 / 11',  '3 / 1 / 5 / 3',   '3 / 3 / 4 / 5',
+                        '3 / 5 / 5 / 8',   '4 / 3 / 5 / 5',   '4 / 8 / 6 / 10',  '5 / 1 / 7 / 3',
+                        '5 / 3 / 6 / 6',   '5 / 10 / 7 / 11', '6 / 3 / 7 / 5',   '6 / 5 / 7 / 8',
+                        '6 / 8 / 7 / 10'
+                    ]
+                }
+            };
+            
+            return templates[pattern] || templates['pattern-1'];
+        },
+        
+        getGridPatterns: function() {
+            return [
+                {
+                    id: 'pattern-1',
+                    name: 'Magazine Hero',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="46" height="46" fill="#007cba" opacity="0.7"/><rect x="52" y="2" width="46" height="21" fill="#007cba" opacity="0.5"/><rect x="52" y="27" width="21" height="21" fill="#007cba" opacity="0.5"/><rect x="77" y="27" width="21" height="21" fill="#007cba" opacity="0.5"/><rect x="2" y="52" width="21" height="46" fill="#007cba" opacity="0.5"/><rect x="27" y="52" width="21" height="46" fill="#007cba" opacity="0.5"/><rect x="52" y="52" width="46" height="46" fill="#007cba" opacity="0.6"/></svg>`
+                },
+                {
+                    id: 'pattern-2',
+                    name: 'Featured Post',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="44" height="63" fill="#007cba" opacity="0.7"/><rect x="50" y="2" width="48" height="28" fill="#007cba" opacity="0.5"/><rect x="50" y="34" width="14" height="31" fill="#007cba" opacity="0.5"/><rect x="68" y="34" width="14" height="31" fill="#007cba" opacity="0.5"/><rect x="86" y="34" width="12" height="31" fill="#007cba" opacity="0.5"/><rect x="2" y="69" width="30" height="29" fill="#007cba" opacity="0.5"/><rect x="36" y="69" width="30" height="29" fill="#007cba" opacity="0.6"/><rect x="70" y="69" width="28" height="29" fill="#007cba" opacity="0.5"/></svg>`
+                },
+                {
+                    id: 'pattern-3',
+                    name: 'Pinterest Masonry',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="21" height="40" fill="#007cba" opacity="0.6"/><rect x="27" y="2" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="52" y="2" width="21" height="40" fill="#007cba" opacity="0.6"/><rect x="77" y="2" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="27" y="26" width="21" height="40" fill="#007cba" opacity="0.7"/><rect x="77" y="26" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="2" y="46" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="52" y="46" width="21" height="52" fill="#007cba" opacity="0.6"/><rect x="77" y="50" width="21" height="48" fill="#007cba" opacity="0.6"/><rect x="2" y="70" width="21" height="28" fill="#007cba" opacity="0.6"/><rect x="27" y="70" width="21" height="28" fill="#007cba" opacity="0.5"/></svg>`
+                },
+                {
+                    id: 'pattern-4',
+                    name: 'Dashboard',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="21" height="14" fill="#007cba" opacity="0.5"/><rect x="27" y="2" width="21" height="14" fill="#007cba" opacity="0.5"/><rect x="52" y="2" width="21" height="14" fill="#007cba" opacity="0.5"/><rect x="77" y="2" width="21" height="14" fill="#007cba" opacity="0.5"/><rect x="2" y="20" width="60" height="44" fill="#007cba" opacity="0.7"/><rect x="66" y="20" width="32" height="44" fill="#007cba" opacity="0.6"/><rect x="2" y="68" width="46" height="30" fill="#007cba" opacity="0.5"/><rect x="52" y="68" width="46" height="30" fill="#007cba" opacity="0.5"/></svg>`
+                },
+                {
+                    id: 'pattern-5',
+                    name: 'Portfolio Showcase',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="36" height="60" fill="#007cba" opacity="0.7"/><rect x="42" y="2" width="16" height="28" fill="#007cba" opacity="0.5"/><rect x="62" y="2" width="16" height="28" fill="#007cba" opacity="0.5"/><rect x="82" y="2" width="16" height="28" fill="#007cba" opacity="0.5"/><rect x="42" y="34" width="56" height="28" fill="#007cba" opacity="0.6"/><rect x="2" y="66" width="16" height="32" fill="#007cba" opacity="0.5"/><rect x="22" y="66" width="16" height="32" fill="#007cba" opacity="0.5"/><rect x="42" y="66" width="16" height="32" fill="#007cba" opacity="0.5"/><rect x="62" y="66" width="16" height="32" fill="#007cba" opacity="0.5"/><rect x="82" y="66" width="16" height="32" fill="#007cba" opacity="0.5"/></svg>`
+                },
+                {
+                    id: 'pattern-6',
+                    name: 'Product Grid',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="44" height="44" fill="#007cba" opacity="0.7"/><rect x="50" y="2" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="75" y="2" width="23" height="20" fill="#007cba" opacity="0.5"/><rect x="50" y="26" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="75" y="26" width="23" height="20" fill="#007cba" opacity="0.5"/><rect x="2" y="50" width="21" height="48" fill="#007cba" opacity="0.6"/><rect x="27" y="50" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="52" y="50" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="77" y="50" width="21" height="20" fill="#007cba" opacity="0.5"/><rect x="27" y="74" width="71" height="24" fill="#007cba" opacity="0.6"/></svg>`
+                },
+                {
+                    id: 'pattern-7',
+                    name: 'Asymmetric Modern',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="28" height="20" fill="#007cba" opacity="0.5"/><rect x="34" y="2" width="28" height="46" fill="#007cba" opacity="0.7"/><rect x="66" y="2" width="32" height="20" fill="#007cba" opacity="0.5"/><rect x="2" y="26" width="13" height="22" fill="#007cba" opacity="0.5"/><rect x="19" y="26" width="13" height="22" fill="#007cba" opacity="0.5"/><rect x="66" y="26" width="32" height="44" fill="#007cba" opacity="0.6"/><rect x="2" y="52" width="30" height="46" fill="#007cba" opacity="0.6"/><rect x="36" y="52" width="26" height="20" fill="#007cba" opacity="0.5"/><rect x="36" y="76" width="60" height="22" fill="#007cba" opacity="0.6"/></svg>`
+                },
+                {
+                    id: 'pattern-8',
+                    name: 'Split Screen',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="46" height="56" fill="#007cba" opacity="0.7"/><rect x="52" y="2" width="46" height="16" fill="#007cba" opacity="0.5"/><rect x="52" y="22" width="46" height="16" fill="#007cba" opacity="0.5"/><rect x="52" y="42" width="46" height="16" fill="#007cba" opacity="0.5"/><rect x="2" y="62" width="46" height="16" fill="#007cba" opacity="0.6"/><rect x="52" y="62" width="46" height="16" fill="#007cba" opacity="0.5"/><rect x="2" y="82" width="46" height="16" fill="#007cba" opacity="0.6"/><rect x="52" y="82" width="46" height="16" fill="#007cba" opacity="0.6"/></svg>`
+                },
+                {
+                    id: 'pattern-9',
+                    name: 'Blog Magazine',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="42" height="36" fill="#007cba" opacity="0.7"/><rect x="48" y="2" width="50" height="16" fill="#007cba" opacity="0.6"/><rect x="48" y="22" width="23" height="16" fill="#007cba" opacity="0.5"/><rect x="75" y="22" width="23" height="16" fill="#007cba" opacity="0.5"/><rect x="2" y="42" width="21" height="16" fill="#007cba" opacity="0.5"/><rect x="27" y="42" width="21" height="16" fill="#007cba" opacity="0.5"/><rect x="52" y="42" width="21" height="16" fill="#007cba" opacity="0.5"/><rect x="77" y="42" width="21" height="16" fill="#007cba" opacity="0.5"/><rect x="2" y="62" width="35" height="36" fill="#007cba" opacity="0.6"/><rect x="41" y="62" width="25" height="16" fill="#007cba" opacity="0.5"/><rect x="70" y="62" width="28" height="16" fill="#007cba" opacity="0.5"/><rect x="41" y="82" width="57" height="16" fill="#007cba" opacity="0.6"/></svg>`
+                },
+                {
+                    id: 'pattern-10',
+                    name: 'Creative Complex',
+                    svg: `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><rect x="2" y="2" width="26" height="34" fill="#007cba" opacity="0.6"/><rect x="32" y="2" width="18" height="16" fill="#007cba" opacity="0.5"/><rect x="54" y="2" width="18" height="34" fill="#007cba" opacity="0.6"/><rect x="76" y="2" width="22" height="16" fill="#007cba" opacity="0.5"/><rect x="32" y="22" width="18" height="16" fill="#007cba" opacity="0.5"/><rect x="76" y="22" width="22" height="34" fill="#007cba" opacity="0.6"/><rect x="2" y="40" width="18" height="36" fill="#007cba" opacity="0.6"/><rect x="24" y="40" width="18" height="16" fill="#007cba" opacity="0.5"/><rect x="46" y="40" width="26" height="36" fill="#007cba" opacity="0.7"/><rect x="24" y="60" width="18" height="16" fill="#007cba" opacity="0.5"/><rect x="2" y="80" width="18" height="18" fill="#007cba" opacity="0.5"/><rect x="24" y="80" width="24" height="18" fill="#007cba" opacity="0.5"/><rect x="76" y="60" width="22" height="18" fill="#007cba" opacity="0.5"/><rect x="52" y="80" width="46" height="18" fill="#007cba" opacity="0.6"/></svg>`
+                }
+            ];
+        },
+        
+        /**
+         * Start column resize
+         */
+        startColumnResize: function(handle, e) {
+            const self = this;
+            const elementId = handle.data('element-id');
+            const columnIndex = parseInt(handle.data('column'));
+            
+            console.log('🎯 Starting column resize for element:', elementId, 'column:', columnIndex);
+            
+            // Get container element
+            const containerElement = this.elements.find(el => el.id === elementId);
+            if (!containerElement) {
+                console.error('Container element not found:', elementId);
+                return;
+            }
+            
+            // Get current column widths
+            const currentWidths = (containerElement.settings.column_widths || '50,50').split(',').map(w => parseFloat(w.trim()));
+            const startX = e.clientX;
+            const startWidths = [...currentWidths];
+            
+            console.log('Start widths:', startWidths);
+            
+            // Get container DOM element for width calculation
+            const $containerColumns = handle.closest('.probuilder-container-columns');
+            const containerWidth = $containerColumns.width();
+            
+            // Show visual feedback
+            handle.css('opacity', '1');
+            $('body').css('cursor', 'ew-resize');
+            
+            // Add global mouse events
+            $(document).on('mousemove.columnResize', function(moveEvent) {
+                moveEvent.preventDefault();
+                
+                const deltaX = moveEvent.clientX - startX;
+                const deltaPercent = (deltaX / containerWidth) * 100;
+                
+                console.log('Delta:', deltaPercent.toFixed(2) + '%');
+                
+                // Calculate new widths
+                const newWidths = [...startWidths];
+                newWidths[columnIndex] = Math.max(5, Math.min(95, startWidths[columnIndex] + deltaPercent));
+                newWidths[columnIndex + 1] = Math.max(5, Math.min(95, startWidths[columnIndex + 1] - deltaPercent));
+                
+                // Update settings
+                containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                
+                console.log('New widths:', containerElement.settings.column_widths);
+                
+                // Re-render container
+                self.updateContainerWithChildren(containerElement);
+            });
+            
+            $(document).on('mouseup.columnResize', function() {
+                $(document).off('.columnResize');
+                
+                // Reset cursor
+                $('body').css('cursor', '');
+                
+                // Save to history
+                self.saveHistory();
+                
+                console.log('✅ Column resize completed. Final widths:', containerElement.settings.column_widths);
+            });
+        },
+        
+        /**
+         * Start grid cell resize - ABSOLUTE POSITIONING METHOD
+         * VERSION: 3.0.0-responsive-2024-10-26
+         */
+        startGridCellResize: function(gridElement, cellIndex, direction, e) {
+            const self = this;
+            
+            console.log('🎯 Starting absolute resize VERSION 3.0.0:', gridElement.id, 'cell:', cellIndex, 'direction:', direction);
+            console.log('📌 CODE VERSION: 3.0.0-responsive-2024-10-26 - WITH RESPONSIVE NEIGHBORS');
+            
+            const $gridContainer = $(`.probuilder-element[data-id="${gridElement.id}"] .probuilder-grid-layout`);
+            const $gridCell = $gridContainer.find(`.grid-cell[data-cell-index="${cellIndex}"]`);
+            
+            // Get cell position and dimensions
+            const cellRect = $gridCell[0].getBoundingClientRect();
+            const containerRect = $gridContainer[0].getBoundingClientRect();
+            
+            const startWidth = cellRect.width;
+            const startHeight = cellRect.height;
+            const startTop = cellRect.top - containerRect.top;
+            const startLeft = cellRect.left - containerRect.left;
+            
+            const startX = e.clientX;
+            const startY = e.clientY;
+            
+            // Store original area and styles
+            const originalArea = $gridCell.data('original-area');
+            const originalPosition = $gridCell.css('position');
+            const originalZIndex = $gridCell.css('z-index');
+            
+            console.log('Start:', {width: startWidth, height: startHeight, area: originalArea});
+            
+            // Convert to absolute positioning for smooth resize
+            $gridCell.css({
+                'position': 'absolute',
+                'top': startTop + 'px',
+                'left': startLeft + 'px',
+                'width': startWidth + 'px',
+                'height': startHeight + 'px',
+                'grid-area': 'unset',
+                'z-index': '1000',
+                'box-shadow': '0 0 20px rgba(0,124,186,0.4)',
+                'border-color': '#007cba',
+                'transition': 'none'
+            });
+            
+            const cursorMap = {
+                'top': 'row-resize',
+                'left': 'col-resize',
+                'right': 'col-resize',
+                'bottom': 'row-resize',
+                'both': 'nwse-resize'
+            };
+            $('body').css('cursor', cursorMap[direction] || 'default');
+            
+            // Add size indicator
+            const $indicator = $('<div class="grid-resize-indicator" style="position: fixed; top: 10px; right: 10px; background: rgba(0,124,186,0.9); color: white; padding: 10px 15px; border-radius: 4px; font-size: 12px; z-index: 99999; font-family: monospace; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>');
+            $('body').append($indicator);
+            
+            // Mouse move - SMOOTH pixel-by-pixel resize
+            $(document).on('mousemove.gridResize', function(moveEvent) {
+                moveEvent.preventDefault();
+                moveEvent.stopPropagation();
+                
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+                
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                let newLeft = startLeft;
+                let newTop = startTop;
+                
+                if (direction === 'top') {
+                    // Resize from top side
+                    newHeight = Math.max(50, startHeight - deltaY);
+                    newTop = startTop + (startHeight - newHeight);
+                    $gridCell.css({
+                        'height': newHeight + 'px',
+                        'top': newTop + 'px'
+                    });
+                } else if (direction === 'bottom' || direction === 'both') {
+                    // Resize from bottom side
+                    newHeight = Math.max(50, startHeight + deltaY);
+                    $gridCell.css('height', newHeight + 'px');
+                }
+                
+                if (direction === 'left') {
+                    // Resize from left side
+                    newWidth = Math.max(50, startWidth - deltaX);
+                    newLeft = startLeft + (startWidth - newWidth);
+                    $gridCell.css({
+                        'width': newWidth + 'px',
+                        'left': newLeft + 'px'
+                    });
+                } else if (direction === 'right' || direction === 'both') {
+                    // Resize from right side
+                    newWidth = Math.max(50, startWidth + deltaX);
+                    $gridCell.css('width', newWidth + 'px');
+                }
+                
+                // Update indicator
+                const widthPercent = Math.round((newWidth / containerRect.width) * 100);
+                const heightPercent = Math.round((newHeight / containerRect.height) * 100);
+                
+                $indicator.html(`
+                    <div style="font-weight: bold; margin-bottom: 5px;">Resizing Cell ${cellIndex + 1}</div>
+                    <div>Width: ${Math.round(newWidth)}px (${widthPercent}%)</div>
+                    <div>Height: ${Math.round(newHeight)}px (${heightPercent}%)</div>
+                    <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                `);
+            });
+            
+            // Mouse up - Convert back to grid with RESPONSIVE behavior
+            $(document).on('mouseup.gridResize', function(upEvent) {
+                upEvent.preventDefault();
+                upEvent.stopPropagation();
+                
+                $(document).off('.gridResize');
+                $indicator.remove();
+                
+                // Calculate final dimensions
+                const deltaX = upEvent.clientX - startX;
+                const deltaY = upEvent.clientY - startY;
+                
+                // Calculate final dimensions based on direction
+                let finalWidth = startWidth;
+                let finalHeight = startHeight;
+                
+                if (direction === 'right' || direction === 'both') {
+                    finalWidth = Math.max(50, startWidth + deltaX);
+                } else if (direction === 'left') {
+                    finalWidth = Math.max(50, startWidth - deltaX);
+                }
+                
+                if (direction === 'bottom' || direction === 'both') {
+                    finalHeight = Math.max(50, startHeight + deltaY);
+                } else if (direction === 'top') {
+                    finalHeight = Math.max(50, startHeight - deltaY);
+                }
+                
+                // Calculate scale factors
+                const scaleX = finalWidth / startWidth;
+                const scaleY = finalHeight / startHeight;
+                
+                // Instead of using grid-area which forces snapping, use explicit width/height
+                // Store the exact pixel dimensions for flexible sizing
+                const exactWidth = Math.round(finalWidth);
+                const exactHeight = Math.round(finalHeight);
+                
+                console.log('Setting exact dimensions:', {width: exactWidth, height: exactHeight});
+                
+                // Parse original grid-area
+                const parts = originalArea.split('/').map(p => p.trim());
+                let [rowStart, colStart, rowEnd, colEnd] = parts.map(p => parseInt(p));
+                
+                // Calculate new spans based on scale - FLEXIBLE (no rounding for precise control)
+                const originalColSpan = colEnd - colStart;
+                const originalRowSpan = rowEnd - rowStart;
+                
+                if (direction === 'right' || direction === 'both') {
+                    // Resize from right: adjust colEnd
+                    const newColSpan = Math.max(1, originalColSpan * scaleX);
+                    colEnd = colStart + newColSpan;
+                } else if (direction === 'left') {
+                    // Resize from left: adjust colStart
+                    const newColSpan = Math.max(1, originalColSpan * scaleX);
+                    colStart = colEnd - newColSpan;
+                }
+                
+                if (direction === 'bottom' || direction === 'both') {
+                    // Resize from bottom: adjust rowEnd
+                    const newRowSpan = Math.max(1, originalRowSpan * scaleY);
+                    rowEnd = rowStart + newRowSpan;
+                } else if (direction === 'top') {
+                    // Resize from top: adjust rowStart
+                    const newRowSpan = Math.max(1, originalRowSpan * scaleY);
+                    rowStart = rowEnd - newRowSpan;
+                }
+                
+                // Round the spans for CSS grid (grid-area requires integers)
+                colStart = Math.round(colStart);
+                colEnd = Math.round(colEnd);
+                rowStart = Math.round(rowStart);
+                rowEnd = Math.round(rowEnd);
+                
+                const finalArea = `${rowStart} / ${colStart} / ${rowEnd} / ${colEnd}`;
+                
+                // FLEXIBLE MODE: Skip grid template adjustment to allow exact pixel sizing
+                // The explicit width/height on the cell will maintain the exact size you set
+                // Uncomment the line below if you want neighboring cells to adjust (responsive mode)
+                // self.adjustGridTemplateForResize(gridElement, cellIndex, direction, scaleX, scaleY);
+                
+                // Restore to grid positioning with explicit dimensions for flexibility
+                $gridCell.css({
+                    'position': '',
+                    'top': '',
+                    'left': '',
+                    'width': exactWidth + 'px',
+                    'height': exactHeight + 'px',
+                    'grid-area': finalArea,
+                    'z-index': '',
+                    'box-shadow': '',
+                    'border-color': '',
+                    'transition': ''
+                });
+                
+                $('body').css('cursor', '');
+                
+                // Update stored area
+                $gridCell.data('original-area', finalArea);
+                $gridCell.attr('data-original-area', finalArea);
+                
+                // Save to history
+                self.saveHistory();
+                
+                console.log('✅ Resize complete:', {
+                    original: originalArea,
+                    final: finalArea,
+                    scaleX: scaleX.toFixed(2),
+                    scaleY: scaleY.toFixed(2),
+                    finalWidth: Math.round(finalWidth),
+                    finalHeight: Math.round(finalHeight)
+                });
+            });
+        },
+        
+        /**
+         * Adjust grid template to make neighbors responsive
+         */
+        adjustGridTemplateForResize: function(gridElement, resizedCellIndex, direction, scaleX, scaleY) {
+            console.log('🔄 Adjusting grid template for responsive behavior:', {
+                cellIndex: resizedCellIndex,
+                direction: direction,
+                scaleX: scaleX.toFixed(2),
+                scaleY: scaleY.toFixed(2)
+            });
+            
+            const $gridContainer = $(`.probuilder-element[data-id="${gridElement.id}"] .probuilder-grid-layout`);
+            const pattern = gridElement.settings.grid_pattern || 'pattern-1';
+            const gridTemplateData = this.getGridTemplateData(pattern);
+            
+            // Get current grid template
+            const currentColumns = $gridContainer.css('grid-template-columns');
+            const currentRows = $gridContainer.css('grid-template-rows');
+            
+            console.log('Current template:', {columns: currentColumns, rows: currentRows});
+            
+            // Parse the template to get fr values
+            let columnValues = [];
+            let rowValues = [];
+            
+            // Extract fr values from template (e.g., "repeat(4, 1fr)" -> [1,1,1,1])
+            if (currentColumns.includes('repeat')) {
+                const match = currentColumns.match(/repeat\((\d+),\s*(\d+(?:\.\d+)?)fr\)/);
+                if (match) {
+                    const count = parseInt(match[1]);
+                    const frValue = parseFloat(match[2]);
+                    columnValues = Array(count).fill(frValue);
+                }
+            } else {
+                // Handle individual fr values
+                columnValues = currentColumns.split(' ').map(v => parseFloat(v.replace('fr', '')));
+            }
+            
+            if (currentRows.includes('repeat')) {
+                const match = currentRows.match(/repeat\((\d+),\s*(\d+(?:\.\d+)?)px\)/);
+                if (match) {
+                    const count = parseInt(match[1]);
+                    const pxValue = parseFloat(match[2]);
+                    rowValues = Array(count).fill(pxValue);
+                }
+            } else {
+                // Handle individual px values
+                rowValues = currentRows.split(' ').map(v => parseFloat(v.replace('px', '')));
+            }
+            
+            console.log('Parsed values:', {columns: columnValues, rows: rowValues});
+            
+            // Adjust neighboring columns/rows
+            if (direction === 'right' || direction === 'both') {
+                // Find which columns the resized cell spans
+                const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
+                const parts = resizedArea.split('/').map(p => p.trim());
+                const [rowStart, colStart, rowEnd, colEnd] = parts.map(p => parseInt(p));
+                
+                // Calculate how much space the resized cell is taking
+                const resizedColSpan = colEnd - colStart;
+                const totalResizedSpace = columnValues.slice(colStart - 1, colEnd - 1).reduce((sum, val) => sum + val, 0);
+                const newResizedSpace = totalResizedSpace * scaleX;
+                const spaceDifference = newResizedSpace - totalResizedSpace;
+                
+                console.log('Column adjustment:', {
+                    resizedColSpan,
+                    totalResizedSpace,
+                    newResizedSpace,
+                    spaceDifference
+                });
+                
+                // Distribute the space difference among neighboring columns
+                if (spaceDifference !== 0) {
+                    // Find columns to adjust (not the resized ones)
+                    const adjustColumns = [];
+                    for (let i = 0; i < columnValues.length; i++) {
+                        if (i < colStart - 1 || i >= colEnd - 1) {
+                            adjustColumns.push(i);
+                        }
+                    }
+                    
+                    if (adjustColumns.length > 0) {
+                        // Distribute space proportionally
+                        const totalAdjustableSpace = adjustColumns.reduce((sum, idx) => sum + columnValues[idx], 0);
+                        const adjustmentRatio = -spaceDifference / totalAdjustableSpace; // Negative to shrink neighbors
+                        
+                        adjustColumns.forEach(idx => {
+                            columnValues[idx] = Math.max(0.1, columnValues[idx] * (1 + adjustmentRatio));
+                        });
+                        
+                        console.log('Adjusted columns:', columnValues);
+                    }
+                }
+            }
+            
+            if (direction === 'bottom' || direction === 'both') {
+                // Similar logic for rows
+                const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
+                const parts = resizedArea.split('/').map(p => p.trim());
+                const [rowStart, colStart, rowEnd, colEnd] = parts.map(p => parseInt(p));
+                
+                const resizedRowSpan = rowEnd - rowStart;
+                const totalResizedSpace = rowValues.slice(rowStart - 1, rowEnd - 1).reduce((sum, val) => sum + val, 0);
+                const newResizedSpace = totalResizedSpace * scaleY;
+                const spaceDifference = newResizedSpace - totalResizedSpace;
+                
+                console.log('Row adjustment:', {
+                    resizedRowSpan,
+                    totalResizedSpace,
+                    newResizedSpace,
+                    spaceDifference
+                });
+                
+                // Adjust neighboring rows
+                if (spaceDifference !== 0) {
+                    const adjustRows = [];
+                    for (let i = 0; i < rowValues.length; i++) {
+                        if (i < rowStart - 1 || i >= rowEnd - 1) {
+                            adjustRows.push(i);
+                        }
+                    }
+                    
+                    if (adjustRows.length > 0) {
+                        const totalAdjustableSpace = adjustRows.reduce((sum, idx) => sum + rowValues[idx], 0);
+                        const adjustmentRatio = -spaceDifference / totalAdjustableSpace;
+                        
+                        adjustRows.forEach(idx => {
+                            rowValues[idx] = Math.max(20, rowValues[idx] * (1 + adjustmentRatio));
+                        });
+                        
+                        console.log('Adjusted rows:', rowValues);
+                    }
+                }
+            }
+            
+            // Apply new template - use precise values without rounding for flexible sizing
+            const newColumnsTemplate = columnValues.map(v => v.toFixed(3) + 'fr').join(' ');
+            const newRowsTemplate = rowValues.map(v => v.toFixed(2) + 'px').join(' ');
+            
+            console.log('New template (flexible):', {columns: newColumnsTemplate, rows: newRowsTemplate});
+            
+            // Update the grid container
+            $gridContainer.css({
+                'grid-template-columns': newColumnsTemplate,
+                'grid-template-rows': newRowsTemplate
+            });
+            
+            // Store the new template in element settings for persistence
+            if (!gridElement.settings.custom_template) {
+                gridElement.settings.custom_template = {};
+            }
+            gridElement.settings.custom_template.columns = newColumnsTemplate;
+            gridElement.settings.custom_template.rows = newRowsTemplate;
+            
+            console.log('✅ Grid template updated for responsive behavior');
+        },
+        
+        /**
+         * Start widget resize - for all regular widgets
+         */
+        startWidgetResize: function(element, $element, direction, e) {
+            const self = this;
+            
+            console.log('🎯 Starting widget resize:', element.id, 'direction:', direction);
+            
+            const $preview = $element.find('.probuilder-element-preview');
+            const startWidth = $preview.outerWidth();
+            const startHeight = $preview.outerHeight();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            
+            console.log('Start dimensions:', {width: startWidth, height: startHeight});
+            
+            // Add visual feedback
+            $element.addClass('is-resizing');
+            
+            // Set cursor based on direction
+            const cursorMap = {
+                'top': 'ns-resize',
+                'bottom': 'ns-resize',
+                'left': 'ew-resize',
+                'right': 'ew-resize',
+                'both': 'nwse-resize'
+            };
+            $('body').css('cursor', cursorMap[direction] || 'default');
+            
+            // Add size indicator - Elementor style
+            const $indicator = $('<div class="probuilder-resize-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 3px; font-size: 13px; z-index: 99999; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif; font-weight: 500; pointer-events: none;"></div>');
+            $('body').append($indicator);
+            
+            // Store original dimensions in settings if not already set
+            if (!element.settings._width) {
+                element.settings._width = '100%';
+            }
+            if (!element.settings._height) {
+                element.settings._height = 'auto';
+            }
+            
+            // Mouse move - live resizing
+            $(document).on('mousemove.widgetResize', function(moveEvent) {
+                moveEvent.preventDefault();
+                moveEvent.stopPropagation();
+                
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+                
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                
+                // Calculate new dimensions based on direction
+                if (direction === 'right' || direction === 'both') {
+                    newWidth = Math.max(50, startWidth + deltaX);
+                } else if (direction === 'left') {
+                    newWidth = Math.max(50, startWidth - deltaX);
+                }
+                
+                if (direction === 'bottom' || direction === 'both') {
+                    newHeight = Math.max(50, startHeight + deltaY);
+                } else if (direction === 'top') {
+                    newHeight = Math.max(50, startHeight - deltaY);
+                }
+                
+                // Apply the new dimensions to both element and preview
+                if (direction === 'left' || direction === 'right' || direction === 'both') {
+                    $element.css('width', newWidth + 'px');
+                    $preview.css('width', newWidth + 'px');
+                }
+                
+                if (direction === 'top' || direction === 'bottom' || direction === 'both') {
+                    $element.css('height', newHeight + 'px');
+                    $preview.css('height', newHeight + 'px');
+                }
+                
+                // Update indicator - Elementor style (simple W × H)
+                $indicator.text(`${Math.round(newWidth)} × ${Math.round(newHeight)}`);
+            });
+            
+            // Mouse up - save dimensions
+            $(document).on('mouseup.widgetResize', function(upEvent) {
+                upEvent.preventDefault();
+                upEvent.stopPropagation();
+                
+                $(document).off('.widgetResize');
+                $indicator.remove();
+                $('body').css('cursor', '');
+                $element.removeClass('is-resizing');
+                
+                // Calculate final dimensions
+                const deltaX = upEvent.clientX - startX;
+                const deltaY = upEvent.clientY - startY;
+                
+                let finalWidth = startWidth;
+                let finalHeight = startHeight;
+                
+                if (direction === 'right' || direction === 'both') {
+                    finalWidth = Math.max(50, startWidth + deltaX);
+                } else if (direction === 'left') {
+                    finalWidth = Math.max(50, startWidth - deltaX);
+                }
+                
+                if (direction === 'bottom' || direction === 'both') {
+                    finalHeight = Math.max(50, startHeight + deltaY);
+                } else if (direction === 'top') {
+                    finalHeight = Math.max(50, startHeight - deltaY);
+                }
+                
+                // Save to element settings and apply to both element and preview
+                if (direction === 'left' || direction === 'right' || direction === 'both') {
+                    element.settings._width = Math.round(finalWidth) + 'px';
+                    $element.css('width', element.settings._width);
+                    $preview.css('width', element.settings._width);
+                }
+                
+                if (direction === 'top' || direction === 'bottom' || direction === 'both') {
+                    element.settings._height = Math.round(finalHeight) + 'px';
+                    $element.css('height', element.settings._height);
+                    $preview.css('height', element.settings._height);
+                }
+                
+                // Save to history
+                self.saveHistory();
+                
+                console.log('✅ Widget resize complete:', {
+                    width: element.settings._width,
+                    height: element.settings._height
+                });
+            });
         },
         
         /**
@@ -1962,6 +2919,16 @@
                         <div class="probuilder-element-preview">
                             ${preview}
                         </div>
+                        <div class="probuilder-element-resize-handles">
+                            <div class="probuilder-widget-resize-handle probuilder-resize-n" data-direction="top" title="Resize height"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-e" data-direction="right" title="Resize width"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-s" data-direction="bottom" title="Resize height"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-w" data-direction="left" title="Resize width"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-ne" data-direction="both" title="Resize both"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-se" data-direction="both" title="Resize both"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-sw" data-direction="both" title="Resize both"></div>
+                            <div class="probuilder-widget-resize-handle probuilder-resize-nw" data-direction="both" title="Resize both"></div>
+                        </div>
                         <div class="probuilder-element-add-below">
                             <button class="probuilder-add-below-btn" title="Add Element Below">
                                 <i class="dashicons dashicons-plus-alt2"></i>
@@ -1973,6 +2940,16 @@
                 console.log('Element HTML created');
                 
                 const self = this;
+                
+                // Apply saved dimensions if they exist
+                if (element.settings._width && element.settings._width !== '100%') {
+                    $element.css('width', element.settings._width);
+                    $element.find('.probuilder-element-preview').css('width', element.settings._width);
+                }
+                if (element.settings._height && element.settings._height !== 'auto') {
+                    $element.css('height', element.settings._height);
+                    $element.find('.probuilder-element-preview').css('height', element.settings._height);
+                }
                 
                 // Edit button
                 $element.find('.probuilder-element-edit').on('click', function(e) {
@@ -2002,12 +2979,22 @@
                     self.showAddElementModal(element);
                 });
                 
+                // Widget resize handles
+                $element.find('.probuilder-widget-resize-handle').on('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const direction = $(this).data('direction');
+                    console.log('🎯 Starting widget resize:', element.id, 'direction:', direction);
+                    self.startWidgetResize(element, $element, direction, e);
+                });
+                
                 // Click to select
                 $element.on('click', function(e) {
                     if (!$(e.target).closest('.probuilder-element-actions').length && 
                         !$(e.target).closest('.probuilder-column-btn').length &&
                         !$(e.target).closest('.probuilder-drop-zone').length &&
-                        !$(e.target).closest('.probuilder-add-below-btn').length) {
+                        !$(e.target).closest('.probuilder-add-below-btn').length &&
+                        !$(e.target).closest('.probuilder-widget-resize-handle').length) {
                         console.log('Element clicked, selecting:', element.id);
                         self.selectElement(element);
                     }
@@ -2060,6 +3047,629 @@
                         });
                         
                         console.log('✅ Initial drop zone handlers attached');
+                    }, 100);
+                }
+                
+                // Grid Layout drop zones and resize handles
+                if (element.widgetType === 'grid-layout') {
+                    setTimeout(function() {
+                        console.log('🎨 Attaching grid drop zone handlers for:', element.id);
+                        
+                        const $gridDropZones = $element.find('.probuilder-drop-zone');
+                        console.log('Found', $gridDropZones.length, 'grid cells');
+                        
+                        $gridDropZones.each(function() {
+                            const $zone = $(this);
+                            const gridId = $zone.data('grid-id');
+                            const cellIndex = $zone.data('cell-index');
+                            
+                            // Make grid cells droppable
+                            $zone.droppable({
+                                accept: '.probuilder-widget',
+                                tolerance: 'pointer',
+                                hoverClass: 'probuilder-drop-hover',
+                                drop: function(event, ui) {
+                                    event.stopPropagation();
+                                    const widgetName = ui.draggable.data('widget');
+                                    console.log('✅ Widget dropped in grid cell:', widgetName, 'grid:', gridId, 'cell:', cellIndex);
+                                    
+                                    // Find the grid element
+                                    const gridElement = self.elements.find(e => e.id === gridId);
+                                    if (!gridElement) {
+                                        console.error('Grid element not found:', gridId);
+                                        return;
+                                    }
+                                    
+                                    // Initialize children array if needed
+                                    if (!gridElement.children) {
+                                        gridElement.children = [];
+                                    }
+                                    
+                                    // Create new element
+                                    const newElement = {
+                                        id: 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                                        widgetType: widgetName,
+                                        settings: {},
+                                        children: []
+                                    };
+                                    
+                                    // Add to the specific cell
+                                    gridElement.children[cellIndex] = newElement;
+                                    
+                                    console.log('Grid children updated:', gridElement.children);
+                                    
+                                    // Re-render the grid
+                                    self.updateElementPreview(gridElement);
+                                    
+                                    // Open settings for the new element
+                                    setTimeout(() => {
+                                        self.openSettings(newElement);
+                                    }, 100);
+                                    
+                                    // Save to history
+                                    self.saveHistory();
+                                }
+                            });
+                            
+                            // Click handler for empty cells - ONLY trigger on "Drop widgets here" text
+                            // VERSION: 6.0.0 - Restricted click area
+                            if (!$zone.hasClass('has-content')) {
+                                // Remove click from entire cell
+                                $zone.off('click');
+                                
+                                // Add click ONLY to the empty content area
+                                $zone.find('.grid-cell-empty-content').off('click').on('click', function(e) {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    console.log('✅ VERSION 6.0.0 - Empty content area clicked:', gridId, 'cell:', cellIndex);
+                                    self.showWidgetTemplateSelector(gridId, cellIndex, true); // true = isGrid
+                                    return false;
+                                });
+                            }
+                        });
+                        
+                        // Resize handles for grid cells - using event delegation
+                        const $resizeHandles = $element.find('.grid-resize-handle');
+                        console.log('Found', $resizeHandles.length, 'resize handles');
+                        
+                        // Remove any existing handlers first
+                        $element.off('mousedown.gridResize', '.grid-resize-handle');
+                        
+                        // Attach using delegation so it survives re-renders
+                        $element.on('mousedown.gridResize', '.grid-resize-handle', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const cellIndex = $(this).data('cell-index');
+                            const direction = $(this).data('direction');
+                            console.log('🎯 Grid resize started:', cellIndex, direction);
+                            
+                            // Get fresh reference to grid element
+                            const gridElement = self.elements.find(el => el.id === element.id);
+                            if (!gridElement) {
+                                console.error('Grid element not found!');
+                                return;
+                            }
+                            
+                            // Prevent any click events from bubbling
+                            $(document).on('click.gridResizePrevent', function(clickEvent) {
+                                clickEvent.preventDefault();
+                                clickEvent.stopPropagation();
+                                $(document).off('click.gridResizePrevent');
+                            });
+                            
+                            self.startGridCellResize(gridElement, cellIndex, direction, e);
+                        });
+                        
+                        // Use event delegation for better reliability
+                        // VERSION: 5.0.0 - Delegated Event Handlers + Cell Delete
+                        console.log('🔧 VERSION 5.0.0 - Setting up delegated event handlers for grid:', element.id);
+                        
+                        const gridElement = self.elements.find(e => e.id === element.id);
+                        
+                        // Grid Cell Delete Button - Delete entire cell
+                        // VERSION: 6.0.0 - Enhanced debugging
+                        console.log('🔧 Setting up cell delete button handlers for grid:', element.id);
+                        
+                        $element.off('click.cellDelete', '.grid-cell-delete-btn')
+                            .on('click.cellDelete', '.grid-cell-delete-btn', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                
+                                const cellIndex = parseInt($(this).data('cell-index'));
+                                console.log('🗑️ VERSION 7.0.0 - Cell delete button clicked:', cellIndex);
+                                console.log('🔍 Button element:', this);
+                                console.log('🔍 Grid element:', gridElement);
+                                
+                                if (!gridElement) {
+                                    console.error('❌ Grid element not found!');
+                                    return;
+                                }
+                                
+                                // Confirm deletion
+                                if (confirm(`Delete widget from Cell ${cellIndex + 1}?`)) {
+                                    console.log('🗑️ Confirmed deletion for cell:', cellIndex);
+                                    
+                                    // Initialize children array if not exists
+                                    if (!gridElement.children) {
+                                        gridElement.children = [];
+                                    }
+                                    
+                                    // Set the cell to null instead of splicing (keep the array index)
+                                    if (gridElement.children[cellIndex]) {
+                                        console.log('🗑️ Removing widget from cell:', cellIndex);
+                                        console.log('🔍 Before delete:', gridElement.children);
+                                        gridElement.children[cellIndex] = null;
+                                        console.log('🔍 After delete:', gridElement.children);
+                                    } else {
+                                        console.log('ℹ️ Cell already empty:', cellIndex);
+                                    }
+                                    
+                                    // Re-render the entire grid
+                                    console.log('🔄 Re-rendering grid element...');
+                                    const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
+                                    const $parent = $oldElement.parent();
+                                    const insertBefore = $oldElement.next()[0];
+                                    
+                                    // Remove old element
+                                    $oldElement.remove();
+                                    
+                                    // Render new element
+                                    self.renderElement(gridElement, insertBefore);
+                                    
+                                    self.saveHistory();
+                                    
+                                    console.log('✅ Cell content deleted and grid refreshed');
+                                } else {
+                                    console.log('❌ Deletion cancelled by user');
+                                }
+                            });
+                        
+                        // Debug: Check if delete buttons exist
+                        const $deleteButtons = $element.find('.grid-cell-delete-btn');
+                        console.log('🔍 Found', $deleteButtons.length, 'cell delete buttons');
+                        $deleteButtons.each(function(i) {
+                            console.log('🔍 Delete button', i, ':', $(this).data('cell-index'));
+                        });
+                        
+                        // Make grid cells sortable - DRAG AND REORDER LIKE PUZZLE
+                        console.log('🧩 Initializing grid cell drag-and-drop reordering');
+                        const $gridContainer = $element.find('.probuilder-grid-layout');
+                        
+                        if ($gridContainer.length > 0) {
+                            $gridContainer.sortable({
+                                items: '> .grid-cell',
+                                handle: '.grid-cell-drag-handle',
+                                placeholder: 'ui-sortable-placeholder grid-cell',
+                                tolerance: 'pointer',
+                                cursor: 'grabbing',
+                                opacity: 0.7,
+                                distance: 10,
+                                delay: 100,
+                                start: function(event, ui) {
+                                    console.log('🎯 Started dragging grid cell');
+                                    ui.item.addClass('ui-sortable-helper');
+                                    $('body').css('cursor', 'grabbing');
+                                },
+                                stop: function(event, ui) {
+                                    console.log('🎯 Stopped dragging grid cell');
+                                    ui.item.removeClass('ui-sortable-helper');
+                                    $('body').css('cursor', '');
+                                },
+                                update: function(event, ui) {
+                                    console.log('🔄 Grid cells reordered - auto-adjusting layout');
+                                    
+                                    // Get new order of cells
+                                    const newChildren = [];
+                                    $gridContainer.find('.grid-cell').each(function(index) {
+                                        const oldIndex = parseInt($(this).data('cell-index'));
+                                        const oldChild = gridElement.children ? gridElement.children[oldIndex] : null;
+                                        newChildren.push(oldChild); // Can be null for empty cells
+                                        
+                                        // Update cell index
+                                        $(this).attr('data-cell-index', index);
+                                        $(this).find('.grid-cell-drag-handle').attr('data-cell-index', index);
+                                        $(this).find('.grid-cell-delete-btn').attr('data-cell-index', index);
+                                    });
+                                    
+                                    // Update the grid element's children array
+                                    gridElement.children = newChildren;
+                                    
+                                    // Re-render the grid with new order
+                                    console.log('🔄 Re-rendering grid with new cell order');
+                                    const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
+                                    const insertBefore = $oldElement.next()[0];
+                                    $oldElement.remove();
+                                    
+                                    self.renderElement(gridElement, insertBefore);
+                                    self.saveHistory();
+                                    
+                                    self.showToast('✅ Grid cells reordered!');
+                                    console.log('✅ Grid layout auto-adjusted like flexbox');
+                                }
+                            });
+                            
+                            console.log('✅ Grid cell sortable initialized');
+                        }
+                        
+                        // Hover to show/hide toolbar - using delegation
+                        $element.off('mouseenter.nestedHover mouseleave.nestedHover', '.probuilder-nested-element')
+                            .on('mouseenter.nestedHover', '.probuilder-nested-element', function() {
+                                $(this).find('.probuilder-nested-toolbar').show();
+                            })
+                            .on('mouseleave.nestedHover', '.probuilder-nested-element', function() {
+                                $(this).find('.probuilder-nested-toolbar').hide();
+                            });
+                        
+                        // Edit button click - using delegation
+                        $element.off('click.nestedEdit', '.probuilder-nested-edit')
+                            .on('click.nestedEdit', '.probuilder-nested-edit', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                const $nestedEl = $(this).closest('.probuilder-nested-element');
+                                const childId = $nestedEl.data('id');
+                                const childElement = gridElement.children ? gridElement.children.find(c => c && c.id === childId) : null;
+                                
+                                if (childElement) {
+                                    console.log('✏️ Edit nested element:', childId);
+                                    self.openSettings(childElement);
+                                }
+                            });
+                        
+                        // Delete button click - using delegation
+                        // VERSION: 6.0.0 - Enhanced debugging for widget delete
+                        console.log('🔧 Setting up widget delete button handlers for grid:', element.id);
+                        
+                        // Use setTimeout to ensure DOM is ready
+                        setTimeout(function() {
+                            $element.off('click.nestedDelete', '.probuilder-nested-delete')
+                                .on('click.nestedDelete', '.probuilder-nested-delete', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                
+                                const $nestedEl = $(this).closest('.probuilder-nested-element');
+                                const childId = $nestedEl.data('id');
+                                const cellIndex = parseInt($nestedEl.closest('.grid-cell').data('cell-index'));
+                                
+                                console.log('🗑️ VERSION 7.0.0 - Widget delete button clicked:', childId, 'in cell:', cellIndex);
+                                console.log('🔍 Delete button element:', this);
+                                console.log('🔍 Nested element:', $nestedEl);
+                                console.log('🔍 Grid element:', gridElement);
+                                
+                                if (!gridElement) {
+                                    console.error('❌ Grid element not found!');
+                                    return;
+                                }
+                                
+                                // Initialize children array if not exists
+                                if (!gridElement.children) {
+                                    gridElement.children = [];
+                                }
+                                
+                                if (gridElement.children[cellIndex]) {
+                                    console.log('🗑️ Removing widget from cell:', cellIndex);
+                                    console.log('🔍 Before delete:', gridElement.children);
+                                    // Set to null instead of splicing (keep the array index)
+                                    gridElement.children[cellIndex] = null;
+                                    console.log('🔍 After delete:', gridElement.children);
+                                    
+                                    // Re-render the entire grid
+                                    console.log('🔄 Re-rendering grid element...');
+                                    const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
+                                    const $parent = $oldElement.parent();
+                                    const insertBefore = $oldElement.next()[0];
+                                    
+                                    // Remove old element
+                                    $oldElement.remove();
+                                    
+                                    // Render new element
+                                    self.renderElement(gridElement, insertBefore);
+                                    
+                                    // Save to history
+                                    self.saveHistory();
+                                    
+                                    console.log('✅ Widget deleted from grid cell', cellIndex);
+                                } else {
+                                    console.warn('⚠️ No widget found in cell:', cellIndex);
+                                }
+                            });
+                        
+                        // Debug: Check if widget delete buttons exist
+                        const $widgetDeleteButtons = $element.find('.probuilder-nested-delete');
+                        console.log('🔍 Found', $widgetDeleteButtons.length, 'widget delete buttons');
+                        $widgetDeleteButtons.each(function(i) {
+                            const $btn = $(this);
+                            const $nestedEl = $btn.closest('.probuilder-nested-element');
+                            console.log('🔍 Widget delete button', i, ':', $nestedEl.data('id'));
+                        });
+                        
+                        }, 100); // End setTimeout for delete handlers
+                        
+                        // Widget Resize Handles - using delegation
+                        // VERSION: 12.0.0 - Widget resize functionality with INSIDE positioning
+                        console.log('🔧 VERSION 12.0.0 - Setting up widget resize handlers for grid:', element.id);
+                        
+                        // Debug: Check if resize dots exist in DOM
+                        setTimeout(function() {
+                            const dotCount = $element.find('.widget-resize-dot').length;
+                            const tlCount = $element.find('.widget-resize-dot-tl').length;
+                            const trCount = $element.find('.widget-resize-dot-tr').length;
+                            const brCount = $element.find('.widget-resize-dot-br').length;
+                            const blCount = $element.find('.widget-resize-dot-bl').length;
+                            
+                            console.log('🔍 VERSION 14.0.0 - Resize Dot Debug:', {
+                                total: dotCount,
+                                topLeft: tlCount,
+                                topRight: trCount,
+                                bottomRight: brCount,
+                                bottomLeft: blCount
+                            });
+                            
+                            if (dotCount > 0) {
+                                console.log('✅ Resize dots found! They should be VISIBLE as colored circles on widget corners.');
+                                console.log('🔴 RED = Top-Left, 🟢 GREEN = Top-Right, 🔵 BLUE = Bottom-Right, 🟡 YELLOW = Bottom-Left');
+                            } else {
+                                console.error('❌ No resize dots found in DOM!');
+                            }
+                        }, 200);
+                        
+                        $element.off('mousedown.widgetResize', '.widget-resize-dot')
+                            .on('mousedown.widgetResize', '.widget-resize-dot', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                
+                                const $handle = $(this);
+                                const direction = $handle.data('direction');
+                                const $widget = $handle.closest('.probuilder-resizable-widget');
+                                const widgetId = $widget.data('id');
+                                const cellIndex = parseInt($widget.data('cell-index'));
+                                
+                                console.log('🎯 VERSION 9.0.0 - Widget resize start:', widgetId, 'direction:', direction);
+                                
+                                // Get widget element from data
+                                const widgetElement = gridElement.children[cellIndex];
+                                if (!widgetElement) return;
+                                
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startWidth = $widget.outerWidth();
+                                const startHeight = $widget.outerHeight();
+                                const startLeft = parseFloat($widget.css('marginLeft')) || 0;
+                                const startTop = parseFloat($widget.css('marginTop')) || 0;
+                                
+                                console.log('🔍 Start dimensions:', startWidth, 'x', startHeight, 'position:', startLeft, startTop);
+                                
+                                // Create size indicator
+                                const $indicator = $('<div>').css({
+                                    position: 'fixed',
+                                    top: e.clientY + 20,
+                                    left: e.clientX + 20,
+                                    background: 'rgba(0,0,0,0.8)',
+                                    color: 'white',
+                                    padding: '8px 12px',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    zIndex: 10000,
+                                    pointerEvents: 'none'
+                                }).text(`${Math.round(startWidth)}px × ${Math.round(startHeight)}px`);
+                                
+                                $('body').append($indicator);
+                                
+                                // Mouse move
+                                $(document).on('mousemove.widgetResize', function(moveEvent) {
+                                    const deltaX = moveEvent.clientX - startX;
+                                    const deltaY = moveEvent.clientY - startY;
+                                    
+                                    let newWidth = startWidth;
+                                    let newHeight = startHeight;
+                                    let newLeft = startLeft;
+                                    let newTop = startTop;
+                                    
+                                    // Handle different resize directions
+                                    switch(direction) {
+                                        case 'right':
+                                            newWidth = Math.max(50, startWidth + deltaX);
+                                            break;
+                                        case 'left':
+                                            newWidth = Math.max(50, startWidth - deltaX);
+                                            newLeft = startLeft + (startWidth - newWidth);
+                                            break;
+                                        case 'bottom':
+                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            break;
+                                        case 'top':
+                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newTop = startTop + (startHeight - newHeight);
+                                            break;
+                                        case 'top-left':
+                                            newWidth = Math.max(50, startWidth - deltaX);
+                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newLeft = startLeft + (startWidth - newWidth);
+                                            newTop = startTop + (startHeight - newHeight);
+                                            break;
+                                        case 'top-right':
+                                            newWidth = Math.max(50, startWidth + deltaX);
+                                            newHeight = Math.max(50, startHeight - deltaY);
+                                            newTop = startTop + (startHeight - newHeight);
+                                            break;
+                                        case 'bottom-right':
+                                            newWidth = Math.max(50, startWidth + deltaX);
+                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            break;
+                                        case 'bottom-left':
+                                            newWidth = Math.max(50, startWidth - deltaX);
+                                            newHeight = Math.max(50, startHeight + deltaY);
+                                            newLeft = startLeft + (startWidth - newWidth);
+                                            break;
+                                    }
+                                    
+                                    // Apply new size and position
+                                    $widget.css({
+                                        width: newWidth + 'px',
+                                        height: newHeight + 'px',
+                                        marginLeft: newLeft + 'px',
+                                        marginTop: newTop + 'px'
+                                    });
+                                    
+                                    // Update indicator
+                                    $indicator.text(`${Math.round(newWidth)}px × ${Math.round(newHeight)}px`);
+                                    $indicator.css({
+                                        top: moveEvent.clientY + 20,
+                                        left: moveEvent.clientX + 20
+                                    });
+                                });
+                                
+                                // Mouse up
+                                $(document).on('mouseup.widgetResize', function(upEvent) {
+                                    $(document).off('.widgetResize');
+                                    $indicator.remove();
+                                    
+                                    const finalWidth = $widget.outerWidth();
+                                    const finalHeight = $widget.outerHeight();
+                                    const finalLeft = parseFloat($widget.css('marginLeft')) || 0;
+                                    const finalTop = parseFloat($widget.css('marginTop')) || 0;
+                                    
+                                    console.log('✅ Final dimensions:', finalWidth, 'x', finalHeight, 'position:', finalLeft, finalTop);
+                                    
+                                    // Save dimensions and position to widget settings
+                                    if (!widgetElement.settings) {
+                                        widgetElement.settings = {};
+                                    }
+                                    widgetElement.settings.widget_width = finalWidth + 'px';
+                                    widgetElement.settings.widget_height = finalHeight + 'px';
+                                    widgetElement.settings.widget_margin_left = finalLeft + 'px';
+                                    widgetElement.settings.widget_margin_top = finalTop + 'px';
+                                    
+                                    self.saveHistory();
+                                    
+                                    console.log('✅ Widget resized and saved');
+                                });
+                            });
+                        
+                        // Drag to move - using delegation
+                        // VERSION: 15.0.0 - Fixed drag with resize dots
+                        $element.off('mousedown.nestedDrag', '.probuilder-nested-element')
+                            .on('mousedown.nestedDrag', '.probuilder-nested-element', function(e) {
+                                // Don't drag if clicking toolbar buttons or resize dots
+                                if ($(e.target).closest('.probuilder-nested-toolbar').length > 0 ||
+                                    $(e.target).closest('.widget-resize-dot').length > 0) {
+                                    console.log('❌ Click on toolbar or resize dot - not dragging');
+                                    return;
+                                }
+                                
+                                console.log('✅ Click on widget content - can drag');
+                                
+                                const $nestedEl = $(this);
+                                const childId = $nestedEl.data('id');
+                                const sourceCellIndex = parseInt($nestedEl.closest('.grid-cell').data('cell-index'));
+                                const $gridContainer = $nestedEl.closest('.probuilder-grid-layout');
+                                
+                                console.log('🎯 VERSION 4.0.0 - Drag start:', childId, 'from cell:', sourceCellIndex);
+                                
+                                // Get the widget data
+                                const widgetData = gridElement.children[sourceCellIndex];
+                                if (!widgetData) return;
+                                
+                                // Create a visual clone for dragging
+                                const $clone = $nestedEl.clone().css({
+                                    position: 'absolute',
+                                    zIndex: 9999,
+                                    pointerEvents: 'none',
+                                    opacity: 0.7,
+                                    transform: 'rotate(5deg)',
+                                    boxShadow: '0 5px 20px rgba(0,0,0,0.3)',
+                                    width: $nestedEl.outerWidth(),
+                                    height: $nestedEl.outerHeight()
+                                });
+                                
+                                $('body').append($clone);
+                                
+                                // Highlight all cells as drop targets except source
+                                $gridContainer.find('.grid-cell').each(function() {
+                                    const cellIndex = parseInt($(this).data('cell-index'));
+                                    if (cellIndex !== sourceCellIndex) {
+                                        $(this).addClass('probuilder-drop-target');
+                                    }
+                                });
+                                
+                                // Track mouse movement
+                                let isDragging = false;
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                
+                                $(document).on('mousemove.nestedDrag', function(moveEvent) {
+                                    if (!isDragging) {
+                                        const deltaX = Math.abs(moveEvent.clientX - startX);
+                                        const deltaY = Math.abs(moveEvent.clientY - startY);
+                                        if (deltaX > 5 || deltaY > 5) {
+                                            isDragging = true;
+                                            $('body').css('cursor', 'grabbing');
+                                            console.log('🎯 Drag activated');
+                                        }
+                                    }
+                                    
+                                    if (isDragging) {
+                                        $clone.css({
+                                            left: moveEvent.clientX - 50,
+                                            top: moveEvent.clientY - 25
+                                        });
+                                        
+                                        // Highlight hovered cell
+                                        const $hoveredCell = $(moveEvent.target).closest('.grid-cell');
+                                        if ($hoveredCell.length && $hoveredCell.hasClass('probuilder-drop-target')) {
+                                            $gridContainer.find('.grid-cell').removeClass('probuilder-drop-hover');
+                                            $hoveredCell.addClass('probuilder-drop-hover');
+                                        } else {
+                                            $gridContainer.find('.grid-cell').removeClass('probuilder-drop-hover');
+                                        }
+                                    }
+                                });
+                                
+                                $(document).on('mouseup.nestedDrag', function(upEvent) {
+                                    $(document).off('.nestedDrag');
+                                    $clone.remove();
+                                    $('body').css('cursor', '');
+                                    
+                                    // Remove all drop target highlights
+                                    $gridContainer.find('.grid-cell').removeClass('probuilder-drop-target probuilder-drop-hover');
+                                    
+                                    if (isDragging) {
+                                        // Check if dropped on a valid cell
+                                        const $droppedCell = $(upEvent.target).closest('.grid-cell');
+                                        if ($droppedCell.length && parseInt($droppedCell.data('cell-index')) !== sourceCellIndex) {
+                                            const targetCellIndex = parseInt($droppedCell.data('cell-index'));
+                                            
+                                            console.log('🎯 Moving widget from cell', sourceCellIndex, 'to cell', targetCellIndex);
+                                            
+                                            // Move the widget in the data structure
+                                            const widgetToMove = gridElement.children[sourceCellIndex];
+                                            
+                                            // Remove from source
+                                            gridElement.children.splice(sourceCellIndex, 1);
+                                            
+                                            // Insert at target (adjust index if needed)
+                                            let insertIndex = targetCellIndex;
+                                            if (targetCellIndex > sourceCellIndex) {
+                                                insertIndex = targetCellIndex - 1; // Adjust for removed item
+                                            }
+                                            
+                                            // Ensure we don't exceed array bounds
+                                            insertIndex = Math.max(0, Math.min(insertIndex, gridElement.children.length));
+                                            
+                                            gridElement.children.splice(insertIndex, 0, widgetToMove);
+                                            
+                                            // Re-render the grid
+                                            self.renderElement(gridElement);
+                                            
+                                            // Save to history
+                                            self.saveHistory();
+                                            
+                                            console.log('✅ Widget moved successfully');
+                                        }
+                                    }
+                                });
+                            });
+                        
+                        console.log('✅ Grid drop zone and resize handlers attached');
                     }, 100);
                 }
                 
@@ -2158,7 +3768,17 @@
                     return `<div style="height: ${settings.height || 50}px;"></div>`;
                     
                 case 'container':
-                    const columns = settings.columns || '1';
+                    const columnsCount = parseInt(settings.columns_count || '2');
+                    
+                    // Auto-generate column widths if not set or count changed
+                    let columnWidths = settings.column_widths || '';
+                    if (!columnWidths || columnWidths.split(',').length !== columnsCount) {
+                        const equalWidth = 100 / columnsCount;
+                        columnWidths = Array(columnsCount).fill(equalWidth).join(',');
+                        // Update settings
+                        element.settings.column_widths = columnWidths;
+                    }
+                    
                     const columnsTablet = settings.columns_tablet || '2';
                     const columnsMobile = settings.columns_mobile || '1';
                     const columnGap = settings.column_gap || 20;
@@ -2167,6 +3787,11 @@
                     const containerId = 'container-preview-' + element.id;
                     const bgType = settings.background_type || 'color';
                     let background = '';
+                    
+                    // Parse column widths for grid
+                    const widths = columnWidths.split(',').map(w => parseFloat(w.trim()));
+                    const total = widths.reduce((sum, w) => sum + w, 0);
+                    const gridTemplate = widths.map(w => (w / total) + 'fr').join(' ');
                     
                     if (bgType === 'color') {
                         background = `background-color: ${settings.background_color || '#f8f9fa'};`;
@@ -2198,6 +3823,84 @@
                             #${containerId} .probuilder-container-columns {
                                 display: grid;
                                 width: 100%;
+                                grid-template-columns: ${gridTemplate};
+                                gap: ${columnGap}px;
+                                position: relative;
+                            }
+                            
+                            #${containerId} .probuilder-column {
+                                position: relative;
+                                min-height: 80px;
+                                border: 1px dashed #ddd;
+                                padding: 15px;
+                                background: rgba(255,255,255,0.8);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                text-align: center;
+                                color: #999;
+                                font-size: 14px;
+                            }
+                            
+                            #${containerId} .probuilder-column:hover {
+                                border-color: #007cba;
+                                background: rgba(0,124,186,0.05);
+                            }
+                            
+                            #${containerId} .probuilder-resize-handle {
+                                position: absolute;
+                                top: 0;
+                                bottom: 0;
+                                right: -4px;
+                                width: 8px;
+                                background: linear-gradient(90deg, #007cba 0%, #0096dd 100%);
+                                cursor: ew-resize;
+                                opacity: 0;
+                                transition: opacity 0.3s, width 0.2s;
+                                z-index: 1000;
+                                border-radius: 2px;
+                            }
+                            
+                            #${containerId} .probuilder-resize-handle::before {
+                                content: '';
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                width: 3px;
+                                height: 30px;
+                                background: rgba(255,255,255,0.8);
+                                border-radius: 10px;
+                            }
+                            
+                            #${containerId} .probuilder-resize-handle:hover {
+                                opacity: 1 !important;
+                                width: 12px;
+                                background: linear-gradient(90deg, #005a87 0%, #007cba 100%);
+                                box-shadow: 0 0 10px rgba(0,124,186,0.5);
+                            }
+                            
+                            #${containerId} .probuilder-container-columns:hover .probuilder-resize-handle {
+                                opacity: 0.6;
+                            }
+                            
+                            #${containerId} .probuilder-column-width-indicator {
+                                position: absolute;
+                                top: 5px;
+                                right: 5px;
+                                background: rgba(0,124,186,0.9);
+                                color: white;
+                                padding: 2px 8px;
+                                border-radius: 10px;
+                                font-size: 11px;
+                                font-weight: 600;
+                                opacity: 0;
+                                transition: opacity 0.2s;
+                                z-index: 100;
+                            }
+                            
+                            #${containerId} .probuilder-column:hover .probuilder-column-width-indicator {
+                                opacity: 1;
                             }
                     `;
                     
@@ -2225,17 +3928,17 @@
                         // Single row CSS
                         responsiveCSS += `
                             #${containerId} .probuilder-container-columns {
-                                grid-template-columns: repeat(${columns}, 1fr);
+                                grid-template-columns: repeat(${columnsCount}, 1fr);
                                 gap: ${columnGap}px;
                             }
                             @media (max-width: 1024px) {
                                 #${containerId} .probuilder-container-columns {
-                                    grid-template-columns: repeat(${columnsTablet}, 1fr);
+                                    grid-template-columns: repeat(${settings.columns_tablet || columnsCount}, 1fr);
                                 }
                             }
                             @media (max-width: 767px) {
                                 #${containerId} .probuilder-container-columns {
-                                    grid-template-columns: repeat(${columnsMobile}, 1fr);
+                                    grid-template-columns: repeat(${settings.columns_mobile || 1}, 1fr);
                                 }
                             }
                         `;
@@ -2351,96 +4054,519 @@
                         // Single row layout (but grid can create multiple rows automatically)
                         let columnsHTML = '<div class="probuilder-container-row probuilder-row-0"><div class="probuilder-container-columns">';
                         
-                        // Show ALL children - grid will automatically wrap to multiple rows
-                        const numChildren = element.children ? element.children.length : 0;
-                        const totalSlots = Math.max(columns, numChildren);
+                        // Show columns with drag handles
+                        const numColumns = parseInt(columnsCount);
                         
-                        for (let i = 0; i < totalSlots; i++) {
+                        for (let i = 0; i < numColumns; i++) {
                             const child = element.children && element.children[i];
+                            const columnWidth = widths[i] || (100 / numColumns);
+                            const widthPercent = Math.round(columnWidth);
                             
-                            if (child) {
-                                // Render child element
-                                const childPreview = this.generatePreview(child, depth + 1);
-                                
-                                columnsHTML += `
-                                    <div class="probuilder-column" style="min-height: 50px; padding: 5px; position: relative; z-index: 1;">
-                                        <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}" style="position: relative; z-index: 1;">
-                                            <div class="probuilder-nested-controls" style="
-                                                position: absolute;
-                                                top: 0;
-                                                right: 0;
-                                                display: none;
-                                                gap: 4px;
-                                                z-index: 100;
-                                                background: rgba(255, 255, 255, 0.95);
-                                                padding: 4px;
-                                                border-radius: 3px;
-                                                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                                            ">
-                                                <button class="probuilder-nested-drag" title="Move" style="
-                                                    background: #71717a;
-                                                    border: none;
-                                                    color: #ffffff;
-                                                    width: 24px;
-                                                    height: 24px;
-                                                    border-radius: 2px;
-                                                    cursor: move;
-                                                    display: flex;
-                                                    align-items: center;
-                                                    justify-content: center;
-                                                    font-size: 12px;
-                                                ">
-                                                    <i class="dashicons dashicons-move" style="font-size: 12px;"></i>
-                                                </button>
-                                                <button class="probuilder-nested-edit" title="Edit" style="
-                                                    background: #92003b;
-                                                    border: none;
-                                                    color: #ffffff;
-                                                    width: 24px;
-                                                    height: 24px;
-                                                    border-radius: 2px;
-                                                    cursor: pointer;
-                                                    display: flex;
-                                                    align-items: center;
-                                                    justify-content: center;
-                                                    font-size: 12px;
-                                                ">
-                                                    <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
-                                                </button>
-                                                <button class="probuilder-nested-delete" title="Delete" style="
-                                                    background: #dc2626;
-                                                    border: none;
-                                                    color: #ffffff;
-                                                    width: 24px;
-                                                    height: 24px;
-                                                    border-radius: 2px;
-                                                    cursor: pointer;
-                                                    display: flex;
-                                                    align-items: center;
-                                                    justify-content: center;
-                                                    font-size: 12px;
-                                                ">
-                                                    <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
-                                                </button>
-                                            </div>
-                                            <div class="probuilder-nested-preview">
-                                                ${childPreview}
-                                            </div>
+                            columnsHTML += `
+                                <div class="probuilder-column" data-column-index="${i}">
+                                    <div class="probuilder-column-width-indicator">${widthPercent}%</div>
+                                    
+                                    ${child ? `
+                                        <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}">
+                                            ${this.generatePreview(child, depth + 1)}
                                         </div>
-                                    </div>
-                                `;
-                            } else {
-                                // Show empty drop zone for this column
-                                columnsHTML += `<div class="probuilder-column probuilder-drop-zone" data-container-id="${element.id}" data-column-index="${i}" style="min-height: 100px; border: 1px dashed #d5dadf; padding: 20px; text-align: center; color: #a4afb7; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                    <i class="dashicons dashicons-plus" style="font-size: 24px; opacity: 0.4; margin-bottom: 5px;"></i>
-                                    <span style="font-size: 13px; opacity: 0.7;">Click to add widget</span>
-                                </div>`;
-                            }
+                                    ` : `
+                                        <div>
+                                            <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i>
+                                            <div style="font-size: 13px; opacity: 0.7;">Column ${i + 1}</div>
+                                            <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">${widthPercent}%</div>
+                                        </div>
+                                    `}
+                                    
+                                    ${i < numColumns - 1 ? `
+                                        <div class="probuilder-resize-handle" data-column="${i}" data-element-id="${element.id}"></div>
+                                    ` : ''}
+                                </div>
+                            `;
                         }
                         
                         columnsHTML += '</div></div>';
                         return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${columnsHTML}</div>`;
                     }
+                    
+                case 'grid-layout':
+                    const gridPattern = settings.grid_pattern || 'pattern-1';
+                    const gridGap = settings.gap || 20;
+                    const gridMinHeight = settings.min_height || 150;
+                    const gridBgColor = settings.background_color || '#f8f9fa';
+                    const gridBorderColor = settings.border_color || '#ddd';
+                    const gridBorderWidth = settings.border_width || 1;
+                    const gridBorderRadius = settings.border_radius || 8;
+                    const enableResize = settings.enable_resize !== false;
+                    
+                    const pattern = this.getGridPatterns().find(p => p.id === gridPattern) || this.getGridPatterns()[0];
+                    const gridTemplateData = this.getGridTemplateData(gridPattern);
+                    
+                    // Initialize children array if not exists
+                    if (!element.children) {
+                        element.children = [];
+                    }
+                    
+                    // Use custom template if available (from resize operations)
+                    let columnsTemplate = gridTemplateData.columns;
+                    let rowsTemplate = gridTemplateData.rows;
+                    
+                    if (element.settings.custom_template) {
+                        columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
+                        rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
+                        console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
+                    }
+                    
+                    // Generate grid HTML with actual cells
+                    const gridId = 'grid-' + element.id;
+                    let gridHTML = `
+                        <style>
+                            #${gridId} {
+                                display: grid;
+                                grid-template-columns: ${columnsTemplate};
+                                grid-template-rows: ${rowsTemplate};
+                                gap: ${gridGap}px;
+                                width: 100%;
+                                position: relative;
+                            }
+                            #${gridId} .grid-cell {
+                                min-height: ${gridMinHeight}px;
+                                background: ${gridBgColor};
+                                border: ${gridBorderWidth}px solid ${gridBorderColor};
+                                border-radius: ${gridBorderRadius}px;
+                                padding: 10px;
+                                position: relative;
+                                overflow: visible !important;
+                            }
+                            #${gridId} .grid-cell.has-content {
+                                padding: 0;
+                                overflow: visible !important; /* Changed from hidden to visible */
+                            }
+                            #${gridId} .grid-cell.empty-cell {
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                transition: all 0.3s;
+                            }
+                            #${gridId} .grid-cell.empty-cell:hover {
+                                background: rgba(0,124,186,0.05);
+                                border-color: #007cba;
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            }
+                            
+                            /* Cell Drag Handle - Shows on hover for reordering */
+                            #${gridId} .grid-cell-drag-handle {
+                                position: absolute;
+                                top: 5px;
+                                left: 5px;
+                                width: 32px;
+                                height: 32px;
+                                background: rgba(0, 124, 186, 0.9);
+                                border: none;
+                                border-radius: 4px;
+                                color: white;
+                                cursor: grab;
+                                display: none;
+                                align-items: center;
+                                justify-content: center;
+                                z-index: 999;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                            }
+                            
+                            #${gridId} .grid-cell:hover .grid-cell-drag-handle {
+                                display: flex;
+                            }
+                            
+                            #${gridId} .grid-cell-drag-handle:hover {
+                                background: rgba(0, 92, 135, 1);
+                                transform: scale(1.1);
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                            }
+                            
+                            #${gridId} .grid-cell-drag-handle:active {
+                                cursor: grabbing;
+                            }
+                            
+                            /* Cell Delete Button - Shows on hover for each cell */
+                            #${gridId} .grid-cell-delete-btn {
+                                position: absolute;
+                                top: 5px;
+                                right: 5px;
+                                width: 28px;
+                                height: 28px;
+                                background: rgba(220, 38, 38, 0.9);
+                                border: none;
+                                border-radius: 4px;
+                                color: white;
+                                cursor: pointer;
+                                display: none;
+                                align-items: center;
+                                justify-content: center;
+                                z-index: 999;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                            }
+                            
+                            #${gridId} .grid-cell:hover .grid-cell-delete-btn {
+                                display: flex;
+                            }
+                            
+                            #${gridId} .grid-cell-delete-btn:hover {
+                                background: rgba(220, 38, 38, 1);
+                                transform: scale(1.1);
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                            }
+                            
+                            /* Dragging state for grid cells */
+                            #${gridId} .grid-cell.ui-sortable-helper {
+                                opacity: 0.7;
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+                                transform: rotate(2deg);
+                                z-index: 10000 !important;
+                                cursor: grabbing !important;
+                            }
+                            
+                            #${gridId} .grid-cell.ui-sortable-placeholder {
+                                border: 2px dashed #007cba !important;
+                                background: rgba(0, 124, 186, 0.1) !important;
+                                opacity: 1 !important;
+                            }
+                            #${gridId} .grid-cell-empty-content {
+                                text-align: center;
+                                color: #999;
+                                pointer-events: auto;
+                                cursor: pointer;
+                                padding: 20px;
+                                border-radius: 4px;
+                                transition: all 0.3s ease;
+                            }
+                            
+                            #${gridId} .grid-cell-empty-content:hover {
+                                background: rgba(0, 124, 186, 0.1);
+                                color: #007cba;
+                                transform: scale(1.05);
+                            }
+                            
+                            #${gridId} .grid-cell-empty-content:hover .dashicons {
+                                opacity: 0.6 !important;
+                            }
+                            #${gridId} .grid-cell-toolbar {
+                                position: absolute;
+                                top: 8px;
+                                right: 8px;
+                                opacity: 0;
+                                transition: opacity 0.2s;
+                                z-index: 100;
+                            }
+                            #${gridId} .grid-cell:hover .grid-cell-toolbar {
+                                opacity: 1;
+                            }
+                            #${gridId} .grid-cell-toolbar button {
+                                background: #007cba;
+                                color: white;
+                                border: none;
+                                border-radius: 3px;
+                                padding: 4px 8px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                margin-left: 4px;
+                            }
+                            /* Resize handles */
+                            #${gridId} .grid-resize-handle {
+                                position: absolute;
+                                background: #007cba;
+                                opacity: 0;
+                                transition: opacity 0.2s;
+                                z-index: 50;
+                            }
+                            #${gridId} .grid-cell:hover .grid-resize-handle {
+                                opacity: 0.6;
+                            }
+                            #${gridId} .grid-resize-handle:hover {
+                                opacity: 1 !important;
+                                background: #005a87;
+                            }
+                            #${gridId} .grid-resize-handle-top {
+                                top: -${Math.floor(gridGap / 2)}px;
+                                left: 0;
+                                width: 100%;
+                                height: 4px;
+                                cursor: row-resize;
+                            }
+                            #${gridId} .grid-resize-handle-left {
+                                top: 0;
+                                left: -${Math.floor(gridGap / 2)}px;
+                                width: 4px;
+                                height: 100%;
+                                cursor: col-resize;
+                            }
+                            #${gridId} .grid-resize-handle-right {
+                                top: 0;
+                                right: -${Math.floor(gridGap / 2)}px;
+                                width: 4px;
+                                height: 100%;
+                                cursor: col-resize;
+                            }
+                            #${gridId} .grid-resize-handle-bottom {
+                                bottom: -${Math.floor(gridGap / 2)}px;
+                                left: 0;
+                                width: 100%;
+                                height: 4px;
+                                cursor: row-resize;
+                            }
+                            #${gridId} .grid-resize-handle-corner {
+                                bottom: -${Math.floor(gridGap / 2)}px;
+                                right: -${Math.floor(gridGap / 2)}px;
+                                width: 12px;
+                                height: 12px;
+                                cursor: nwse-resize;
+                                border-radius: 2px;
+                            }
+                            
+                            /* Drag and Drop Styles for Grid Cells */
+                            #${gridId} .probuilder-drop-target {
+                                outline: 2px dashed #007cba !important;
+                                background: rgba(0, 124, 186, 0.1) !important;
+                                transition: all 0.2s ease;
+                            }
+                            
+                            #${gridId} .probuilder-drop-hover {
+                                outline: 3px solid #007cba !important;
+                                background: rgba(0, 124, 186, 0.2) !important;
+                                transform: scale(1.02);
+                                box-shadow: 0 4px 12px rgba(0, 124, 186, 0.3);
+                            }
+                            
+                            /* Nested Element Drag Styles */
+                            #${gridId} .probuilder-nested-element {
+                                cursor: grab;
+                                transition: all 0.2s ease;
+                            }
+                            
+                            #${gridId} .probuilder-nested-element:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            }
+                            
+                            #${gridId} .probuilder-nested-element:active {
+                                cursor: grabbing;
+                            }
+                            
+                            /* Toolbar Styles */
+                            #${gridId} .probuilder-nested-toolbar {
+                                background: rgba(0, 0, 0, 0.8);
+                                border-radius: 4px;
+                                padding: 4px;
+                                backdrop-filter: blur(10px);
+                            }
+                            
+                            #${gridId} .probuilder-nested-toolbar button {
+                                background: transparent;
+                                border: none;
+                                color: white;
+                                padding: 6px;
+                                margin: 0 2px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                transition: background 0.2s ease;
+                            }
+                            
+                            #${gridId} .probuilder-nested-toolbar button:hover {
+                                background: rgba(255, 255, 255, 0.2);
+                            }
+                            
+                            #${gridId} .probuilder-nested-toolbar .probuilder-nested-delete:hover {
+                                background: rgba(244, 67, 54, 0.8);
+                            }
+                            
+                            /* Widget Resize Dots - SIMPLE ALWAYS VISIBLE CORNERS */
+                            #${gridId} .widget-resize-dot {
+                                position: absolute;
+                                width: 16px;
+                                height: 16px;
+                                z-index: 9999;
+                                opacity: 1 !important;
+                                cursor: pointer;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                                border: 2px solid white;
+                            }
+                            
+                            #${gridId} .widget-resize-dot:hover {
+                                transform: scale(1.3);
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                            }
+                            
+                            /* 4 Corner Dots - OUTSIDE the widget for visibility */
+                            #${gridId} .widget-resize-dot-tl {
+                                top: -8px;
+                                left: -8px;
+                                cursor: nwse-resize;
+                            }
+                            
+                            #${gridId} .widget-resize-dot-tr {
+                                top: -8px;
+                                right: -8px;
+                                cursor: nesw-resize;
+                            }
+                            
+                            #${gridId} .widget-resize-dot-br {
+                                bottom: -8px;
+                                right: -8px;
+                                cursor: nwse-resize;
+                            }
+                            
+                            #${gridId} .widget-resize-dot-bl {
+                                bottom: -8px;
+                                left: -8px;
+                                cursor: nesw-resize;
+                            }
+                            
+                            #${gridId} .probuilder-resizable-widget {
+                                min-width: 50px;
+                                min-height: 50px;
+                                border: 1px dashed transparent;
+                                transition: border-color 0.2s ease;
+                                padding: 8px; /* Add padding so handles don't get cut off */
+                                margin: 8px; /* Add margin for space */
+                                overflow: visible !important; /* Ensure handles are visible */
+                            }
+                            
+                            #${gridId} .probuilder-resizable-widget:hover {
+                                border-color: #007cba;
+                            }
+                        </style>
+                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}">
+                    `;
+                    
+                    // Generate cells based on pattern
+                    gridTemplateData.areas.forEach((area, index) => {
+                        const child = element.children && element.children[index];
+                        const hasContent = !!child;
+                        
+                        gridHTML += `
+                            <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
+                                 style="grid-area: ${area};" 
+                                 data-cell-index="${index}"
+                                 data-grid-id="${element.id}"
+                                 data-original-area="${area}">
+                                <div class="grid-cell-drag-handle" data-cell-index="${index}" title="Drag to reorder">
+                                    <i class="dashicons dashicons-move" style="font-size: 16px;"></i>
+                                </div>
+                                <button class="grid-cell-delete-btn" data-cell-index="${index}" title="Delete this cell">
+                                    <i class="dashicons dashicons-trash" style="font-size: 14px;"></i>
+                                </button>
+                        `;
+                        
+                        if (hasContent) {
+                            // Render child widget with resize handles
+                            const childPreview = this.generatePreview(child, depth + 1);
+                            
+                            // Get widget dimensions and position (if stored)
+                            const widgetWidth = child.settings?.widget_width || '100%';
+                            const widgetHeight = child.settings?.widget_height || 'auto';
+                            const widgetMarginLeft = child.settings?.widget_margin_left || '0px';
+                            const widgetMarginTop = child.settings?.widget_margin_top || '0px';
+                            
+                            gridHTML += `
+                                <div class="probuilder-nested-element probuilder-resizable-widget" 
+                                     data-id="${child.id}" 
+                                     data-widget="${child.widgetType}"
+                                     data-cell-index="${index}"
+                                     style="width: ${widgetWidth}; height: ${widgetHeight}; margin-left: ${widgetMarginLeft}; margin-top: ${widgetMarginTop}; position: relative;">
+                                    <div class="probuilder-nested-toolbar" style="
+                                        position: absolute;
+                                        top: 5px;
+                                        right: 5px;
+                                        z-index: 1000;
+                                        display: none;
+                                        gap: 4px;
+                                        background: rgba(255,255,255,0.95);
+                                        padding: 4px;
+                                        border-radius: 3px;
+                                        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                    ">
+                                        <button class="probuilder-nested-edit" title="Edit" style="
+                                            background: #007cba;
+                                            border: none;
+                                            color: #ffffff;
+                                            width: 24px;
+                                            height: 24px;
+                                            border-radius: 2px;
+                                            cursor: pointer;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                        ">
+                                            <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
+                                        </button>
+                                        <button class="probuilder-nested-delete" title="Delete" style="
+                                            background: #dc2626;
+                                            border: none;
+                                            color: #ffffff;
+                                            width: 24px;
+                                            height: 24px;
+                                            border-radius: 2px;
+                                            cursor: pointer;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                        ">
+                                            <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Widget Resize Handles - 4 VISIBLE corner dots -->
+                                    <div class="widget-resize-dot widget-resize-dot-tl" data-direction="top-left" title="Resize from top-left">
+                                        <span style="background: #ff0000; width: 100%; height: 100%; display: block; border-radius: 50%;"></span>
+                                    </div>
+                                    <div class="widget-resize-dot widget-resize-dot-tr" data-direction="top-right" title="Resize from top-right">
+                                        <span style="background: #00ff00; width: 100%; height: 100%; display: block; border-radius: 50%;"></span>
+                                    </div>
+                                    <div class="widget-resize-dot widget-resize-dot-br" data-direction="bottom-right" title="Resize from bottom-right">
+                                        <span style="background: #0000ff; width: 100%; height: 100%; display: block; border-radius: 50%;"></span>
+                                    </div>
+                                    <div class="widget-resize-dot widget-resize-dot-bl" data-direction="bottom-left" title="Resize from bottom-left">
+                                        <span style="background: #ffff00; width: 100%; height: 100%; display: block; border-radius: 50%;"></span>
+                                    </div>
+                                    
+                                    <div class="probuilder-nested-preview">
+                                        ${childPreview}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Empty drop zone
+                            gridHTML += `
+                                <div class="grid-cell-empty-content">
+                                    <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3;"></i>
+                                    <div style="font-size: 12px; margin-top: 8px;">Cell ${index + 1}</div>
+                                    <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Add resize handles if enabled
+                        if (enableResize) {
+                            gridHTML += `
+                                <div class="grid-resize-handle grid-resize-handle-top" data-cell-index="${index}" data-direction="top"></div>
+                                <div class="grid-resize-handle grid-resize-handle-left" data-cell-index="${index}" data-direction="left"></div>
+                                <div class="grid-resize-handle grid-resize-handle-right" data-cell-index="${index}" data-direction="right"></div>
+                                <div class="grid-resize-handle grid-resize-handle-bottom" data-cell-index="${index}" data-direction="bottom"></div>
+                                <div class="grid-resize-handle grid-resize-handle-corner" data-cell-index="${index}" data-direction="both"></div>
+                            `;
+                        }
+                        
+                        gridHTML += `</div>`;
+                    });
+                    
+                    gridHTML += `</div>`;
+                    gridHTML += `<div style="margin-top: 10px; padding: 10px; background: #f0f0f1; border-radius: 6px; text-align: center; font-size: 11px; color: #666;">
+                        <strong>${pattern.name}</strong> · ${gridTemplateData.areas.length} cells · Gap: ${gridGap}px · Min Height: ${gridMinHeight}px
+                    </div>`;
+                    
+                    return gridHTML;
                     
                 case 'flexbox':
                     const flexDirection = settings.direction || 'row';
@@ -3560,6 +5686,95 @@
                     `;
                     
                     return mapHTML;
+                    
+                case 'tabs':
+                    const tabsItems = settings.tabs || [
+                        {tab_title: 'Tab #1', tab_icon: 'fa fa-home', tab_content: 'Tab content goes here.'},
+                        {tab_title: 'Tab #2', tab_icon: 'fa fa-star', tab_content: 'Tab content goes here.'},
+                        {tab_title: 'Tab #3', tab_icon: 'fa fa-heart', tab_content: 'Tab content goes here.'}
+                    ];
+                    const tabOrientation = settings.tab_orientation || 'horizontal';
+                    const tabAlignment = settings.tab_alignment || 'left';
+                    const verticalTabWidth = settings.vertical_tab_width || 25;
+                    const tabBg = settings.tab_bg_color || '#f5f5f5';
+                    const tabActiveBg = settings.tab_active_bg_color || '#ffffff';
+                    const tabText = settings.tab_text_color || '#333333';
+                    const tabActiveText = settings.tab_active_text_color || '#007cba';
+                    const tabBorderColor = settings.tab_border_color || '#ddd';
+                    const tabBorderWidth = settings.tab_border_width || 1;
+                    const tabBorderRadius = settings.tab_border_radius || 4;
+                    const tabPadding = settings.tab_padding || 15;
+                    const contentPadding = settings.content_padding || 20;
+                    
+                    let tabsPreviewHTML = `
+                        <div style="
+                            display: ${tabOrientation === 'vertical' ? 'flex' : 'block'};
+                            border: ${tabBorderWidth}px solid ${tabBorderColor};
+                            border-radius: ${tabBorderRadius}px;
+                            overflow: hidden;
+                        ">
+                    `;
+                    
+                    // Tab navigation
+                    tabsPreviewHTML += `
+                        <div style="
+                            ${tabOrientation === 'vertical' ? `
+                                width: ${verticalTabWidth}%;
+                                flex-shrink: 0;
+                                border-right: ${tabBorderWidth}px solid ${tabBorderColor};
+                            ` : `
+                                display: flex;
+                                ${tabAlignment === 'center' ? 'justify-content: center;' : ''}
+                                ${tabAlignment === 'right' ? 'justify-content: flex-end;' : ''}
+                                ${tabAlignment === 'justified' ? 'justify-content: space-between;' : ''}
+                                border-bottom: ${tabBorderWidth}px solid ${tabBorderColor};
+                            `}
+                        ">
+                    `;
+                    
+                    tabsItems.forEach((tab, index) => {
+                        const isActive = index === 0;
+                        tabsPreviewHTML += `
+                            <div style="
+                                padding: ${tabPadding}px ${tabPadding * 1.5}px;
+                                background: ${isActive ? tabActiveBg : tabBg};
+                                color: ${isActive ? tabActiveText : tabText};
+                                font-weight: ${isActive ? '600' : '400'};
+                                cursor: pointer;
+                                ${tabOrientation === 'horizontal' ? `
+                                    display: inline-block;
+                                    ${tabAlignment === 'justified' ? 'flex: 1; text-align: center;' : ''}
+                                ` : ''}
+                                ${tabOrientation === 'vertical' ? `
+                                    border-bottom: ${tabBorderWidth}px solid ${tabBorderColor};
+                                    text-align: left;
+                                ` : ''}
+                            ">
+                                ${tab.tab_icon ? `<i class="${tab.tab_icon}" style="margin-right: 8px;"></i>` : ''}
+                                ${tab.tab_title}
+                            </div>
+                        `;
+                    });
+                    
+                    tabsPreviewHTML += '</div>';
+                    
+                    // Tab content
+                    tabsPreviewHTML += `
+                        <div style="
+                            ${tabOrientation === 'vertical' ? 'flex: 1;' : ''}
+                            padding: ${contentPadding}px;
+                            background: ${tabActiveBg};
+                            min-height: 150px;
+                        ">
+                            <div style="color: #666; line-height: 1.6;">
+                                ${tabsItems[0].tab_content}
+                            </div>
+                        </div>
+                    `;
+                    
+                    tabsPreviewHTML += '</div>';
+                    
+                    return tabsPreviewHTML;
                     
                 case 'toggle':
                     const toggleItems = settings.items || [
@@ -5349,22 +7564,70 @@
                     </div>`;
                 
                 case 'text-path':
-                    const pathText = settings.text || 'Curved Text Path';
-                    const pathType = settings.path || 'curve';
-                    const pathColor = settings.color || '#333';
-                    const pathSize = settings.size || 24;
-                    return `<div style="text-align:center;padding:30px;background:#f9f9f9;border-radius:8px">
-                        <svg viewBox="0 0 500 150" style="width:100%;max-width:500px;height:auto">
-                            <defs>
-                                <path id="curve-path" d="M 50,100 Q 250,50 450,100" fill="transparent"/>
-                            </defs>
-                            <text fill="${pathColor}" font-size="${pathSize}" font-weight="600">
-                                <textPath href="#curve-path" startOffset="50%" text-anchor="middle">
-                                    ${pathText}
+                    const curvedText = settings.text || 'Beautiful Curved Text';
+                    const curvePathType = settings.path_type || 'arc';
+                    const curveAmount = settings.curve_amount || 30;
+                    const curveWidth = settings.path_width || 500;
+                    const curveHeight = settings.path_height || 200;
+                    const textPathColor = settings.text_color || '#1a1a1a';
+                    const textPathSize = settings.font_size || 32;
+                    const textPathWeight = settings.font_weight || '600';
+                    const textPathSpacing = settings.letter_spacing || 0;
+                    const startOff = settings.start_offset || 0;
+                    const strokeW = settings.text_stroke || 0;
+                    const strokeCol = settings.stroke_color || '#000000';
+                    
+                    // Generate path based on type
+                    let curvePath = '';
+                    const cX = curveWidth / 2;
+                    const cY = curveHeight / 2;
+                    const sX = 50;
+                    const eX = curveWidth - 50;
+                    
+                    switch(curvePathType) {
+                        case 'arc':
+                            curvePath = `M ${sX},${cY} Q ${cX},${cY - curveAmount} ${eX},${cY}`;
+                            break;
+                        case 'arc-down':
+                            curvePath = `M ${sX},${cY} Q ${cX},${cY + curveAmount} ${eX},${cY}`;
+                            break;
+                        case 'wave':
+                            const wH = Math.abs(curveAmount);
+                            const step = curveWidth / 4;
+                            curvePath = `M ${sX},${cY} Q ${sX + step},${cY - wH} ${sX + step * 2},${cY} Q ${sX + step * 3},${cY + wH} ${eX},${cY}`;
+                            break;
+                        case 'circle':
+                            const rad = Math.min(curveWidth, curveHeight) / 2 - 50;
+                            curvePath = `M ${cX - rad},${cY} A ${rad},${rad} 0 1,1 ${cX + rad},${cY}`;
+                            break;
+                        case 's-curve':
+                            const c1Y = cY - curveAmount;
+                            const c2Y = cY + curveAmount;
+                            curvePath = `M ${sX},${cY} C ${curveWidth * 0.3},${c1Y} ${curveWidth * 0.7},${c2Y} ${eX},${cY}`;
+                            break;
+                        default:
+                            curvePath = `M ${sX},${cY} Q ${cX},${cY - curveAmount} ${eX},${cY}`;
+                    }
+                    
+                    const pathId = 'curve-' + Math.random().toString(36).substr(2, 9);
+                    const strokeAttr = strokeW > 0 ? `stroke="${strokeCol}" stroke-width="${strokeW}"` : '';
+                    
+                    return `<div style="text-align:center;padding:30px;background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);border-radius:12px">
+                        <svg viewBox="0 0 ${curveWidth} ${curveHeight}" style="width:100%;max-width:${curveWidth}px;height:auto">
+                            <path id="${pathId}" d="${curvePath}" fill="transparent" stroke="rgba(0,0,0,0.1)" stroke-width="1" stroke-dashautor="5,5"/>
+                            <text fill="${textPathColor}" font-size="${textPathSize}" font-weight="${textPathWeight}" letter-spacing="${textPathSpacing}" ${strokeAttr} text-anchor="middle">
+                                <textPath href="#${pathId}" startOffset="${startOff}%">
+                                    ${curvedText}
                                 </textPath>
                             </text>
                         </svg>
-                        <p style="margin:10px 0 0;color:#999;font-size:12px">Text follows a curved path</p>
+                        <div style="margin-top:20px;padding:15px;background:rgba(255,255,255,0.9);border-radius:8px">
+                            <p style="margin:0;color:#667eea;font-size:13px;font-weight:600">
+                                📐 ${curvePathType.toUpperCase()} Path | 
+                                Curve: ${curveAmount > 0 ? '+' : ''}${curveAmount} | 
+                                Size: ${textPathSize}px
+                            </p>
+                        </div>
                     </div>`;
                 
                 case 'scroll-snap':
@@ -6356,6 +8619,48 @@
                         html += `<option value="${optKey}" ${value === optKey ? 'selected' : ''}>${control.options[optKey]}</option>`;
                     });
                     html += `</select>`;
+                    break;
+                    
+                case 'grid_preset':
+                    const gridPatterns = this.getGridPatterns();
+                    html += `<div class="probuilder-grid-presets" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px;">`;
+                    
+                    gridPatterns.forEach(pattern => {
+                        const isSelected = value === pattern.id || (!value && pattern.id === 'pattern-1');
+                        html += `
+                            <div class="probuilder-grid-preset-item ${isSelected ? 'selected' : ''}" 
+                                 data-setting="${key}" 
+                                 data-pattern="${pattern.id}"
+                                 style="
+                                     cursor: pointer;
+                                     padding: 12px;
+                                     border: 2px solid ${isSelected ? '#007cba' : '#ddd'};
+                                     border-radius: 8px;
+                                     background: ${isSelected ? 'rgba(0,124,186,0.05)' : '#fff'};
+                                     transition: all 0.2s;
+                                 "
+                                 title="${pattern.name}">
+                                <div style="
+                                    width: 100%;
+                                    height: 80px;
+                                    background: #f0f0f1;
+                                    border-radius: 4px;
+                                    padding: 4px;
+                                    margin-bottom: 8px;
+                                ">
+                                    ${pattern.svg}
+                                </div>
+                                <div style="
+                                    text-align: center;
+                                    font-size: 10px;
+                                    color: ${isSelected ? '#007cba' : '#666'};
+                                    font-weight: ${isSelected ? '600' : '400'};
+                                ">${pattern.name}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div>`;
                     break;
                     
                 case 'color':
@@ -7376,6 +9681,13 @@
          * Delete element
          */
         deleteElement: function(element) {
+            // Ensure elements is always an array
+            if (!Array.isArray(this.elements)) {
+                console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                this.elements = [];
+                return;
+            }
+            
             const index = this.elements.findIndex(e => e.id === element.id);
             if (index > -1) {
                 this.elements.splice(index, 1);
@@ -8232,12 +10544,11 @@
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: rgba(0, 0, 0, 0.85);
+                    background: rgba(0, 0, 0, 0.8);
                     z-index: 999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    backdrop-filter: blur(3px);
                 ">
                     <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
                         <div style="font-size: 48px; color: #92003b; margin-bottom: 20px;">
@@ -8324,12 +10635,11 @@
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: rgba(0, 0, 0, 0.85);
+                    background: rgba(0, 0, 0, 0.8);
                     z-index: 999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    backdrop-filter: blur(3px);
                 ">
                     <div style="
                         background: white;
@@ -8393,12 +10703,11 @@
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: rgba(0, 0, 0, 0.85);
+                    background: rgba(0, 0, 0, 0.8);
                     z-index: 999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    backdrop-filter: blur(3px);
                 ">
                     <div class="probuilder-templates-modal" style="
                         background: #ffffff;
@@ -8668,13 +10977,18 @@
                         if (response.success && response.data && response.data.data) {
                             const templateData = response.data.data;
                             console.log('Template elements:', Array.isArray(templateData) ? templateData.length : 1);
+                            console.log('Template type:', template.type);
                             
                             // Close modal
                             $('.probuilder-templates-modal-overlay').remove();
                             
-                            // Clear existing canvas first
-                            console.log('Clearing canvas before inserting template...');
-                            self.clearCanvas();
+                            // Clear canvas ONLY for full-page templates
+                            if (template.type === 'page') {
+                                console.log('🗑️ Full page template - clearing canvas first');
+                                self.clearCanvas();
+                            } else {
+                                console.log('➕ Section template - adding to existing content');
+                            }
                             
                             // Insert template elements
                             if (Array.isArray(templateData)) {
@@ -8693,7 +11007,8 @@
                             }
                             
                             // Show success message
-                            self.showToast('✓ Template inserted: ' + template.name);
+                            const action = template.type === 'page' ? 'inserted' : 'added';
+                            self.showToast('✓ Template ' + action + ': ' + template.name);
                         } else {
                             console.error('❌ Invalid template data response');
                             alert('Error: Could not load template data');
@@ -10751,7 +13066,7 @@
         showWidgetPicker: function(insertIndex) {
             const self = this;
             
-            // Create simple widget picker overlay
+            // Create widget picker overlay with tabs and search
             const $overlay = $(`
                 <div class="probuilder-widget-picker-overlay" style="
                     position: fixed;
@@ -10769,28 +13084,112 @@
                     <div class="probuilder-widget-picker" style="
                         background: #ffffff;
                         border-radius: 8px;
-                        padding: 30px;
-                        max-width: 600px;
+                        padding: 0;
+                        max-width: 700px;
                         width: 90%;
-                        max-height: 80vh;
-                        overflow-y: auto;
+                        max-height: 85vh;
+                        overflow: hidden;
                         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                        display: flex;
+                        flex-direction: column;
                     ">
-                        <h3 style="margin: 0 0 20px 0; font-size: 20px; color: #27272a;">Select a Widget</h3>
-                        <div class="probuilder-picker-grid" style="
-                            display: grid;
-                            grid-template-columns: repeat(3, 1fr);
-                            gap: 15px;
-                        "></div>
-                        <button class="probuilder-picker-close" style="
-                            margin-top: 20px;
-                            padding: 10px 25px;
-                            background: #f4f4f5;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-weight: 600;
-                        ">Cancel</button>
+                        <!-- Header -->
+                        <div style="padding: 25px 30px 20px; border-bottom: 1px solid #e6e9ec;">
+                            <h3 style="margin: 0 0 15px 0; font-size: 22px; color: #27272a; font-weight: 600;">Select a Widget</h3>
+                            
+                            <!-- Search Input -->
+                            <input type="text" 
+                                   class="probuilder-picker-search" 
+                                   placeholder="Search widgets..." 
+                                   style="
+                                       width: 100%;
+                                       padding: 12px 15px 12px 40px;
+                                       border: 2px solid #e6e9ec;
+                                       border-radius: 6px;
+                                       font-size: 14px;
+                                       outline: none;
+                                       transition: all 0.2s;
+                                       background: #fafafa url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%2371717a\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg>') no-repeat 12px center;
+                                   ">
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="probuilder-picker-tabs" style="
+                            display: flex;
+                            border-bottom: 1px solid #e6e9ec;
+                            background: #fafafa;
+                        ">
+                            <button class="probuilder-picker-tab active" data-tab="widgets" style="
+                                flex: 1;
+                                padding: 15px 20px;
+                                border: none;
+                                background: #ffffff;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: #344047;
+                                border-bottom: 3px solid #344047;
+                                transition: all 0.2s;
+                            ">
+                                <i class="dashicons dashicons-screenoptions" style="font-size: 18px; margin-right: 6px;"></i>
+                                Widgets
+                            </button>
+                            <button class="probuilder-picker-tab" data-tab="templates" style="
+                                flex: 1;
+                                padding: 15px 20px;
+                                border: none;
+                                background: transparent;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: #71717a;
+                                border-bottom: 3px solid transparent;
+                                transition: all 0.2s;
+                            ">
+                                <i class="dashicons dashicons-layout" style="font-size: 18px; margin-right: 6px;"></i>
+                                Templates
+                            </button>
+                        </div>
+                        
+                        <!-- Content Area -->
+                        <div class="probuilder-picker-content" style="
+                            flex: 1;
+                            overflow-y: auto;
+                            padding: 25px 30px;
+                        ">
+                            <!-- Widgets Tab Content -->
+                            <div class="probuilder-picker-tab-content active" data-tab="widgets">
+                                <div class="probuilder-picker-grid" style="
+                                    display: grid;
+                                    grid-template-columns: repeat(3, 1fr);
+                                    gap: 15px;
+                                "></div>
+                            </div>
+                            
+                            <!-- Templates Tab Content -->
+                            <div class="probuilder-picker-tab-content" data-tab="templates" style="display: none;">
+                                <div style="text-align: center; padding: 40px 20px; color: #71717a;">
+                                    <i class="dashicons dashicons-layout" style="font-size: 64px; opacity: 0.2; margin-bottom: 15px;"></i>
+                                    <h4 style="margin: 0 0 10px; font-size: 16px; color: #344047;">Templates Coming Soon</h4>
+                                    <p style="margin: 0; font-size: 13px;">Pre-made templates will be available here for quick page building.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div style="padding: 15px 30px; border-top: 1px solid #e6e9ec; background: #fafafa; text-align: right;">
+                            <button class="probuilder-picker-close" style="
+                                padding: 10px 25px;
+                                background: #344047;
+                                color: #ffffff;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 13px;
+                                transition: all 0.2s;
+                            ">Close</button>
+                        </div>
                     </div>
                 </div>
             `);
@@ -10844,6 +13243,65 @@
                 $grid.append($card);
             });
             
+            // Tab switching
+            $overlay.find('.probuilder-picker-tab').on('click', function() {
+                const tab = $(this).data('tab');
+                
+                // Update active tab
+                $overlay.find('.probuilder-picker-tab').removeClass('active').css({
+                    'background': 'transparent',
+                    'color': '#71717a',
+                    'border-bottom-color': 'transparent'
+                });
+                
+                $(this).addClass('active').css({
+                    'background': '#ffffff',
+                    'color': '#344047',
+                    'border-bottom-color': '#344047'
+                });
+                
+                // Show corresponding content
+                $overlay.find('.probuilder-picker-tab-content').hide();
+                $overlay.find(`.probuilder-picker-tab-content[data-tab="${tab}"]`).show();
+                
+                console.log('Switched to tab:', tab);
+            });
+            
+            // Search functionality
+            $overlay.find('.probuilder-picker-search').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    // Show all widgets
+                    $overlay.find('.probuilder-picker-widget').show();
+                } else {
+                    // Filter widgets
+                    $overlay.find('.probuilder-picker-widget').each(function() {
+                        const widgetTitle = $(this).find('div').text().toLowerCase();
+                        const widgetName = $(this).data('widget').toLowerCase();
+                        
+                        if (widgetTitle.includes(searchTerm) || widgetName.includes(searchTerm)) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                }
+            });
+            
+            // Search input focus effect
+            $overlay.find('.probuilder-picker-search').on('focus', function() {
+                $(this).css({
+                    'border-color': '#344047',
+                    'background': '#ffffff'
+                });
+            }).on('blur', function() {
+                $(this).css({
+                    'border-color': '#e6e9ec',
+                    'background': '#fafafa'
+                });
+            });
+            
             // Close button
             $overlay.find('.probuilder-picker-close').on('click', function() {
                 $overlay.remove();
@@ -10856,13 +13314,32 @@
                 }
             });
             
+            // ESC key to close
+            $(document).on('keydown.widgetPicker', function(e) {
+                if (e.key === 'Escape') {
+                    $overlay.remove();
+                    $(document).off('keydown.widgetPicker');
+                }
+            });
+            
             $('body').append($overlay);
+            
+            // Focus search input
+            setTimeout(() => {
+                $overlay.find('.probuilder-picker-search').focus();
+            }, 100);
         },
         
         /**
          * Insert element at specific index
          */
         insertElementAt: function(widgetName, index) {
+            // Ensure elements is always an array
+            if (!Array.isArray(this.elements)) {
+                console.warn('⚠️ this.elements was not an array! Initializing as empty array.');
+                this.elements = [];
+            }
+            
             const widget = this.widgets.find(w => w.name === widgetName);
             if (!widget) {
                 console.error('Widget not found:', widgetName);
@@ -10887,10 +13364,311 @@
         },
         
         /**
+         * Show page settings modal
+         */
+        showPageSettings: function() {
+            const self = this;
+            const postId = ProBuilderEditor.post_id;
+            
+            // Get current page data
+            $.ajax({
+                url: ProBuilderEditor.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_get_page_settings',
+                    nonce: ProBuilderEditor.nonce,
+                    post_id: postId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
+                        self.renderPageSettingsModal(data);
+                    } else {
+                        alert('Error loading page settings');
+                    }
+                },
+                error: function() {
+                    alert('Error loading page settings');
+                }
+            });
+        },
+        
+        /**
+         * Render page settings modal
+         */
+        renderPageSettingsModal: function(data) {
+            const self = this;
+            
+            const $modal = $(`
+                <div class="probuilder-page-settings-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.7);
+                    z-index: 100000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    backdrop-filter: blur(3px);
+                ">
+                    <div class="probuilder-page-settings-modal" style="
+                        background: #ffffff;
+                        border-radius: 8px;
+                        width: 600px;
+                        max-width: 90%;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                        overflow: hidden;
+                    ">
+                        <div style="padding: 25px 30px; border-bottom: 1px solid #e6e9ec; background: #fafafa;">
+                            <h3 style="margin: 0; font-size: 20px; color: #344047; font-weight: 600;">
+                                <i class="dashicons dashicons-admin-generic" style="font-size: 24px; vertical-align: middle; margin-right: 8px;"></i>
+                                Page Settings
+                            </h3>
+                        </div>
+                        
+                        <div style="padding: 30px;">
+                            <!-- Page Title -->
+                            <div style="margin-bottom: 25px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #344047; font-size: 13px;">
+                                    <i class="dashicons dashicons-edit" style="font-size: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                                    Page Title
+                                </label>
+                                <input type="text" 
+                                       id="probuilder-page-title-input" 
+                                       value="${data.title || ''}"
+                                       placeholder="Enter page title..."
+                                       style="
+                                           width: 100%;
+                                           padding: 12px 15px;
+                                           border: 2px solid #e6e9ec;
+                                           border-radius: 6px;
+                                           font-size: 14px;
+                                           outline: none;
+                                           transition: all 0.2s;
+                                       ">
+                            </div>
+                            
+                            <!-- Page URL/Slug -->
+                            <div style="margin-bottom: 25px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #344047; font-size: 13px;">
+                                    <i class="dashicons dashicons-admin-links" style="font-size: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                                    Page URL (Slug)
+                                </label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="color: #71717a; font-size: 13px; white-space: nowrap;">${data.site_url}/</span>
+                                    <input type="text" 
+                                           id="probuilder-page-slug-input" 
+                                           value="${data.slug || ''}"
+                                           placeholder="page-url"
+                                           style="
+                                               flex: 1;
+                                               padding: 12px 15px;
+                                               border: 2px solid #e6e9ec;
+                                               border-radius: 6px;
+                                               font-size: 14px;
+                                               outline: none;
+                                               transition: all 0.2s;
+                                           ">
+                                </div>
+                                <p style="margin: 8px 0 0; font-size: 12px; color: #71717a;">
+                                    <i class="dashicons dashicons-info" style="font-size: 14px; vertical-align: middle;"></i>
+                                    URL-friendly characters only (lowercase, numbers, hyphens)
+                                </p>
+                            </div>
+                            
+                            <!-- Current URL Display -->
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; margin-bottom: 20px;">
+                                <p style="margin: 0 0 5px; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase;">Current URL:</p>
+                                <p id="probuilder-current-url" style="margin: 0; font-size: 13px; color: #344047; word-break: break-all;">
+                                    ${data.permalink || ''}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="padding: 20px 30px; border-top: 1px solid #e6e9ec; background: #fafafa; display: flex; justify-content: flex-end; gap: 10px;">
+                            <button class="probuilder-page-settings-cancel" style="
+                                padding: 10px 25px;
+                                background: #f4f4f5;
+                                color: #344047;
+                                border: 2px solid #e6e9ec;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 13px;
+                                transition: all 0.2s;
+                            ">Cancel</button>
+                            <button class="probuilder-page-settings-save" style="
+                                padding: 10px 25px;
+                                background: #344047;
+                                color: #ffffff;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 13px;
+                                transition: all 0.2s;
+                            ">
+                                <i class="dashicons dashicons-saved" style="font-size: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Auto-generate slug from title
+            $modal.find('#probuilder-page-title-input').on('input', function() {
+                const title = $(this).val();
+                const currentSlug = $('#probuilder-page-slug-input').val();
+                
+                // Only auto-generate if slug is empty
+                if (!currentSlug || currentSlug === '') {
+                    const slug = title.toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/^-|-$/g, '');
+                    $('#probuilder-page-slug-input').val(slug);
+                    $('#probuilder-current-url').text(data.site_url + '/' + slug + '/');
+                }
+            });
+            
+            // Update URL preview on slug change
+            $modal.find('#probuilder-page-slug-input').on('input', function() {
+                let slug = $(this).val();
+                // Sanitize slug in real-time
+                slug = slug.toLowerCase()
+                    .replace(/[^a-z0-9-]/g, '')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                $(this).val(slug);
+                $('#probuilder-current-url').text(data.site_url + '/' + slug + '/');
+            });
+            
+            // Focus styles
+            $modal.find('input').on('focus', function() {
+                $(this).css('border-color', '#344047');
+            }).on('blur', function() {
+                $(this).css('border-color', '#e6e9ec');
+            });
+            
+            // Hover effects
+            $modal.find('.probuilder-page-settings-cancel').hover(
+                function() { $(this).css({'background': '#e6e9ec', 'transform': 'translateY(-1px)'}); },
+                function() { $(this).css({'background': '#f4f4f5', 'transform': 'translateY(0)'}); }
+            );
+            
+            $modal.find('.probuilder-page-settings-save').hover(
+                function() { $(this).css({'background': '#2c3540', 'transform': 'translateY(-1px)'}); },
+                function() { $(this).css({'background': '#344047', 'transform': 'translateY(0)'}); }
+            );
+            
+            // Cancel button
+            $modal.find('.probuilder-page-settings-cancel').on('click', function() {
+                $modal.remove();
+            });
+            
+            // Close on overlay click
+            $modal.on('click', function(e) {
+                if ($(e.target).hasClass('probuilder-page-settings-overlay')) {
+                    $modal.remove();
+                }
+            });
+            
+            // Save button
+            $modal.find('.probuilder-page-settings-save').on('click', function() {
+                const newTitle = $('#probuilder-page-title-input').val().trim();
+                const newSlug = $('#probuilder-page-slug-input').val().trim();
+                
+                if (!newTitle) {
+                    alert('Please enter a page title');
+                    return;
+                }
+                
+                if (!newSlug) {
+                    alert('Please enter a page URL');
+                    return;
+                }
+                
+                // Save via AJAX
+                $(this).prop('disabled', true).text('Saving...');
+                
+                $.ajax({
+                    url: ProBuilderEditor.ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'probuilder_save_page_settings',
+                        nonce: ProBuilderEditor.nonce,
+                        post_id: ProBuilderEditor.post_id,
+                        title: newTitle,
+                        slug: newSlug
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update page title in header
+                            $('.probuilder-page-title').text(newTitle);
+                            
+                            // Show success message
+                            self.showToast('✅ Page settings updated!');
+                            
+                            // Close modal
+                            $modal.remove();
+                            
+                            // Update the current URL in browser if needed
+                            console.log('✅ Page settings saved:', {title: newTitle, slug: newSlug});
+                        } else {
+                            alert('Error saving page settings: ' + (response.data?.message || 'Unknown error'));
+                            $(this).prop('disabled', false).html('<i class="dashicons dashicons-saved"></i> Save Changes');
+                        }
+                    },
+                    error: function() {
+                        alert('Error saving page settings. Please try again.');
+                        $(this).prop('disabled', false).html('<i class="dashicons dashicons-saved"></i> Save Changes');
+                    }
+                });
+            });
+            
+            // Add to DOM
+            $('body').append($modal);
+            
+            // Focus on title input
+            setTimeout(() => {
+                $('#probuilder-page-title-input').focus().select();
+            }, 100);
+        },
+        
+        /**
          * Save page
          */
         savePage: function() {
             $('#probuilder-loading').show();
+            
+            // Debug: Log what we're about to save
+            console.log('=== SAVING PAGE ===');
+            console.log('Post ID:', ProBuilderEditor.post_id);
+            console.log('Elements count:', this.elements.length);
+            console.log('Elements array:', this.elements);
+            
+            if (this.elements.length > 0) {
+                console.log('First element:', this.elements[0]);
+                if (this.elements[0].widgetType === 'heading') {
+                    console.log('Heading text:', this.elements[0].settings?.title);
+                }
+            }
+            
+            // Ensure elements is an array
+            if (!Array.isArray(this.elements)) {
+                console.error('❌ this.elements is not an array!');
+                alert('Error: Cannot save - data is corrupted. Please refresh the page.');
+                $('#probuilder-loading').hide();
+                return;
+            }
+            
+            const elementsJSON = JSON.stringify(this.elements);
+            console.log('JSON length:', elementsJSON.length);
+            console.log('JSON preview:', elementsJSON.substring(0, 200));
             
             $.ajax({
                 url: ProBuilderEditor.ajaxurl,
@@ -10899,16 +13677,93 @@
                     action: 'probuilder_save_page',
                     nonce: ProBuilderEditor.nonce,
                     post_id: ProBuilderEditor.post_id,
-                    elements: JSON.stringify(this.elements)
+                    elements: elementsJSON
                 },
                 success: function(response) {
                     $('#probuilder-loading').hide();
                     
                     if (response.success) {
-                        // Show success message
-                        const $message = $('<div class="probuilder-notice probuilder-notice-success">Page saved successfully!</div>');
-                        $('.probuilder-editor-header').after($message);
-                        setTimeout(() => $message.fadeOut(() => $message.remove()), 3000);
+                        const permalink = response.data?.permalink || '';
+                        const elementCount = response.data?.element_count || 0;
+                        
+                        // Show success message with permalink
+                        const listAllPagesUrl = ProBuilderEditor.home_url + '/wp-content/plugins/probuilder/list-all-pages.php';
+                        
+                        const $message = $(`
+                            <div class="probuilder-notice probuilder-notice-success" style="
+                                position: fixed;
+                                top: 80px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background: #ffffff;
+                                border-left: 4px solid #22c55e;
+                                padding: 25px 30px;
+                                border-radius: 12px;
+                                box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+                                z-index: 99999;
+                                min-width: 450px;
+                                max-width: 650px;
+                            ">
+                                <div style="font-size: 18px; font-weight: 700; color: #16a34a; margin-bottom: 8px;">
+                                    <i class="dashicons dashicons-yes-alt" style="font-size: 24px; vertical-align: middle; margin-right: 8px;"></i>
+                                    Page Saved Successfully!
+                                </div>
+                                <div style="font-size: 14px; color: #71717a; margin-bottom: 18px;">
+                                    <strong>${elementCount}</strong> element(s) saved to this page
+                                </div>
+                                ${permalink ? `
+                                    <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                                        <div style="font-size: 11px; color: #71717a; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;">Page URL:</div>
+                                        <div style="font-size: 13px; color: #344047; word-break: break-all; font-family: monospace;">
+                                            ${permalink}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <a href="${permalink}" target="_blank" style="
+                                            flex: 1;
+                                            display: inline-flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            background: #22c55e;
+                                            color: #ffffff;
+                                            padding: 12px 20px;
+                                            border-radius: 6px;
+                                            text-decoration: none;
+                                            font-size: 14px;
+                                            font-weight: 600;
+                                            transition: all 0.2s;
+                                            gap: 8px;
+                                        " onmouseover="this.style.background='#16a34a'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34,197,94,0.3)'" onmouseout="this.style.background='#22c55e'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                            <i class="dashicons dashicons-external" style="font-size: 18px;"></i>
+                                            View This Page
+                                        </a>
+                                        <a href="${listAllPagesUrl}" target="_blank" style="
+                                            display: inline-flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            background: #344047;
+                                            color: #ffffff;
+                                            padding: 12px 20px;
+                                            border-radius: 6px;
+                                            text-decoration: none;
+                                            font-size: 14px;
+                                            font-weight: 600;
+                                            transition: all 0.2s;
+                                            gap: 8px;
+                                        " onmouseover="this.style.background='#2c3540'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#344047'; this.style.transform='translateY(0)'">
+                                            <i class="dashicons dashicons-list-view" style="font-size: 18px;"></i>
+                                            All Pages
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `);
+                        
+                        $('body').append($message);
+                        setTimeout(() => $message.fadeOut(() => $message.remove()), 5000);
+                        
+                        console.log('✅ Page saved with', elementCount, 'elements');
+                        console.log('📍 View at:', permalink);
                     } else {
                         alert('Error saving page: ' + (response.data?.message || 'Unknown error'));
                     }

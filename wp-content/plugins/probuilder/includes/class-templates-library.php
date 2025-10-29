@@ -68,30 +68,30 @@ class ProBuilder_Templates_Library {
         $placeholder = 'data:image/svg+xml;base64,' . base64_encode('<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="200" fill="#f3f4f6"/><text x="150" y="100" text-anchor="middle" fill="#92003b" font-size="24" font-weight="bold">ProBuilder</text></svg>');
         
         return [
-            // E-COMMERCE FULL PAGE TEMPLATES
-            ['id' => 'ecommerce-shop', 'name' => '🛒 E-Commerce Shop Page', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'ecommerce-product', 'name' => '📦 Product Detail Page', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'ecommerce-homepage', 'name' => '🏪 E-Commerce Homepage', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'fashion-store', 'name' => '👗 Fashion Store Homepage', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'electronics-store', 'name' => '💻 Electronics Store', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'agency-portfolio', 'name' => '🎨 Creative Agency Portfolio', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'saas-landing', 'name' => '🚀 SaaS Landing Page', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'restaurant-food', 'name' => '🍕 Restaurant & Food Ordering', 'category' => 'pages', 'thumbnail' => $placeholder],
-            ['id' => 'blog-magazine', 'name' => '📰 Blog & Magazine', 'category' => 'pages', 'thumbnail' => $placeholder],
+            // E-COMMERCE FULL PAGE TEMPLATES (type: page - clears canvas)
+            ['id' => 'ecommerce-shop', 'name' => '🛒 E-Commerce Shop Page', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'ecommerce-product', 'name' => '📦 Product Detail Page', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'ecommerce-homepage', 'name' => '🏪 E-Commerce Homepage', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'fashion-store', 'name' => '👗 Fashion Store Homepage', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'electronics-store', 'name' => '💻 Electronics Store', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'agency-portfolio', 'name' => '🎨 Creative Agency Portfolio', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'saas-landing', 'name' => '🚀 SaaS Landing Page', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'restaurant-food', 'name' => '🍕 Restaurant & Food Ordering', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
+            ['id' => 'blog-magazine', 'name' => '📰 Blog & Magazine', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
             
-            // SECTION TEMPLATES
-            ['id' => 'hero-1', 'name' => 'Hero Section - Modern', 'category' => 'hero', 'thumbnail' => $placeholder],
-            ['id' => 'hero-2', 'name' => 'Hero Section - Gradient', 'category' => 'hero', 'thumbnail' => $placeholder],
-            ['id' => 'features-grid', 'name' => 'Features Grid - 3 Columns', 'category' => 'features', 'thumbnail' => $placeholder],
-            ['id' => 'pricing-table', 'name' => 'Pricing Table - 3 Plans', 'category' => 'pricing', 'thumbnail' => $placeholder],
-            ['id' => 'team-section', 'name' => 'Team Section - 4 Members', 'category' => 'team', 'thumbnail' => $placeholder],
-            ['id' => 'testimonials', 'name' => 'Testimonials - Carousel', 'category' => 'testimonials', 'thumbnail' => $placeholder],
-            ['id' => 'cta-banner', 'name' => 'Call to Action - Banner', 'category' => 'cta', 'thumbnail' => $placeholder],
-            ['id' => 'gallery-masonry', 'name' => 'Gallery - Masonry Grid', 'category' => 'gallery', 'thumbnail' => $placeholder],
-            ['id' => 'stats-counter', 'name' => 'Stats Counter - 4 Columns', 'category' => 'stats', 'thumbnail' => $placeholder],
-            ['id' => 'services-cards', 'name' => 'Services Cards - 3 Columns', 'category' => 'services', 'thumbnail' => $placeholder],
-            ['id' => 'contact-form', 'name' => 'Contact Section with Form', 'category' => 'contact', 'thumbnail' => $placeholder],
-            ['id' => 'newsletter-popup', 'name' => 'Newsletter - Subscribe Box', 'category' => 'newsletter', 'thumbnail' => $placeholder]
+            // SECTION TEMPLATES (type: section - adds to existing)
+            ['id' => 'hero-1', 'name' => 'Hero Section - Modern', 'category' => 'hero', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'hero-2', 'name' => 'Hero Section - Gradient', 'category' => 'hero', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'features-grid', 'name' => 'Features Grid - 3 Columns', 'category' => 'features', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'pricing-table', 'name' => 'Pricing Table - 3 Plans', 'category' => 'pricing', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'team-section', 'name' => 'Team Section - 4 Members', 'category' => 'team', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'testimonials', 'name' => 'Testimonials - Carousel', 'category' => 'testimonials', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'cta-banner', 'name' => 'Call to Action - Banner', 'category' => 'cta', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'gallery-masonry', 'name' => 'Gallery - Masonry Grid', 'category' => 'gallery', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'stats-counter', 'name' => 'Stats Counter - 4 Columns', 'category' => 'stats', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'services-cards', 'name' => 'Services Cards - 3 Columns', 'category' => 'services', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'contact-form', 'name' => 'Contact Section with Form', 'category' => 'contact', 'type' => 'section', 'thumbnail' => $placeholder],
+            ['id' => 'newsletter-popup', 'name' => 'Newsletter - Subscribe Box', 'category' => 'newsletter', 'type' => 'section', 'thumbnail' => $placeholder]
         ];
     }
     

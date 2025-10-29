@@ -12,10 +12,31 @@
 
 get_header();
 
+// Check if using ProBuilder
+$is_probuilder = get_post_meta(get_the_ID(), '_probuilder_data', true);
+
 // Check if this is an Elementor Canvas page
 $is_elementor_canvas = get_post_meta(get_the_ID(), '_wp_page_template', true) === 'elementor_canvas';
 
-if ($is_elementor_canvas) {
+// Check if using Elementor
+$is_elementor = get_post_meta(get_the_ID(), '_elementor_edit_mode', true) === 'builder';
+
+if ($is_probuilder) {
+    // ProBuilder page - full width, no sidebar, no title
+    ?>
+    <main id="primary" class="site-main">
+        <div class="probuilder-page-wrapper" style="width: 100%; max-width: 100%;">
+            <?php while (have_posts()) : the_post(); ?>
+                <?php the_content(); ?>
+            <?php endwhile; ?>
+        </div>
+    </main>
+    <?php
+    get_footer();
+    return;
+}
+
+if ($is_elementor_canvas || $is_elementor) {
     // For Elementor Canvas, just show content without container
     ?>
     <main id="primary" class="site-main">

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ProBuilder Resize Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .check-item {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .check-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .status.ok {
+            background: #4caf50;
+            color: white;
+        }
+        .status.warning {
+            background: #ff9800;
+            color: white;
+        }
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        .instruction {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 ProBuilder Grid Resize Verification</h1>
+    <p>This page helps verify that the smooth resize feature is properly loaded.</p>
+
+    <div class="check-item">
+        <h3>✅ Step 1: Check JavaScript File</h3>
+        <p>Checking if editor.js is loaded and up-to-date...</p>
+        <div id="js-check">Checking...</div>
+    </div>
+
+    <div class="check-item">
+        <h3>🔄 Step 2: Clear Browser Cache</h3>
+        <div class="instruction">
+            <strong>IMPORTANT: You must clear your browser cache!</strong>
+            <br><br>
+            <strong>Quick Method:</strong>
+            <div class="code-box">
+Windows/Linux: Ctrl + Shift + R
+Mac: Cmd + Shift + R
+            </div>
+            <br>
+            <strong>Or use DevTools:</strong>
+            <ol>
+                <li>Press F12 to open DevTools</li>
+                <li>Right-click the refresh button</li>
+                <li>Select "Empty Cache and Hard Reload"</li>
+            </ol>
+            <button onclick="location.reload(true)">Reload This Page</button>
+        </div>
+    </div>
+
+    <div class="check-item">
+        <h3>🎯 Step 3: Test in Editor</h3>
+        <p>After clearing cache, go to the ProBuilder editor and:</p>
+        <ol>
+            <li>Add or open a Grid Layout widget</li>
+            <li>Hover over a grid cell</li>
+            <li>Look for blue resize handles on edges</li>
+            <li>Drag a handle - cell should resize smoothly</li>
+            <li>A blue indicator should appear showing size</li>
+        </ol>
+        <div class="instruction">
+            <strong>Open Browser Console (F12) and look for:</strong>
+            <div class="code-box">
+🎯 Starting absolute resize: element-xxx cell: 0 direction: right
+            </div>
+            If you see this message when dragging, it's working!
+        </div>
+    </div>
+
+    <div class="check-item">
+        <h3>🐛 Troubleshooting</h3>
+        <p><strong>If resize still doesn't work smoothly:</strong></p>
+        <ul>
+            <li>Close ALL tabs with your WordPress site</li>
+            <li>Clear cache completely: Ctrl+Shift+Delete</li>
+            <li>Close and reopen browser</li>
+            <li>Check browser console for JavaScript errors</li>
+            <li>Verify file timestamp below shows recent modification</li>
+        </ul>
+    </div>
+
+    <script>
+        // Check JavaScript file
+        fetch('/wp-content/plugins/probuilder/assets/js/editor.js', {
+            method: 'HEAD',
+            cache: 'no-cache'
+        }).then(response => {
+            const lastModified = response.headers.get('Last-Modified');
+            const size = response.headers.get('Content-Length');
+            
+            let html = '<div class="status ok">✓ File Found</div>';
+            html += '<p><strong>File:</strong> /wp-content/plugins/probuilder/assets/js/editor.js</p>';
+            if (lastModified) {
+                html += '<p><strong>Last Modified:</strong> ' + new Date(lastModified).toLocaleString() + '</p>';
+                html += '<p><strong>Size:</strong> ' + Math.round(size / 1024) + ' KB</p>';
+            }
+            html += '<div class="instruction">';
+            html += '<strong>Expected:</strong> File modified today (Oct 26, 2025)<br>';
+            html += '<strong>Size:</strong> Around 647 KB<br><br>';
+            html += 'If the date/size is old, the changes haven\'t been saved!';
+            html += '</div>';
+            
+            document.getElementById('js-check').innerHTML = html;
+        }).catch(error => {
+            document.getElementById('js-check').innerHTML = 
+                '<div class="status error">✗ Error checking file</div>' +
+                '<p>' + error.message + '</p>';
+        });
+    </script>
+</body>
+</html>
+

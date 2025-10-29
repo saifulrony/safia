@@ -166,6 +166,9 @@ class ProBuilder_Editor {
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('probuilder-editor'),
             'post_id' => $post_id,
+            'home_url' => home_url(),
+            'site_url' => get_site_url(),
+            'plugin_url' => PROBUILDER_URL,
             'widgets' => ProBuilder_Widgets_Manager::instance()->get_widgets_config(),
             'templates' => ProBuilder_Templates::instance()->get_templates_list(),
             'i18n' => [

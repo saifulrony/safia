@@ -1,16 +1,34 @@
 <?php
 /**
- * EcoCommerce Pro functions and definitions
+ * Safia - Premium WooCommerce Theme
+ * Functions and definitions
  *
- * @link https://developer.wordpress.org/themes/basics/theme-functions/
+ * @link https://safia.com
  *
- * @package EcoCommerce_Pro
+ * @package Safia
+ * @copyright 2025 Safia Technologies. All rights reserved.
+ * @license Proprietary License - Safia Technologies
+ * 
+ * This theme is licensed, not sold. Unauthorized copying, distribution,
+ * modification, or use is strictly prohibited.
  */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
+/**
+ * Load License Manager (FIRST!)
+ */
+require_once get_template_directory() . '/inc/class-theme-license-manager.php';
+require_once get_template_directory() . '/inc/class-theme-license-page.php';
+
+// Initialize license manager
+add_action('after_setup_theme', function() {
+    Safia_Theme_License_Manager::instance();
+    Safia_Theme_License_Page::instance();
+}, 1);
 
 /**
  * Theme setup

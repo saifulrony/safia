@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Layout - Resizable Borders Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .demo-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .control-group button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .control-group button:hover {
+            background: #5568d3;
+        }
+        
+        #demo-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 150px);
+            gap: 20px;
+            width: 100%;
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .grid-cell {
+            min-height: 150px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .grid-cell:hover {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+        
+        .resize-handle {
+            position: absolute;
+            background: #667eea;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        
+        .grid-cell:hover .resize-handle {
+            opacity: 0.6;
+        }
+        
+        .resize-handle:hover {
+            opacity: 1 !important;
+        }
+        
+        .resize-handle-right {
+            top: 0;
+            right: 0;
+            width: 6px;
+            height: 100%;
+            cursor: col-resize;
+        }
+        
+        .resize-handle-bottom {
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            cursor: row-resize;
+        }
+        
+        .resize-handle-corner {
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            cursor: nwse-resize;
+            border-radius: 0 0 12px 0;
+        }
+        
+        .grid-cell-content {
+            text-align: center;
+            color: #495057;
+        }
+        
+        .grid-cell-content i {
+            font-size: 48px;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+        
+        .grid-cell-content h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .grid-cell-content p {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .grid-cell-toolbar {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .grid-cell:hover .grid-cell-toolbar {
+            opacity: 1;
+        }
+        
+        .grid-cell-toolbar button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        
+        .grid-cell-toolbar button:hover {
+            background: #5568d3;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info ul li {
+            padding: 5px 0;
+            color: #495057;
+        }
+        
+        .info ul li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        /* Grid Patterns */
+        .pattern-1 .cell-1 { grid-area: 1 / 1 / 3 / 3; }
+        .pattern-1 .cell-2 { grid-area: 1 / 3 / 2 / 5; }
+        .pattern-1 .cell-3 { grid-area: 2 / 3 / 3 / 4; }
+        .pattern-1 .cell-4 { grid-area: 2 / 4 / 3 / 5; }
+        .pattern-1 .cell-5 { grid-area: 3 / 1 / 5 / 2; }
+        .pattern-1 .cell-6 { grid-area: 3 / 2 / 5 / 3; }
+        .pattern-1 .cell-7 { grid-area: 3 / 3 / 5 / 5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Grid Layout Demo</h1>
+            <p>Interactive Grid with Resizable Borders</p>
+        </div>
+        
+        <div class="demo-container">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Pattern:</label>
+                    <select id="pattern-select">
+                        <option value="pattern-1">Magazine Hero</option>
+                        <option value="pattern-2">Featured Post</option>
+                        <option value="pattern-3">Pinterest Masonry</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Gap:</label>
+                    <input type="range" id="gap-slider" min="0" max="50" value="20">
+                    <span id="gap-value">20px</span>
+                </div>
+                
+                <div class="control-group">
+                    <label>Border Radius:</label>
+                    <input type="range" id="radius-slider" min="0" max="24" value="12">
+                    <span id="radius-value">12px</span>
+                </div>
+                
+                <div class="control-group">
+                    <button id="toggle-resize">Disable Resize</button>
+                </div>
+            </div>
+            
+            <div id="demo-grid" class="pattern-1">
+                <div class="grid-cell cell-1">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-images"></i>
+                        <h3>Hero</h3>
+                        <p>Large featured area</p>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-2">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-newspaper"></i>
+                        <h3>Top</h3>
+                        <p>Drag handles to resize</p>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-3">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-th"></i>
+                        <h3>Cell 3</h3>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-4">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-grip-vertical"></i>
+                        <h3>Cell 4</h3>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-5">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-columns"></i>
+                        <h3>Side 1</h3>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-6">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-clone"></i>
+                        <h3>Side 2</h3>
+                    </div>
+                </div>
+                
+                <div class="grid-cell cell-7">
+                    <div class="resize-handle resize-handle-right"></div>
+                    <div class="resize-handle resize-handle-bottom"></div>
+                    <div class="resize-handle resize-handle-corner"></div>
+                    <div class="grid-cell-toolbar">
+                        <button><i class="fas fa-plus"></i></button>
+                        <button><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="grid-cell-content">
+                        <i class="fas fa-border-all"></i>
+                        <h3>Footer</h3>
+                        <p>Wide bottom section</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info">
+                <h3>🎯 How to Use</h3>
+                <ul>
+                    <li>Hover over cells to reveal resize handles</li>
+                    <li>Drag the <strong>right edge</strong> to resize width</li>
+                    <li>Drag the <strong>bottom edge</strong> to resize height</li>
+                    <li>Drag the <strong>corner</strong> to resize both dimensions</li>
+                    <li>Click + button to add content</li>
+                    <li>Click ⚙ button for cell settings</li>
+                    <li>Change pattern using dropdown above</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Interactive controls
+        const grid = document.getElementById('demo-grid');
+        const gapSlider = document.getElementById('gap-slider');
+        const gapValue = document.getElementById('gap-value');
+        const radiusSlider = document.getElementById('radius-slider');
+        const radiusValue = document.getElementById('radius-value');
+        const toggleBtn = document.getElementById('toggle-resize');
+        
+        let resizeEnabled = true;
+        
+        gapSlider.addEventListener('input', function() {
+            grid.style.gap = this.value + 'px';
+            gapValue.textContent = this.value + 'px';
+        });
+        
+        radiusSlider.addEventListener('input', function() {
+            const cells = grid.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                cell.style.borderRadius = this.value + 'px';
+            });
+            radiusValue.textContent = this.value + 'px';
+        });
+        
+        toggleBtn.addEventListener('click', function() {
+            resizeEnabled = !resizeEnabled;
+            const handles = grid.querySelectorAll('.resize-handle');
+            handles.forEach(handle => {
+                handle.style.display = resizeEnabled ? 'block' : 'none';
+            });
+            this.textContent = resizeEnabled ? 'Disable Resize' : 'Enable Resize';
+        });
+        
+        console.log('✅ Grid Layout Demo loaded successfully!');
+        console.log('📊 Total cells:', grid.querySelectorAll('.grid-cell').length);
+        console.log('🎨 Resize handles active:', resizeEnabled);
+    </script>
+</body>
+</html>
+
+

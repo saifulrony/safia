@@ -164,7 +164,7 @@ class ProBuilder_Templates {
      * AJAX: Save template
      */
     public function ajax_save_template() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('edit_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
@@ -216,7 +216,7 @@ class ProBuilder_Templates {
      * AJAX: Delete template
      */
     public function ajax_delete_template() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('delete_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
@@ -241,7 +241,7 @@ class ProBuilder_Templates {
      * AJAX: Export template
      */
     public function ajax_export_template() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('edit_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
@@ -275,7 +275,7 @@ class ProBuilder_Templates {
      * AJAX: Import template
      */
     public function ajax_import_template() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('edit_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
@@ -325,7 +325,7 @@ class ProBuilder_Templates {
      * AJAX: Duplicate template
      */
     public function ajax_duplicate_template() {
-        check_ajax_referer('probuilder_editor', 'nonce');
+        check_ajax_referer('probuilder-editor', 'nonce');
         
         if (!current_user_can('edit_posts')) {
             wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
