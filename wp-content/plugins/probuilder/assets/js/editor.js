@@ -1476,10 +1476,52 @@
                 self.showWidgetPicker(null);
             });
             
-            // Container column resize handles
+            // Container column resize handles (vertical dividers between columns)
             $(document).on('mousedown', '.probuilder-resize-handle', function(e) {
                 e.preventDefault();
                 self.startColumnResize($(this), e);
+            });
+            
+            // Column resize handles (resize individual columns)
+            $(document).on('mousedown', '.column-resize-handle', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                const $handle = $(this);
+                const elementId = $handle.data('element-id');
+                const columnIndex = parseInt($handle.data('column-index'));
+                const direction = $handle.data('direction');
+                
+                console.log('🎯🎯🎯 COLUMN RESIZE HANDLE CLICKED! 🎯🎯🎯', {
+                    elementId, 
+                    columnIndex, 
+                    direction,
+                    handleClass: $handle.attr('class'),
+                    handleElement: $handle[0]
+                });
+                
+                // Find the container element in our data
+                const containerElement = self.elements.find(el => el.id === elementId);
+                if (!containerElement) {
+                    console.error('❌ Container element not found:', elementId);
+                    return;
+                }
+                
+                if (isNaN(columnIndex)) {
+                    console.error('❌ Invalid column index:', columnIndex);
+                    return;
+                }
+                
+                // Prevent any click events from bubbling
+                $(document).on('click.columnResizePrevent', function(clickEvent) {
+                    clickEvent.preventDefault();
+                    clickEvent.stopPropagation();
+                    $(document).off('click.columnResizePrevent');
+                });
+                
+                self.startColumnDimensionResize(containerElement, columnIndex, direction, e);
+                return false;
             });
             
             // Global grid cell resize handler (more reliable)
@@ -2145,6 +2187,347 @@
                 self.saveHistory();
                 
                 console.log('✅ Column resize completed. Final widths:', containerElement.settings.column_widths);
+            });
+        },
+        
+        /**
+         * Start column dimension resize - Similar to grid cell resize
+         * Resizes individual column's height and width based on direction
+         */
+        startColumnDimensionResize: function(containerElement, columnIndex, direction, e) {
+            const self = this;
+            
+            console.log('🎯 Starting column resize:', containerElement.id, 'column:', columnIndex, 'direction:', direction);
+            
+            const $containerElement = $(`.probuilder-element[data-id="${containerElement.id}"]`);
+            const $column = $containerElement.find(`.probuilder-column[data-column-index="${columnIndex}"]`);
+            const $containerColumns = $column.closest('.probuilder-container-columns');
+            
+            if (!$column.length) {
+                console.error('Column not found:', columnIndex);
+                return;
+            }
+            
+            // Get starting dimensions
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startWidth = $column.outerWidth();
+            const startHeight = $column.outerHeight();
+            const containerWidth = $containerColumns.width();
+            
+            // Get or initialize column heights and paddings
+            if (!containerElement.settings.column_heights) {
+                containerElement.settings.column_heights = [];
+            }
+            if (!containerElement.settings.column_paddings) {
+                containerElement.settings.column_paddings = [];
+            }
+            
+            const startColumnHeight = containerElement.settings.column_heights[columnIndex] || 'auto';
+            const startHeightValue = startColumnHeight === 'auto' ? startHeight : parseInt(startColumnHeight);
+            
+            // Get current paddings for this column
+            const columnPadding = containerElement.settings.column_paddings[columnIndex] || {};
+            const startPaddingTop = columnPadding.top || 0;
+            const startPaddingLeft = columnPadding.left || 0;
+            const startPaddingRight = columnPadding.right || 0;
+            
+            // Get current column widths
+            const currentWidths = (containerElement.settings.column_widths || '50,50').split(',').map(w => parseFloat(w.trim()));
+            const startWidths = [...currentWidths];
+            const columnsCount = parseInt(containerElement.settings.columns_count || '2');
+            
+            console.log('Start:', {columnIndex, height: startHeightValue, paddingTop: startPaddingTop, widths: startWidths});
+            
+            // Set cursor based on direction
+            const cursorMap = {
+                'top': 'row-resize',
+                'left': 'col-resize',
+                'right': 'col-resize',
+                'bottom': 'row-resize',
+                'both': 'nwse-resize'
+            };
+            $('body').css('cursor', cursorMap[direction] || 'default');
+            
+            // Add visual feedback
+            $column.css({
+                'box-shadow': '0 0 20px rgba(0,124,186,0.4)',
+                'border-color': '#007cba',
+                'transition': 'none'
+            });
+            
+            // Add size indicator
+            const $indicator = $('<div class="column-resize-indicator" style="position: fixed; top: 10px; right: 10px; background: rgba(0,124,186,0.9); color: white; padding: 10px 15px; border-radius: 4px; font-size: 12px; z-index: 99999; font-family: monospace; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>');
+            $('body').append($indicator);
+            
+            // Mouse move - resize
+            $(document).on('mousemove.columnDimensionResize', function(moveEvent) {
+                moveEvent.preventDefault();
+                moveEvent.stopPropagation();
+                
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+                
+                let newHeight = startHeightValue;
+                let newPaddingTop = startPaddingTop;
+                let newPaddingLeft = startPaddingLeft;
+                let newPaddingRight = startPaddingRight;
+                let newWidths = [...startWidths];
+                
+                // Handle horizontal resizing (width)
+                if (direction === 'left') {
+                    console.log('LEFT handle dragging:', {deltaX, columnIndex, columnsCount});
+                    
+                    if (columnIndex > 0) {
+                        // Middle/last columns: Resize from left - adjust this column and previous column widths
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        newWidths[columnIndex - 1] = Math.max(5, Math.min(95, startWidths[columnIndex - 1] + deltaPercent));
+                        newWidths[columnIndex] = Math.max(5, Math.min(95, startWidths[columnIndex] - deltaPercent));
+                        
+                        // Update settings for save
+                        containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                        
+                        // Update grid template directly without re-rendering
+                        const total = newWidths.reduce((sum, w) => sum + w, 0);
+                        const gridTemplate = newWidths.map(w => (w / total) + 'fr').join(' ');
+                        $containerColumns.css('grid-template-columns', gridTemplate);
+                        
+                        // Update indicator
+                        $indicator.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                            <div>Width: ${Math.round(newWidths[columnIndex])}%</div>
+                            <div>Prev Col: ${Math.round(newWidths[columnIndex - 1])}%</div>
+                            <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                        `);
+                    } else {
+                        // First column: Resize by redistributing to other columns
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        const newWidth = Math.max(5, Math.min(70, startWidths[columnIndex] - deltaPercent));
+                        const changeAmount = startWidths[columnIndex] - newWidth;
+                        
+                        newWidths[columnIndex] = newWidth;
+                        
+                        // Distribute change to other columns proportionally
+                        if (columnsCount > 1) {
+                            const totalOthersStart = startWidths.slice(1).reduce((sum, w) => sum + w, 0);
+                            for (let j = 1; j < columnsCount; j++) {
+                                const proportion = startWidths[j] / totalOthersStart;
+                                newWidths[j] = Math.max(5, startWidths[j] + (changeAmount * proportion));
+                            }
+                        }
+                        
+                        // Update settings
+                        containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                        
+                        // Update grid template directly
+                        const total = newWidths.reduce((sum, w) => sum + w, 0);
+                        const gridTemplate = newWidths.map(w => (w / total) + 'fr').join(' ');
+                        $containerColumns.css('grid-template-columns', gridTemplate);
+                        
+                        // Update indicator
+                        $indicator.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                            <div>Width: ${Math.round(newWidths[columnIndex])}%</div>
+                            <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                        `);
+                    }
+                    
+                } else if (direction === 'right') {
+                    console.log('RIGHT handle dragging:', {deltaX, columnIndex, columnsCount});
+                    
+                    if (columnIndex < columnsCount - 1) {
+                        // First/middle columns: Resize from right - adjust this column and next column widths
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        newWidths[columnIndex] = Math.max(5, Math.min(95, startWidths[columnIndex] + deltaPercent));
+                        newWidths[columnIndex + 1] = Math.max(5, Math.min(95, startWidths[columnIndex + 1] - deltaPercent));
+                        
+                        // Update settings for save
+                        containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                        
+                        // Update grid template directly without re-rendering
+                        const total = newWidths.reduce((sum, w) => sum + w, 0);
+                        const gridTemplate = newWidths.map(w => (w / total) + 'fr').join(' ');
+                        $containerColumns.css('grid-template-columns', gridTemplate);
+                        
+                        // Update indicator
+                        $indicator.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                            <div>Width: ${Math.round(newWidths[columnIndex])}%</div>
+                            <div>Next Col: ${Math.round(newWidths[columnIndex + 1])}%</div>
+                            <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                        `);
+                    } else {
+                        // Last column: Resize by redistributing to other columns
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        const newWidth = Math.max(5, Math.min(70, startWidths[columnIndex] + deltaPercent));
+                        const changeAmount = newWidth - startWidths[columnIndex];
+                        
+                        newWidths[columnIndex] = newWidth;
+                        
+                        // Distribute change to other columns proportionally
+                        if (columnsCount > 1) {
+                            const totalOthersStart = startWidths.slice(0, columnIndex).reduce((sum, w) => sum + w, 0);
+                            for (let j = 0; j < columnIndex; j++) {
+                                const proportion = startWidths[j] / totalOthersStart;
+                                newWidths[j] = Math.max(5, startWidths[j] - (changeAmount * proportion));
+                            }
+                        }
+                        
+                        // Update settings
+                        containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                        
+                        // Update grid template directly
+                        const total = newWidths.reduce((sum, w) => sum + w, 0);
+                        const gridTemplate = newWidths.map(w => (w / total) + 'fr').join(' ');
+                        $containerColumns.css('grid-template-columns', gridTemplate);
+                        
+                        // Update indicator
+                        $indicator.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                            <div>Width: ${Math.round(newWidths[columnIndex])}%</div>
+                            <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                        `);
+                    }
+                    
+                } else if (direction === 'top') {
+                    // Resize from top - drag down = shorter, drag up = taller
+                    // Subtract deltaY so dragging down (positive) makes it shorter
+                    newHeight = Math.max(50, startHeightValue - deltaY);
+                    
+                    // Update indicator
+                    $indicator.html(`
+                        <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                        <div>Height: ${Math.round(newHeight)}px</div>
+                        <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Drag down = shorter, up = taller</div>
+                    `);
+                    
+                    // Update column height
+                    $column.css({
+                        'min-height': newHeight + 'px',
+                        'height': newHeight + 'px'
+                    });
+                    
+                } else if (direction === 'bottom') {
+                    // Resize from bottom - drag down = taller, drag up = shorter
+                    newHeight = Math.max(50, startHeightValue + deltaY);
+                    
+                    // Update indicator
+                    $indicator.html(`
+                        <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                        <div>Height: ${Math.round(newHeight)}px</div>
+                        <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Drag down = taller, up = shorter</div>
+                    `);
+                    
+                    // Update column height
+                    $column.css({
+                        'min-height': newHeight + 'px',
+                        'height': newHeight + 'px'
+                    });
+                    
+                } else if (direction === 'both') {
+                    // Corner handle - adjust both height and width
+                    newHeight = Math.max(50, startHeightValue + deltaY);
+                    
+                    // Also adjust width if not last column
+                    if (columnIndex < columnsCount - 1) {
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        newWidths[columnIndex] = Math.max(5, Math.min(95, startWidths[columnIndex] + deltaPercent));
+                        newWidths[columnIndex + 1] = Math.max(5, Math.min(95, startWidths[columnIndex + 1] - deltaPercent));
+                        containerElement.settings.column_widths = newWidths.map(w => w.toFixed(2)).join(',');
+                        
+                        // Update grid template directly
+                        const total = newWidths.reduce((sum, w) => sum + w, 0);
+                        const gridTemplate = newWidths.map(w => (w / total) + 'fr').join(' ');
+                        $containerColumns.css('grid-template-columns', gridTemplate);
+                    }
+                    
+                    // Update indicator
+                    $indicator.html(`
+                        <div style="font-weight: bold; margin-bottom: 5px;">Resizing Column ${columnIndex + 1}</div>
+                        <div>Height: ${Math.round(newHeight)}px</div>
+                        <div>Width: ${Math.round(newWidths[columnIndex])}%</div>
+                        <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">Release to apply</div>
+                    `);
+                    
+                    // Update column height in real-time
+                    $column.css({
+                        'min-height': newHeight + 'px',
+                        'height': newHeight + 'px'
+                    });
+                }
+            });
+            
+            // Mouse up - finalize resize
+            $(document).on('mouseup.columnDimensionResize', function(upEvent) {
+                upEvent.preventDefault();
+                upEvent.stopPropagation();
+                
+                $(document).off('.columnDimensionResize');
+                $indicator.remove();
+                $('body').css('cursor', '');
+                
+                if (direction === 'left' || direction === 'right') {
+                    // Width was already updated during mousemove for all cases
+                    console.log('✅ Column widths SAVED (before updateElementPreview):', {
+                        columnIndex,
+                        widths: containerElement.settings.column_widths,
+                        columnsCount: containerElement.settings.columns_count,
+                        widthArray: containerElement.settings.column_widths.split(','),
+                        arrayLength: containerElement.settings.column_widths.split(',').length
+                    });
+                    
+                } else if (direction === 'top') {
+                    // Save height (resized from top)
+                    const finalHeight = parseInt($column.css('min-height'));
+                    containerElement.settings.column_heights[columnIndex] = finalHeight;
+                    
+                    console.log('✅ Column height updated (from top):', {
+                        columnIndex,
+                        height: finalHeight
+                    });
+                    
+                } else if (direction === 'bottom') {
+                    // Save height only
+                    const finalHeight = parseInt($column.css('min-height'));
+                    containerElement.settings.column_heights[columnIndex] = finalHeight;
+                    
+                    console.log('✅ Column height updated:', {
+                        columnIndex,
+                        height: finalHeight
+                    });
+                    
+                } else if (direction === 'both') {
+                    // Save both height and width
+                    const finalHeight = parseInt($column.css('min-height'));
+                    containerElement.settings.column_heights[columnIndex] = finalHeight;
+                    
+                    // Width was already updated during mousemove
+                    console.log('✅ Column height and width updated:', {
+                        columnIndex,
+                        height: finalHeight,
+                        widths: containerElement.settings.column_widths
+                    });
+                }
+                
+                // Remove visual feedback
+                $column.css({
+                    'box-shadow': '',
+                    'border-color': '',
+                    'transition': ''
+                });
+                
+                console.log('🔄 About to update preview with widths:', containerElement.settings.column_widths);
+                
+                // Only update preview if height changed, not for width changes
+                if (direction === 'top' || direction === 'bottom' || direction === 'both') {
+                    self.updateElementPreview(containerElement);
+                } else {
+                    // For width-only changes, just save without full re-render
+                    console.log('💾 Skipping preview update for width-only change');
+                }
+                
+                // Save to history
+                self.saveHistory();
             });
         },
         
@@ -3799,10 +4182,36 @@
                     
                     // Auto-generate column widths if not set or count changed
                     let columnWidths = settings.column_widths || '';
-                    if (!columnWidths || columnWidths.split(',').length !== columnsCount) {
+                    const currentWidthsArray = columnWidths ? columnWidths.split(',') : [];
+                    
+                    console.log('📊 Container preview - checking widths:', {
+                        elementId: element.id,
+                        columnsCount,
+                        currentWidths: columnWidths,
+                        arrayLength: currentWidthsArray.length
+                    });
+                    
+                    // Only reset if truly not set OR if count is different (but preserve existing widths when possible)
+                    if (!columnWidths) {
                         const equalWidth = 100 / columnsCount;
                         columnWidths = Array(columnsCount).fill(equalWidth).join(',');
-                        // Update settings
+                        element.settings.column_widths = columnWidths;
+                        console.log('⚠️ Generated default widths:', columnWidths);
+                    } else if (currentWidthsArray.length !== columnsCount) {
+                        // Count changed - adjust array length but try to preserve proportions
+                        if (currentWidthsArray.length < columnsCount) {
+                            // Adding columns - distribute remaining space
+                            const currentTotal = currentWidthsArray.reduce((sum, w) => sum + parseFloat(w), 0);
+                            const remaining = 100 - currentTotal;
+                            const newColWidth = remaining / (columnsCount - currentWidthsArray.length);
+                            while (currentWidthsArray.length < columnsCount) {
+                                currentWidthsArray.push(newColWidth.toFixed(2));
+                            }
+                        } else {
+                            // Removing columns - keep first N columns
+                            currentWidthsArray.splice(columnsCount);
+                        }
+                        columnWidths = currentWidthsArray.join(',');
                         element.settings.column_widths = columnWidths;
                     }
                     
@@ -3851,8 +4260,10 @@
                                 display: grid;
                                 width: 100%;
                                 grid-template-columns: ${gridTemplate};
+                                grid-auto-rows: minmax(0, auto);
                                 gap: ${columnGap}px;
                                 position: relative;
+                                align-items: start;
                             }
                             
                             #${containerId} .probuilder-column {
@@ -3861,12 +4272,21 @@
                                 border: 1px dashed #ddd;
                                 padding: 15px;
                                 background: rgba(255,255,255,0.8);
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
                                 text-align: center;
                                 color: #999;
                                 font-size: 14px;
+                                overflow: visible;
+                                align-self: start;
+                            }
+                            
+                            #${containerId} .probuilder-column-content {
+                                position: relative;
+                                z-index: 1;
+                                pointer-events: none;
+                            }
+                            
+                            #${containerId} .probuilder-column-content > * {
+                                pointer-events: auto;
                             }
                             
                             #${containerId} .probuilder-column:hover {
@@ -3924,10 +4344,89 @@
                                 opacity: 0;
                                 transition: opacity 0.2s;
                                 z-index: 100;
+                                pointer-events: none;
                             }
                             
                             #${containerId} .probuilder-column:hover .probuilder-column-width-indicator {
                                 opacity: 1;
+                            }
+                            
+                            /* Column Resize Handles - Similar to Grid Layout Cells */
+                            #${containerId} .column-resize-handle {
+                                position: absolute;
+                                background: #007cba;
+                                opacity: 0;
+                                transition: opacity 0.2s, background 0.2s;
+                                z-index: 101;
+                                pointer-events: auto;
+                            }
+                            
+                            #${containerId} .probuilder-column:hover .column-resize-handle {
+                                opacity: 0.6;
+                            }
+                            
+                            #${containerId} .column-resize-handle:hover {
+                                opacity: 1 !important;
+                                background: #005a87;
+                            }
+                            
+                            #${containerId} .column-resize-handle-top {
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 8px;
+                                cursor: row-resize;
+                                z-index: 102;
+                            }
+                            
+                            #${containerId} .column-resize-handle-left {
+                                top: 0;
+                                left: 0;
+                                width: 8px;
+                                height: 100%;
+                                cursor: col-resize;
+                                z-index: 102;
+                            }
+                            
+                            #${containerId} .column-resize-handle-right {
+                                top: 0;
+                                right: 0;
+                                width: 8px;
+                                height: 100%;
+                                cursor: col-resize;
+                                z-index: 102;
+                            }
+                            
+                            #${containerId} .column-resize-handle-bottom {
+                                bottom: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 8px;
+                                cursor: row-resize;
+                                z-index: 101;
+                            }
+                            
+                            #${containerId} .column-resize-handle-corner {
+                                bottom: 0;
+                                right: 0;
+                                width: 20px;
+                                height: 20px;
+                                cursor: nwse-resize;
+                                border-radius: 3px;
+                                background: #007cba;
+                                z-index: 103;
+                            }
+                            
+                            #${containerId} .column-resize-handle-corner::after {
+                                content: '';
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                width: 8px;
+                                height: 8px;
+                                background: rgba(255, 255, 255, 0.9);
+                                border-radius: 2px;
                             }
                     `;
                     
@@ -4083,27 +4582,43 @@
                         
                         // Show columns with drag handles
                         const numColumns = parseInt(columnsCount);
+                        const columnHeights = settings.column_heights || [];
+                        const columnPaddings = settings.column_paddings || [];
                         
                         for (let i = 0; i < numColumns; i++) {
                             const child = element.children && element.children[i];
                             const columnWidth = widths[i] || (100 / numColumns);
                             const widthPercent = Math.round(columnWidth);
+                            const columnHeight = columnHeights[i] || 'auto';
+                            const columnPadding = columnPaddings[i] || {};
+                            
+                            const heightStyle = columnHeight !== 'auto' ? `min-height: ${columnHeight}px; height: ${columnHeight}px;` : '';
+                            const paddingTopStyle = columnPadding.top ? `padding-top: ${columnPadding.top}px;` : '';
+                            const paddingLeftStyle = columnPadding.left ? `padding-left: ${columnPadding.left}px;` : '';
+                            const paddingRightStyle = columnPadding.right ? `padding-right: ${columnPadding.right}px;` : '';
                             
                             columnsHTML += `
-                                <div class="probuilder-column" data-column-index="${i}">
-                                    <div class="probuilder-column-width-indicator">${widthPercent}%</div>
+                                <div class="probuilder-column" data-column-index="${i}" style="position: relative; ${heightStyle} ${paddingTopStyle} ${paddingLeftStyle} ${paddingRightStyle}">
+                                    <!-- Resize handles at top level -->
+                                    <div class="column-resize-handle column-resize-handle-top" data-element-id="${element.id}" data-column-index="${i}" data-direction="top"></div>
+                                    <div class="column-resize-handle column-resize-handle-left" data-element-id="${element.id}" data-column-index="${i}" data-direction="left"></div>
+                                    <div class="column-resize-handle column-resize-handle-right" data-element-id="${element.id}" data-column-index="${i}" data-direction="right"></div>
+                                    <div class="column-resize-handle column-resize-handle-bottom" data-element-id="${element.id}" data-column-index="${i}" data-direction="bottom"></div>
+                                    <div class="column-resize-handle column-resize-handle-corner" data-element-id="${element.id}" data-column-index="${i}" data-direction="both"></div>
                                     
-                                    ${child ? `
-                                        <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}">
-                                            ${this.generatePreview(child, depth + 1)}
-                                        </div>
-                                    ` : `
-                                        <div>
-                                            <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i>
-                                            <div style="font-size: 13px; opacity: 0.7;">Column ${i + 1}</div>
-                                            <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">${widthPercent}%</div>
-                                        </div>
-                                    `}
+                                    <!-- Content wrapper to prevent blocking handles -->
+                                    <div class="probuilder-column-content">
+                                        ${child ? `
+                                            <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}">
+                                                ${this.generatePreview(child, depth + 1)}
+                                            </div>
+                                        ` : `
+                                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50px;">
+                                                <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i>
+                                                <div style="font-size: 13px; opacity: 0.7;">Drop Widget Here</div>
+                                            </div>
+                                        `}
+                                    </div>
                                     
                                     ${i < numColumns - 1 ? `
                                         <div class="probuilder-resize-handle" data-column="${i}" data-element-id="${element.id}"></div>
@@ -4113,6 +4628,7 @@
                         }
                         
                         columnsHTML += '</div></div>';
+                        
                         return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${columnsHTML}</div>`;
                     }
                     
