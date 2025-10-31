@@ -53,7 +53,13 @@ class ProBuilder_Woo_Related_Widget extends ProBuilder_Base_Widget {
             return;
         }
         
-        echo '<div style="display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:20px">';
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:20px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-woo-related" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         foreach ($related_ids as $related_id) {
             $related_product = wc_get_product($related_id);

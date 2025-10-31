@@ -15,11 +15,20 @@ class ProBuilder_Offcanvas_Widget extends ProBuilder_Base_Widget {
         $this->end_style_tab();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $id = 'offcanvas-' . uniqid();
         echo '<button class="pb-offcanvas-trigger" onclick="document.getElementById(\'' . $id . '\').classList.add(\'open\')">' . esc_html($s['trigger_text']) . '</button>';
-        echo '<div id="' . $id . '" class="pb-offcanvas pb-pos-' . $s['position'] . '" style="width:' . $s['panel_width'] . 'px;background:' . $s['panel_bg'] . '"><button class="pb-close" onclick="this.parentElement.classList.remove(\'open\')">×</button><div class="pb-offcanvas-content">' . wpautop($s['content']) . '</div></div>';
-        echo '<div class="pb-offcanvas-overlay" onclick="document.getElementById(\'' . $id . '\').classList.remove(\'open\')"></div>';
+        echo '<div id="' . $id . '" class="pb-offcanvas pb-pos-' . $s['position'] . '" style="width:' . ($inline_styles ? ' ' . $inline_styles : '') . '' . $s['panel_width'] . 'px;background:' . $s['panel_bg'] . '"><button class="pb-close" onclick="this.parentElement.classList.remove(\'open\')">×</button><div class="pb-offcanvas-content">' . wpautop($s['content']) . '</div></div>';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-offcanvas-overlay" onclick="document.getElementById(\'' . $id . '\').classList.remove(\'open\')"></div>';
         echo '<style>.pb-offcanvas{position:fixed;top:0;height:100vh;transform:translateX(-100%);transition:0.3s;z-index:99999;padding:20px;overflow-y:auto}.pb-offcanvas.pb-pos-right{left:auto;right:0;transform:translateX(100%)}.pb-offcanvas.open{transform:translateX(0)}.pb-offcanvas-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:0.3s;z-index:99998}.pb-offcanvas.open~.pb-offcanvas-overlay{opacity:1;pointer-events:all}.pb-close{position:absolute;top:10px;right:10px;background:none;border:none;font-size:30px;cursor:pointer}</style>';
     }
 }

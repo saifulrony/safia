@@ -44,10 +44,21 @@ class ProBuilder_Reviews_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $reviews = $this->get_settings('reviews', []);
         $columns = $this->get_settings('columns', 2);
         
-        echo '<div style="display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:20px">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        $style = 'display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:20px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-reviews" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         foreach ($reviews as $review) {
             echo '<div style="background:#f9f9f9;padding:20px;border-radius:8px">';

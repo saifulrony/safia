@@ -76,6 +76,13 @@ class ProBuilder_Widget_Woo_Cart extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->settings;
         if (!class_exists('WooCommerce')) {
             echo '<div class="probuilder-woo-notice">';
@@ -93,7 +100,9 @@ class ProBuilder_Widget_Woo_Cart extends ProBuilder_Base_Widget {
         $badge_bg = $settings['badge_bg_color'] ?? '#e74c3c';
         $badge_text = $settings['badge_text_color'] ?? '#ffffff';
         
-        echo '<div class="probuilder-woo-cart" style="display: inline-flex; align-items: center; gap: 10px;">';
+        $cart_style = 'display: inline-flex; align-items: center; gap: 10px;';
+        if ($inline_styles) $cart_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-woo-cart" ' . $wrapper_attributes . ' style="' . esc_attr($cart_style) . '">';
         echo '<a href="' . esc_url($cart_url) . '" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;">';
         
         // Icon with badge

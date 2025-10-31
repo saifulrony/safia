@@ -171,6 +171,9 @@ class ProBuilder_Widget_Countdown extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $target_date = $this->get_settings('target_date', date('Y-m-d H:i:s', strtotime('+30 days')));
         $show_days = $this->get_settings('show_days', 'yes');
         $show_hours = $this->get_settings('show_hours', 'yes');
@@ -190,6 +193,12 @@ class ProBuilder_Widget_Countdown extends ProBuilder_Base_Widget {
         $box_border_radius = $this->get_settings('box_border_radius', 8);
         $separator_show = $this->get_settings('separator_show', 'no');
         $separator_text = $this->get_settings('separator_text', ':');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         $id = 'countdown-' . uniqid();
         
@@ -218,14 +227,17 @@ class ProBuilder_Widget_Countdown extends ProBuilder_Base_Widget {
         $label_style = 'font-size: ' . esc_attr($label_size) . 'px; color: ' . esc_attr($label_color) . '; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;';
         $separator_style = 'font-size: ' . esc_attr($digit_size) . 'px; font-weight: bold; color: ' . esc_attr($digit_color) . ';';
         
-        echo '<div class="probuilder-countdown" id="' . esc_attr($id) . '" data-target="' . esc_attr($target_date) . '" data-expire-message="' . esc_attr($expire_message) . '" style="' . $wrapper_style . '">';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-countdown" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" data-target="' . esc_attr($target_date) . '" data-expire-message="' . esc_attr($expire_message) . '" style="' . esc_attr($wrapper_style) . '">';
         
         $first_item = true;
         
         // Days
         if ($show_days === 'yes') {
             if (!$first_item && $separator_show === 'yes' && $layout === 'inline') {
-                echo '<div class="countdown-separator" style="' . $separator_style . '">' . esc_html($separator_text) . '</div>';
+                echo '<div class="countdown-separator" ' . $wrapper_attributes . '  style="' . $separator_style . '">' . esc_html($separator_text) . '</div>';
             }
             echo '<div class="countdown-box countdown-days-box" style="' . $box_style . '">';
             echo '<div class="countdown-days" style="' . $digit_style . '">00</div>';

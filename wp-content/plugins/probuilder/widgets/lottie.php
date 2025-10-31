@@ -62,7 +62,13 @@ class ProBuilder_Lottie_Widget extends ProBuilder_Base_Widget {
         
         $animation_id = 'lottie-' . uniqid();
         
-        echo '<div style="text-align:center"><div id="' . $animation_id . '" style="width:' . $width . 'px;max-width:100%;margin:0 auto"></div></div>';
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'text-align:center;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-lottie" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '"><div id="' . $animation_id . '" style="width:' . $width . 'px;max-width:100%;margin:0 auto"></div></div>';
         
         // Enqueue Lottie
         wp_enqueue_script('lottie-player', 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js', [], '5.12.2', true);

@@ -22,12 +22,21 @@ class ProBuilder_Progress_Tracker_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div class="pb-progress-tracker pb-orient-' . $s['orientation'] . '">';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-progress-tracker pb-orient-' . $s['orientation'] . '">';
         foreach ($s['steps'] as $i => $step) {
             $class = $step['complete'] ? 'complete' : 'incomplete';
             echo '<div class="pb-step ' . $class . '">';
-            echo '<div class="pb-step-circle" style="background: ' . ($step['complete'] ? $s['active_color'] : $s['inactive_color']) . '">' . ($i+1) . '</div>';
+            echo '<div class="pb-step-circle" ' . $wrapper_attributes . '  style="background: ' . ($inline_styles ? ' ' . $inline_styles : '') . '' . ($step['complete'] ? $s['active_color'] : $s['inactive_color']) . '">' . ($i+1) . '</div>';
             echo '<div class="pb-step-content"><h4>' . esc_html($step['title']) . '</h4>';
             if (!empty($step['description'])) echo '<p>' . esc_html($step['description']) . '</p>';
             echo '</div></div>';

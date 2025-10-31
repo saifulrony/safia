@@ -120,10 +120,19 @@ class ProBuilder_Widget_Alert extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $type = $this->get_settings('alert_type', 'info');
         $title = $this->get_settings('title', 'Information');
         $message = $this->get_settings('message', '');
         $dismissible = $this->get_settings('dismissible', 'yes');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         $colors = [
             'info' => ['bg' => '#e3f2fd', 'border' => '#2196f3', 'text' => '#0d47a1', 'icon' => 'fa-circle-info'],
@@ -139,7 +148,10 @@ class ProBuilder_Widget_Alert extends ProBuilder_Base_Widget {
         $box_style .= 'color: ' . $color_scheme['text'] . '; ';
         $box_style .= 'padding: 20px; border-radius: 4px; position: relative; margin: 20px 0;';
         
-        echo '<div class="probuilder-alert probuilder-alert-' . esc_attr($type) . '" style="' . $box_style . '">';
+        if ($inline_styles) {
+            $box_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-alert probuilder-alert-' . esc_attr($type) . '" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . '">';
         
         echo '<div style="display: flex; align-items: flex-start; gap: 15px;">';
         

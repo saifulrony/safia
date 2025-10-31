@@ -187,10 +187,19 @@ class ProBuilder_Widget_FAQ extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->get_settings_for_display();
         $faq_id = 'probuilder-faq-' . $this->get_id();
         
-        echo '<div id="' . esc_attr($faq_id) . '" class="probuilder-faq">';
+        $faq_style = '';
+        if ($inline_styles) $faq_style = ' style="' . esc_attr($inline_styles) . '"';
+        echo '<div id="' . esc_attr($faq_id) . '" class="' . esc_attr($wrapper_classes) . ' probuilder-faq" ' . $wrapper_attributes . $faq_style . '>';
         
         // Title and Description
         if (!empty($settings['faq_title'])) {

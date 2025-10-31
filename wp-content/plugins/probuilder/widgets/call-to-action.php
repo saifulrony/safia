@@ -68,6 +68,9 @@ class ProBuilder_Widget_Call_To_Action extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $title = $this->get_settings('title', 'Ready to Get Started?');
         $description = $this->get_settings('description', '');
         $button_text = $this->get_settings('button_text', 'Get Started Now');
@@ -75,10 +78,19 @@ class ProBuilder_Widget_Call_To_Action extends ProBuilder_Base_Widget {
         $bg_color = $this->get_settings('bg_color', '#92003b');
         $text_color = $this->get_settings('text_color', '#ffffff');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         $box_style = 'background: ' . esc_attr($bg_color) . '; color: ' . esc_attr($text_color) . '; ';
         $box_style .= 'padding: 60px 40px; text-align: center; border-radius: 8px;';
         
-        echo '<div class="probuilder-cta" style="' . $box_style . '">';
+        if ($inline_styles) {
+            $box_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-cta" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . '">';
         
         echo '<h2 style="margin: 0 0 15px 0; font-size: 36px; color: inherit;">' . esc_html($title) . '</h2>';
         

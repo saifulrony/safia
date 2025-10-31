@@ -320,7 +320,7 @@ class ProBuilder_Widget_Image_Box extends ProBuilder_Base_Widget {
         $image_style .= 'height: auto; display: block; transition: transform 0.3s ease;';
         
         ?>
-        <div class="probuilder-image-box" id="<?php echo esc_attr($id); ?>" style="<?php echo $box_style; ?>" data-hover="<?php echo esc_attr($hover_effect); ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-image-box" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($box_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>" data-hover="<?php echo esc_attr($hover_effect); ?>">
             <?php if ($link_full_box && $button_link): ?>
             <a href="<?php echo esc_url($button_link); ?>" style="text-decoration: none; color: inherit; display: contents;">
             <?php endif; ?>

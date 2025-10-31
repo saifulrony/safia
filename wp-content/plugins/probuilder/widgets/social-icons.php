@@ -170,13 +170,17 @@ class ProBuilder_Widget_Social_Icons extends ProBuilder_Base_Widget {
         }
         
         $wrapper_style = 'text-align: ' . esc_attr($align) . ';';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
+        
         $icon_wrapper_style = 'display: inline-block; width: ' . ($icon_size + 20) . 'px; height: ' . ($icon_size + 20) . 'px; ';
         $icon_wrapper_style .= 'background: ' . esc_attr($bg_color) . '; color: ' . esc_attr($color) . '; ';
         $icon_wrapper_style .= 'border-radius: 50%; margin: 0 ' . esc_attr($spacing) . 'px; ';
         $icon_wrapper_style .= 'display: inline-flex; align-items: center; justify-content: center; ';
         $icon_wrapper_style .= 'font-size: ' . esc_attr($icon_size) . 'px; transition: all 0.3s;';
         
-        echo '<div class="probuilder-social-icons" style="' . $wrapper_style . '">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-social-icons" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
         
         foreach ($items as $item) {
             echo '<a href="' . esc_url($item['url']) . '" target="_blank" class="probuilder-social-icon" style="' . $icon_wrapper_style . '" onmouseover="this.style.transform=\'translateY(-5px)\'; this.style.opacity=\'0.8\';" onmouseout="this.style.transform=\'translateY(0)\'; this.style.opacity=\'1\';">';

@@ -268,7 +268,7 @@ class ProBuilder_Text_Path_Widget extends ProBuilder_Base_Widget {
             $filter_attr = 'filter="url(#text-shadow-' . $path_id . ')"';
         }
         
-        echo '<div class="probuilder-text-path" style="width: 100%; max-width: ' . $width . 'px; margin: 0 auto;">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-text-path" style="width: 100%; max-width: ' . $width . 'px; margin: 0 auto;">';
         echo '<svg viewBox="0 0 ' . $width . ' ' . $height . '" style="width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">';
         echo $filters;
         echo '<path id="' . $path_id . '" d="' . $path_d . '" fill="transparent" stroke="none"/>';

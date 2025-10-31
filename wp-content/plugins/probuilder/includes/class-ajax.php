@@ -89,11 +89,15 @@ class ProBuilder_Ajax {
             wp_send_json_error(['message' => __('URL cannot be empty', 'probuilder')]);
         }
         
+        // Store original slug to check if it was changed
+        $original_slug = $slug;
+        
         // Check if slug already exists (for different post)
         $existing_post = get_page_by_path($slug, OBJECT, get_post_type($post_id));
         if ($existing_post && $existing_post->ID != $post_id) {
             // Slug exists, make it unique
             $slug = wp_unique_post_slug($slug, $post_id, get_post_status($post_id), get_post_type($post_id), 0);
+            error_log("ProBuilder: Duplicate slug detected. Changed '$original_slug' to '$slug' for Post #$post_id");
         }
         
         // Update post
@@ -107,10 +111,24 @@ class ProBuilder_Ajax {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
         
+        // Flush rewrite rules to ensure URL changes take effect
+        flush_rewrite_rules(false);
+        
+        // Clear post cache
+        clean_post_cache($post_id);
+        
+        // Prepare success message
+        $message = __('Page settings updated successfully!', 'probuilder');
+        if ($original_slug !== $slug) {
+            $message .= ' ' . __('Note: URL was changed to avoid duplicate.', 'probuilder');
+        }
+        
         wp_send_json_success([
-            'message' => __('Page settings updated successfully!', 'probuilder'),
+            'message' => $message,
             'title' => $title,
             'slug' => $slug,
+            'original_slug' => $original_slug,
+            'slug_changed' => ($original_slug !== $slug),
             'permalink' => get_permalink($post_id)
         ]);
     }
@@ -128,6 +146,12 @@ class ProBuilder_Ajax {
         $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
         $elements = isset($_POST['elements']) ? $_POST['elements'] : '[]';
         
+        // Debug logging (only when WP_DEBUG is enabled)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ProBuilder Save - POST keys: ' . implode(', ', array_keys($_POST)));
+            error_log('ProBuilder Save - Elements raw length: ' . (is_string($elements) ? strlen($elements) : 'not a string'));
+        }
+        
         if (!$post_id) {
             wp_send_json_error(['message' => __('Invalid post ID', 'probuilder')]);
         }
@@ -140,9 +164,20 @@ class ProBuilder_Ajax {
         
         // Parse and validate elements
         if (is_string($elements)) {
+            // CRITICAL FIX: WordPress adds slashes to POST data, we need to remove them!
+            // This prevents JSON decode errors when WordPress magic quotes are enabled
+            $elements = stripslashes($elements);
+            
             $decoded = json_decode($elements, true);
+            
             if (json_last_error() === JSON_ERROR_NONE) {
                 $elements = $decoded;
+            } else {
+                // If JSON decode fails, log error (only in debug mode)
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('ProBuilder Save - JSON decode failed: ' . json_last_error_msg());
+                }
+                $elements = [];
             }
         }
         
@@ -151,27 +186,54 @@ class ProBuilder_Ajax {
             $elements = [];
         }
         
-        // Debug logging
-        error_log('ProBuilder Save - Post ID: ' . $post_id);
-        error_log('ProBuilder Save - Elements count: ' . count($elements));
-        error_log('ProBuilder Save - Data type: ' . gettype($elements));
+        // Debug logging (only when WP_DEBUG is enabled)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ProBuilder Save - Post ID: ' . $post_id);
+            error_log('ProBuilder Save - Elements count: ' . count($elements));
+        }
         
         // Save ProBuilder data (save as array, WordPress will serialize it)
         $updated = update_post_meta($post_id, '_probuilder_data', $elements);
         update_post_meta($post_id, '_probuilder_edit_mode', 'probuilder');
+        
+        // Ensure post has a unique slug before publishing
+        $current_slug = $post->post_name;
+        if (empty($current_slug) || $current_slug === 'auto-draft') {
+            // Generate slug from title
+            $current_slug = sanitize_title($post->post_title);
+            if (empty($current_slug)) {
+                $current_slug = 'page-' . $post_id;
+            }
+        }
+        
+        // Check for duplicate slugs and make unique if needed
+        $existing_post = get_page_by_path($current_slug, OBJECT, $post->post_type);
+        if ($existing_post && $existing_post->ID != $post_id) {
+            $unique_slug = wp_unique_post_slug($current_slug, $post_id, 'publish', $post->post_type, 0);
+            error_log("ProBuilder Save - Duplicate slug detected. Changed '$current_slug' to '$unique_slug' for Post #$post_id");
+            $current_slug = $unique_slug;
+        }
         
         // Ensure post status is published (not draft)
         if ($post->post_status === 'auto-draft' || $post->post_status === 'draft') {
             wp_update_post([
                 'ID' => $post_id,
                 'post_status' => 'publish',
+                'post_name' => $current_slug,
                 'post_modified' => current_time('mysql')
             ]);
             error_log('ProBuilder Save - Post status changed to publish');
         } else {
-            // Just update modified date
-            wp_update_post(['ID' => $post_id, 'post_modified' => current_time('mysql')]);
+            // Just update modified date and ensure slug is set
+            wp_update_post([
+                'ID' => $post_id, 
+                'post_name' => $current_slug,
+                'post_modified' => current_time('mysql')
+            ]);
         }
+        
+        // Flush rewrite rules to ensure new URLs work immediately
+        flush_rewrite_rules(false);
         
         // Clear any cache
         clean_post_cache($post_id);

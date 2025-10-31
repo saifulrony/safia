@@ -160,8 +160,11 @@ class ProBuilder_Widget_Video extends ProBuilder_Base_Widget {
         $loop_param = $loop ? '1' : '0';
         $controls_param = $controls ? '1' : '0';
         
-        echo '<div class="probuilder-video">';
-        echo '<div class="probuilder-video-wrapper" style="' . $wrapper_style . '">';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-video" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '">';
+        echo '<div class="probuilder-video-wrapper" style="' . esc_attr($wrapper_style) . '">';
         
         if ($video_type === 'youtube' && $youtube_url) {
             // Extract video ID from various YouTube URL formats

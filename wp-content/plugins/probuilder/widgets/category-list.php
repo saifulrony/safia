@@ -11,9 +11,18 @@ class ProBuilder_Category_List_Widget extends ProBuilder_Base_Widget {
         $this->add_control('limit', ['label' => 'Limit', 'type' => 'number', 'default' => 10]);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $terms = get_terms(['taxonomy' => $s['taxonomy'], 'number' => $s['limit']]);
-        echo '<ul class="pb-category-list">';
+        echo '<ul class="' . esc_attr($wrapper_classes) . ' pb-category-list" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '">';
         foreach ($terms as $term) {
             echo '<li><a href="' . get_term_link($term) . '">' . $term->name . '</a>';
             if ($s['show_count']) echo ' (' . $term->count . ')';

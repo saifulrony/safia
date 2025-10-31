@@ -11,9 +11,18 @@ class ProBuilder_Sticky_Video_Widget extends ProBuilder_Base_Widget {
         $this->add_control('enable_minimize', ['label' => 'Enable Minimize', 'type' => 'switcher', 'default' => true]);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $video_id = $this->extract_video_id($s['video_url']);
-        echo '<div class="pb-sticky-video" data-position="' . $s['sticky_position'] . '"><iframe width="560" height="315" src="https://www.youtube.com/embed/' . $video_id . '" frameborder="0" allowfullscreen></iframe></div>';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-sticky-video" data-position="' . $s['sticky_position'] . '"><iframe width="560" height="315" src="https://www.youtube.com/embed/' . $video_id . '" frameborder="0" allowfullscreen></iframe></div>';
         echo '<style>.pb-sticky-video{position:fixed;bottom:20px;right:20px;width:400px;max-width:90vw;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3)}.pb-sticky-video iframe{width:100%;height:225px}</style>';
     }
     private function extract_video_id($url) {

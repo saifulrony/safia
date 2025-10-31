@@ -72,11 +72,19 @@ class ProBuilder_Widget_Divider extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $style_type = $this->get_settings('style', 'solid');
         $width = $this->get_settings('width', 100);
         $height = $this->get_settings('height', 1);
         $color = $this->get_settings('color', '#ddd');
         $align = $this->get_settings('align', 'center');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         
         $margin = 'margin: 0 auto;';
         if ($align === 'left') {
@@ -89,8 +97,11 @@ class ProBuilder_Widget_Divider extends ProBuilder_Base_Widget {
         $style .= 'height: ' . esc_attr($height) . 'px; ';
         $style .= 'border-top: ' . esc_attr($height) . 'px ' . esc_attr($style_type) . ' ' . esc_attr($color) . '; ';
         $style .= $margin;
+        if ($inline_styles) {
+            $style .= ' ' . $inline_styles;
+        }
         
-        echo '<div class="probuilder-divider" style="' . $style . '"></div>';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-divider" ' . $wrapper_attributes . ' style="' . $style . '"></div>';
     }
 }
 

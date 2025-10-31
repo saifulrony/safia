@@ -19,7 +19,13 @@ class ProBuilder_Woo_Rating_Widget extends ProBuilder_Base_Widget {
         $rating = $product->get_average_rating();
         $count = $product->get_review_count();
         if (!$rating) { echo '<p style="color:#999">No ratings yet</p>'; return; }
-        echo '<div style="display:flex;align-items:center;gap:10px">';
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'display:flex;align-items:center;gap:10px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-woo-rating" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         echo '<div style="color:#ffc107;font-size:18px">';
         for ($i = 1; $i <= 5; $i++) echo $i <= round($rating) ? '★' : '☆';
         echo '</div>';

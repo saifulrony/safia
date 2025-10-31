@@ -1,0 +1,38 @@
+Current Logic Analysis:
+
+Direction: 'top' (dragging top handle)
+→ checkVertical = false  
+→ checkHorizontal = true ✓
+→ Shows: horizontal lines (top, bottom, centerH)
+→ Purpose: Compare HEIGHTS ✓ CORRECT
+
+Direction: 'bottom' (dragging bottom handle)
+→ checkVertical = false
+→ checkHorizontal = true ✓
+→ Shows: horizontal lines (top, bottom, centerH)
+→ Purpose: Compare HEIGHTS ✓ CORRECT
+
+Direction: 'left' (dragging left handle)
+→ checkVertical = true ✓
+→ checkHorizontal = false
+→ Shows: vertical lines (left, right, centerV)
+→ Purpose: Compare WIDTHS ✓ CORRECT
+
+Direction: 'right' (dragging right handle)
+→ checkVertical = true ✓
+→ checkHorizontal = false
+→ Shows: vertical lines (left, right, centerV)
+→ Purpose: Compare WIDTHS ✓ CORRECT
+
+Direction: 'both' (dragging corner)
+→ checkVertical = true ✓
+→ checkHorizontal = true ✓
+→ Shows: ALL guides (vertical + horizontal)
+→ Purpose: Compare BOTH ✓ CORRECT
+
+The logic appears correct!
+But let me verify guide types:
+- left, right, centerV → class="vertical" → width:1px, height:100vh → VERTICAL LINES ✓
+- top, bottom, centerH → class="horizontal" → height:1px, width:100vw → HORIZONTAL LINES ✓
+
+All seems correct!

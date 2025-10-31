@@ -259,7 +259,16 @@ class ProBuilder_Widget_Icon_List extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $settings = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $id = 'icon-list-' . uniqid();
         
         $items = $settings['items'] ?? [];
@@ -319,7 +328,7 @@ class ProBuilder_Widget_Icon_List extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <ul class="probuilder-icon-list" id="<?php echo esc_attr($id); ?>" style="<?php echo $container_style; ?>">
+        <ul class="<?php echo esc_attr($wrapper_classes); ?> probuilder-icon-list" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php foreach ($items as $index => $item): 
                 $item_style = 'display: flex; align-items: center; ';
                 if ($layout === 'vertical') {

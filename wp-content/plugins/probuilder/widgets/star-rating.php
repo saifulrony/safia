@@ -303,7 +303,7 @@ class ProBuilder_Widget_Star_Rating extends ProBuilder_Base_Widget {
         $star_icon_half = 'fa-star-half-stroke';
         
         ?>
-        <div class="probuilder-star-rating" id="<?php echo esc_attr($id); ?>" style="<?php echo $container_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-star-rating" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php if ($show_title && $title): ?>
             <div class="rating-title" style="font-size: <?php echo esc_attr($title_size); ?>px; font-weight: 600; color: <?php echo esc_attr($title_color); ?>; margin-bottom: <?php echo $layout === 'vertical' ? $item_spacing : 0; ?>px;">
                 <?php echo esc_html($title); ?>

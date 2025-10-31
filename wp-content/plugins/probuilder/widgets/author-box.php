@@ -37,6 +37,9 @@ class ProBuilder_Author_Box_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!is_single()) {
             echo '<p style="padding:20px;background:#f5f5f5">View on a single post</p>';
             return;
@@ -46,7 +49,15 @@ class ProBuilder_Author_Box_Widget extends ProBuilder_Base_Widget {
         $show_avatar = $this->get_settings('show_avatar', true);
         $avatar_size = $this->get_settings('avatar_size', 80);
         
-        echo '<div style="background:#f9f9f9;border:1px solid #eee;padding:30px;border-radius:8px;display:flex;gap:20px;align-items:center">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        $style = 'background:#f9f9f9;border:1px solid #eee;padding:30px;border-radius:8px;display:flex;gap:20px;align-items:center;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-author-box" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         if ($show_avatar) {
             echo '<div style="flex-shrink:0">' . get_avatar($author_id, $avatar_size, '', '', ['style' => 'border-radius:50%']) . '</div>';

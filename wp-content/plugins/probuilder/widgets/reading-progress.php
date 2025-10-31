@@ -18,9 +18,20 @@ class ProBuilder_Reading_Progress_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $id = 'reading-progress-' . uniqid();
-        echo '<div id="' . $id . '" class="pb-reading-progress" style="position:fixed;' . $s['position'] . ':0;left:0;width:0%;height:' . $s['height'] . 'px;background:' . $s['color'] . ';z-index:9999;transition:width 0.3s"></div>';
+        $style = 'position:fixed;' . $s['position'] . ':0;left:0;width:0%;height:' . $s['height'] . 'px;background:' . $s['color'] . ';z-index:9999;transition:width 0.3s;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div id="' . $id . '" class="' . esc_attr($wrapper_classes) . ' pb-reading-progress" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '"></div>';
         echo '<script>window.addEventListener("scroll",function(){var s=document.documentElement.scrollTop,h=document.documentElement.scrollHeight-document.documentElement.clientHeight,p=(s/h)*100;document.getElementById("' . $id . '").style.width=p+"%"});</script>';
     }
 }

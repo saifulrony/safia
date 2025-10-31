@@ -223,7 +223,7 @@ class ProBuilder_Widget_Toggle extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <div class="probuilder-toggle" id="<?php echo esc_attr($id); ?>" style="<?php echo $container_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-toggle" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php foreach ($items as $index => $item): 
                 $item_id = $id . '-' . $index;
                 $is_open = ($item['default_open'] ?? 'no') === 'yes';

@@ -16,9 +16,20 @@ class ProBuilder_Audio_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $src = $s['audio_source'] === 'url' ? $s['audio_url'] : $s['audio_file'];
-        echo '<audio controls' . ($s['autoplay'] ? ' autoplay' : '') . ($s['loop'] ? ' loop' : '') . ' style="width:100%"><source src="' . esc_url($src) . '"></audio>';
+        $style = 'width:100%;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-audio" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '"><audio controls' . ($s['autoplay'] ? ' autoplay' : '') . ($s['loop'] ? ' loop' : '') . ' style="' . esc_attr($style) . '"><source src="' . esc_url($src) . '"></audio></div>';
     }
 }
 

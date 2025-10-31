@@ -264,7 +264,7 @@ class ProBuilder_Widget_Gallery extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <div class="probuilder-gallery" id="<?php echo esc_attr($id); ?>" style="<?php echo $grid_style; ?>" data-lightbox="<?php echo $lightbox ? 'true' : 'false'; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-gallery" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($grid_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>" data-lightbox="<?php echo $lightbox ? 'true' : 'false'; ?>">
             <?php foreach ($images as $index => $image): 
                 $item_style = 'position: relative; overflow: hidden; border-radius: ' . $border_radius . 'px; line-height: 0; transition: all 0.3s ease;';
                 

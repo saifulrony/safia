@@ -36,7 +36,16 @@ class ProBuilder_Share_Buttons_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $networks = $this->get_settings('networks', ['facebook', 'twitter']);
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $url = get_permalink();
         $title = get_the_title();
         
@@ -47,7 +56,9 @@ class ProBuilder_Share_Buttons_Widget extends ProBuilder_Base_Widget {
             'pinterest' => ['url' => 'https://pinterest.com/pin/create/button/?url=' . urlencode($url), 'color' => '#bd081c', 'icon' => 'fa fa-pinterest-p'],
         ];
         
-        echo '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+        $style = 'display:flex;gap:10px;flex-wrap:wrap;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-share-buttons" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         foreach ($networks as $network) {
             if (isset($share_urls[$network])) {

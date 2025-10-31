@@ -36,6 +36,9 @@ class ProBuilder_Woo_Add_To_Cart_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!class_exists('WooCommerce')) {
             echo '<p style="padding:20px;background:#f5f5f5">WooCommerce not installed</p>';
             return;
@@ -52,7 +55,13 @@ class ProBuilder_Woo_Add_To_Cart_Widget extends ProBuilder_Base_Widget {
         $button_text = $this->get_settings('button_text', 'Add to Cart');
         $show_qty = $this->get_settings('show_quantity', true);
         
-        echo '<div class="pb-woo-add-to-cart">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-woo-add-to-cart">';
         echo '<form action="' . esc_url($product->add_to_cart_url()) . '" method="post" style="display:flex;gap:10px;align-items:center">';
         
         if ($show_qty && !$product->is_sold_individually()) {

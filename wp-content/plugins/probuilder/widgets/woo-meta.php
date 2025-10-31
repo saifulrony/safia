@@ -14,10 +14,19 @@ class ProBuilder_Woo_Meta_Widget extends ProBuilder_Base_Widget {
         $this->end_controls_section();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!class_exists('WooCommerce')) { echo '<p>WooCommerce not installed</p>'; return; }
         $product = wc_get_product(get_the_ID());
         if (!$product) { echo '<p>View on product page</p>'; return; }
-        echo '<div style="font-size:14px;color:#666">';
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'font-size:14px;color:#666;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-woo-meta" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         if ($this->get_settings('show_sku', true) && $product->get_sku()) {
             echo '<div style="margin-bottom:8px"><strong style="color:#999">SKU:</strong> ' . esc_html($product->get_sku()) . '</div>';
         }

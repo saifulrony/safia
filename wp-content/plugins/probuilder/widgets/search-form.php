@@ -48,11 +48,22 @@ class ProBuilder_Search_Form_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $placeholder = $this->get_settings('placeholder', 'Search...');
         $button_text = $this->get_settings('button_text', 'Search');
         $button_color = $this->get_settings('button_color', '#0073aa');
         
-        echo '<form role="search" method="get" action="' . esc_url(home_url('/')) . '" style="display:flex;gap:0;max-width:600px">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        $style = 'display:flex;gap:0;max-width:600px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<form role="search" method="get" action="' . esc_url(home_url('/')) . '" class="' . esc_attr($wrapper_classes) . ' pb-search-form" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         echo '<input type="search" name="s" placeholder="' . esc_attr($placeholder) . '" style="flex:1;padding:12px 15px;border:1px solid #ddd;border-radius:4px 0 0 4px;font-size:16px;outline:none" />';
         echo '<button type="submit" style="background:' . esc_attr($button_color) . ';color:#fff;border:none;padding:12px 24px;border-radius:0 4px 4px 0;cursor:pointer;font-weight:600;font-size:16px">' . esc_html($button_text) . '</button>';
         echo '</form>';

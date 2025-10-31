@@ -200,16 +200,30 @@ class ProBuilder_Widget_Logo_Grid extends ProBuilder_Base_Widget {
         
         $this->end_controls_section();
         
-        // ADVANCED WITH ANIMATIONS
-        $this->start_controls_section('section_advanced', [
-            'label' => __('Advanced', 'probuilder'),
-            'tab' => 'advanced'
+        // STYLE TAB - Spacing
+        $this->start_controls_section('section_spacing', [
+            'label' => __('Spacing', 'probuilder'),
+            'tab' => 'style'
         ]);
         
         $this->add_control('margin', [
             'label' => __('Margin', 'probuilder'),
             'type' => 'dimensions',
             'default' => ['top' => 20, 'right' => 0, 'bottom' => 20, 'left' => 0]
+        ]);
+        
+        $this->add_control('padding', [
+            'label' => __('Padding', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]
+        ]);
+        
+        $this->end_controls_section();
+        
+        // ADVANCED WITH ANIMATIONS
+        $this->start_controls_section('section_advanced', [
+            'label' => __('Advanced', 'probuilder'),
+            'tab' => 'advanced'
         ]);
         
         $this->add_control('entrance_animation', [
@@ -272,7 +286,7 @@ class ProBuilder_Widget_Logo_Grid extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <div class="probuilder-logo-grid" id="<?php echo esc_attr($id); ?>" style="<?php echo $grid_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-logo-grid" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($grid_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php foreach ($logos as $logo): 
                 $item_style = 'text-align: center; padding: ' . $logo_padding . 'px; background: ' . $bg_color . '; ';
                 $item_style .= 'transition: all 0.3s ease; ';

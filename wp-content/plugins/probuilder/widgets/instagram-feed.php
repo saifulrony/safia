@@ -11,10 +11,19 @@ class ProBuilder_Instagram_Feed_Widget extends ProBuilder_Base_Widget {
         $this->add_control('columns', ['label' => 'Columns', 'type' => 'select', 'options' => ['2' => '2', '3' => '3', '4' => '4', '6' => '6'], 'default' => '3']);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div class="pb-instagram-feed" style="display:grid;grid-template-columns:repeat(' . $s['columns'] . ',1fr);gap:10px">';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-instagram-feed" style="display:grid;grid-template-columns:repeat(' . ($inline_styles ? ' ' . $inline_styles : '') . '' . $s['columns'] . ',1fr);gap:10px">';
         for ($i = 0; $i < $s['limit']; $i++) {
-            echo '<div class="pb-instagram-item" style="aspect-ratio:1;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center">📷</div>';
+            echo '<div class="pb-instagram-item" ' . $wrapper_attributes . '  style="aspect-ratio:1;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center">📷</div>';
         }
         echo '</div><p style="text-align:center;margin-top:10px;font-size:12px;color:#999">Placeholder - Connect Instagram API</p>';
     }

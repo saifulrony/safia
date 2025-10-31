@@ -404,7 +404,7 @@ class ProBuilder_Widget_Flip_Box extends ProBuilder_Base_Widget {
         $padding_style = 'padding: ' . $padding['top'] . 'px ' . $padding['right'] . 'px ' . $padding['bottom'] . 'px ' . $padding['left'] . 'px;';
         
         ?>
-        <div class="probuilder-flip-box" id="<?php echo esc_attr($id); ?>" data-effect="<?php echo esc_attr($flip_effect); ?>" style="<?php echo $container_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-flip-box" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" data-effect="<?php echo esc_attr($flip_effect); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <div class="flip-box-inner" style="<?php echo $inner_style; ?>">
                 
                 <!-- Front -->

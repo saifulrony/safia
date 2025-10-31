@@ -35,9 +35,22 @@ class ProBuilder_Widget_Spacer extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $height = $this->get_settings('height', 50);
         
-        echo '<div class="probuilder-spacer" style="height: ' . esc_attr($height) . 'px;"></div>';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'height: ' . esc_attr($height) . 'px;';
+        if ($inline_styles) {
+            $style .= ' ' . $inline_styles;
+        }
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-spacer" ' . $wrapper_attributes . ' style="' . $style . '"></div>';
     }
 }
 

@@ -350,10 +350,6 @@
                     <i class="dashicons dashicons-admin-appearance"></i>
                     <?php esc_html_e('Style', 'probuilder'); ?>
                 </button>
-                <button class="probuilder-settings-tab" data-tab="advanced">
-                    <i class="dashicons dashicons-admin-settings"></i>
-                    <?php esc_html_e('Advanced', 'probuilder'); ?>
-                </button>
                 <button class="probuilder-settings-tab" data-tab="motion">
                     <i class="dashicons dashicons-controls-play"></i>
                     <?php esc_html_e('Motion', 'probuilder'); ?>
@@ -369,7 +365,7 @@
                         <p style="font-size: 12px; color: #71717a; margin: 0 0 10px 0;"><strong><?php esc_html_e('Quick Tips:', 'probuilder'); ?></strong></p>
                         <ul style="font-size: 11px; color: #71717a; margin: 0; padding-left: 20px; line-height: 1.8;">
                             <li><?php esc_html_e('Click "Edit" button on elements', 'probuilder'); ?></li>
-                            <li><?php esc_html_e('Use Content/Style/Advanced tabs', 'probuilder'); ?></li>
+                            <li><?php esc_html_e('Use Content/Style/Motion tabs', 'probuilder'); ?></li>
                             <li><?php esc_html_e('Changes update instantly', 'probuilder'); ?></li>
                             <li><?php esc_html_e('Resize this panel by dragging left edge', 'probuilder'); ?></li>
                         </ul>

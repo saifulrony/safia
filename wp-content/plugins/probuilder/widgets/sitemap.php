@@ -43,11 +43,22 @@ class ProBuilder_Sitemap_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $show_pages = $this->get_settings('show_pages', true);
         $show_posts = $this->get_settings('show_posts', true);
         $columns = $this->get_settings('columns', 3);
         
-        echo '<div style="display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:30px">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        $style = 'display:grid;grid-template-columns:repeat(' . $columns . ',1fr);gap:30px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-sitemap" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         if ($show_pages) {
             echo '<div>';

@@ -12,9 +12,18 @@ class ProBuilder_Sidebar_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         if (is_active_sidebar($s['sidebar'])) {
-            echo '<div class="pb-sidebar-widget">';
+            echo '<div class="' . esc_attr($wrapper_classes) . ' pb-sidebar-widget">';
             dynamic_sidebar($s['sidebar']);
             echo '</div>';
         } else {

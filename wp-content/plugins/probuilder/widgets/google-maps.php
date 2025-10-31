@@ -15,9 +15,16 @@ class ProBuilder_Google_Maps_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        $this->render_custom_css();
         $s = $this->get_settings();
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $map_id = 'map-' . uniqid();
-        echo '<div id="' . $map_id . '" style="width:100%;height:' . $s['height'] . 'px"></div>';
+        $style = 'width:100%;height:' . $s['height'] . 'px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div id="' . $map_id . '" class="' . esc_attr($wrapper_classes) . ' pb-google-maps" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '"></div>';
         if (!empty($s['api_key'])) {
             wp_enqueue_script('google-maps', 'https://maps.googleapis.com/maps/api/js?key=' . $s['api_key']);
             echo '<script>

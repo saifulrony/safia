@@ -115,6 +115,13 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->settings;
         if (!class_exists('WooCommerce')) {
             echo '<div class="probuilder-woo-notice">';
@@ -158,7 +165,9 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
         $column_gap = $settings['column_gap'] ?? 20;
         $row_gap = $settings['row_gap'] ?? 30;
         
-        echo '<div class="probuilder-woo-products" style="display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . esc_attr($row_gap) . 'px ' . esc_attr($column_gap) . 'px;">';
+        $products_style = 'display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . esc_attr($row_gap) . 'px ' . esc_attr($column_gap) . 'px;';
+        if ($inline_styles) $products_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-woo-products" ' . $wrapper_attributes . ' style="' . esc_attr($products_style) . '">';
         
         if ($products->have_posts()) {
             while ($products->have_posts()) {

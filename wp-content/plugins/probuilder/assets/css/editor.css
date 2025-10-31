@@ -1134,10 +1134,12 @@ body:not(.admin-bar) .probuilder-editor-main {
     position: relative !important;
     background: #ffffff;
     cursor: default;
+    padding-top: 40px; /* Space for controls bar */
 }
 
 .probuilder-element:hover {
-    outline: none;
+    outline: 2px solid #92003b;
+    outline-offset: -1px;
     z-index: 10;
 }
 
@@ -1152,7 +1154,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     border-radius: 3px;
     font-size: 10px;
     font-weight: 600;
-    z-index: 1000;
+    z-index: 999;
     pointer-events: none;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -1197,45 +1199,51 @@ body:not(.admin-bar) .probuilder-editor-main {
 /* Elementor-style handles - small blue circles */
 .probuilder-widget-resize-handle {
     position: absolute !important;
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background: #1292ee;
-    border: 1px solid #ffffff;
+    border: 2px solid #ffffff;
     border-radius: 50%;
     pointer-events: auto !important;
-    z-index: 101;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+    z-index: 102;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.probuilder-element:hover .probuilder-widget-resize-handle {
+    opacity: 1;
 }
 
 .probuilder-widget-resize-handle:hover {
-    background: #0073e6;
-    transform: scale(1.3);
+    background: #ff0066;
+    transform: scale(1.5);
+    box-shadow: 0 3px 10px rgba(255, 0, 102, 0.5);
 }
 
-/* Edge handles - middle of each side */
+/* Edge handles - positioned to avoid conflicts */
 .probuilder-resize-n {
-    top: -3px;
+    top: -4px;
     left: 50%;
     transform: translateX(-50%);
     cursor: ns-resize;
 }
 
 .probuilder-resize-s {
-    bottom: -3px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: -4px;
+    right: 50px;
     cursor: ns-resize;
 }
 
 .probuilder-resize-e {
-    right: -3px;
+    right: -4px;
     top: 50%;
     transform: translateY(-50%);
     cursor: ew-resize;
 }
 
 .probuilder-resize-w {
-    left: -3px;
+    left: -4px;
     top: 50%;
     transform: translateY(-50%);
     cursor: ew-resize;
@@ -1243,26 +1251,26 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 /* Corner handles */
 .probuilder-resize-ne {
-    top: -3px;
-    right: -3px;
+    top: -4px;
+    right: -4px;
     cursor: nesw-resize;
 }
 
 .probuilder-resize-se {
-    bottom: -3px;
-    right: -3px;
+    bottom: -4px;
+    right: -4px;
     cursor: nwse-resize;
 }
 
 .probuilder-resize-sw {
-    bottom: -3px;
-    left: -3px;
+    bottom: -4px;
+    left: 50px;
     cursor: nesw-resize;
 }
 
 .probuilder-resize-nw {
-    top: -3px;
-    left: -3px;
+    top: -4px;
+    left: -4px;
     cursor: nwse-resize;
 }
 
@@ -1270,6 +1278,60 @@ body:not(.admin-bar) .probuilder-editor-main {
 .probuilder-element.is-resizing .probuilder-widget-resize-handle {
     background: #0073e6;
     transform: scale(1.5);
+}
+
+/* Illustrator-style Alignment Guides */
+.probuilder-alignment-guide {
+    position: fixed;
+    background: #ff00ff;
+    z-index: 9999;
+    pointer-events: none;
+    animation: guideAppear 0.15s ease;
+}
+
+@keyframes guideAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.probuilder-alignment-guide.vertical {
+    width: 1px;
+    height: 100vh;
+    top: 0;
+    box-shadow: 0 0 4px rgba(255, 0, 255, 0.8), 0 0 12px rgba(255, 0, 255, 0.4);
+}
+
+.probuilder-alignment-guide.horizontal {
+    height: 1px;
+    width: 100vw;
+    left: 0;
+    box-shadow: 0 0 4px rgba(255, 0, 255, 0.8), 0 0 12px rgba(255, 0, 255, 0.4);
+}
+
+.probuilder-alignment-guide::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 0, 255, 0.15);
+}
+
+.probuilder-alignment-guide.vertical::after {
+    width: 5px;
+    height: 100vh;
+    left: -2px;
+    top: 0;
+}
+
+.probuilder-alignment-guide.horizontal::after {
+    height: 5px;
+    width: 100vw;
+    top: -2px;
+    left: 0;
 }
 
 /* Protect content inside elements from drag operations */
@@ -1325,8 +1387,8 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 /* Element Controls Bar */
 .probuilder-element-controls {
-    display: none;
-    background: #344047;
+    display: none !important;
+    background: linear-gradient(135deg, #344047 0%, #2c3338 100%);
     color: #ffffff;
     padding: 6px 10px;
     align-items: center;
@@ -1334,54 +1396,63 @@ body:not(.admin-bar) .probuilder-editor-main {
     font-size: 11px;
     gap: 8px;
     position: absolute;
-    top: -33px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1001;
-    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.12);
-    border-radius: 3px;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 0;
     width: auto;
-    min-width: 200px;
-    pointer-events: auto;
+    min-width: auto;
+    pointer-events: auto !important;
+    border-bottom: 2px solid #92003b;
 }
 
 .probuilder-element:hover .probuilder-element-controls {
-    display: flex;
+    display: flex !important;
 }
 
 /* Ensure all control buttons can be clicked */
 .probuilder-element-controls * {
     pointer-events: auto !important;
     user-select: none !important;
+    z-index: 1002 !important;
 }
 
 .probuilder-element-drag {
-    cursor: grab;
-    display: flex;
+    cursor: grab !important;
+    display: flex !important;
     align-items: center;
-    padding: 4px 8px;
+    padding: 5px 10px;
     border-radius: 3px;
     transition: all 0.2s;
-    margin-right: auto;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    pointer-events: auto;
+    margin-right: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    pointer-events: auto !important;
+    z-index: 1003 !important;
+    position: relative;
 }
 
 .probuilder-element-drag:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
-    cursor: grab;
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.5);
+    cursor: grab !important;
+    transform: scale(1.05);
 }
 
 .probuilder-element-drag:active {
-    cursor: grabbing;
-    background: rgba(255, 255, 255, 0.3);
+    cursor: grabbing !important;
+    background: rgba(255, 255, 255, 0.4) !important;
+    transform: scale(0.98);
 }
 
 .probuilder-element-drag .dashicons {
-    font-size: 16px;
-    margin-right: 4px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 0;
+    pointer-events: none;
 }
 
 /* Dragging state */
@@ -1421,79 +1492,89 @@ body:not(.admin-bar) .probuilder-editor-main {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 9px;
+    font-size: 10px;
     margin-left: 4px;
+    color: #ffffff;
+    opacity: 0.9;
 }
 
 .probuilder-element-actions {
-    display: flex;
-    gap: 3px;
+    display: flex !important;
+    gap: 4px;
     margin-left: auto;
-    pointer-events: auto;
+    pointer-events: auto !important;
+    z-index: 1002 !important;
 }
 
 .probuilder-element-actions button {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: #ffffff;
-    padding: 4px 8px;
+    padding: 5px 10px;
     border-radius: 3px;
-    cursor: pointer;
+    cursor: pointer !important;
     transition: all 0.2s;
     font-size: 14px;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
+    min-width: 32px;
+    min-height: 28px;
     pointer-events: auto !important;
-    z-index: 1002;
+    z-index: 1003 !important;
     position: relative;
 }
 
 .probuilder-element-actions button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2) !important;
     border-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.05);
+    transform: scale(1.1) !important;
+}
+
+.probuilder-element-actions button:active {
+    transform: scale(0.95) !important;
 }
 
 .probuilder-element-actions button .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
     pointer-events: none;
 }
 
 /* Show edit button */
 .probuilder-element-actions .probuilder-element-edit {
-    display: flex;
+    display: flex !important;
     background: #007cba;
     border-color: rgba(255, 255, 255, 0.5);
 }
 
 .probuilder-element-actions .probuilder-element-edit:hover {
-    background: #0096dd;
+    background: #0096dd !important;
     border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Delete button specific styling */
 .probuilder-element-actions .probuilder-element-delete {
+    display: flex !important;
     background: #dc3545;
     border-color: rgba(255, 255, 255, 0.5);
 }
 
 .probuilder-element-actions .probuilder-element-delete:hover {
-    background: #c82333;
+    background: #ff1a2e !important;
     border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Duplicate button specific styling */
 .probuilder-element-actions .probuilder-element-duplicate {
+    display: flex !important;
     background: #28a745;
     border-color: rgba(255, 255, 255, 0.5);
 }
 
 .probuilder-element-actions .probuilder-element-duplicate:hover {
-    background: #218838;
+    background: #34d058 !important;
     border-color: rgba(255, 255, 255, 0.7);
 }
 
@@ -1503,13 +1584,13 @@ body:not(.admin-bar) .probuilder-editor-main {
     min-height: 70px;
 }
 
-/* Add Below Button - Middle of bottom border */
+/* Add Below Button - Left side of bottom border */
 .probuilder-element-add-below {
     position: absolute;
-    bottom: -12px;
+    bottom: -14px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 20;
+    z-index: 21;
     opacity: 0;
     transition: opacity 0.2s ease;
 }
@@ -1519,11 +1600,11 @@ body:not(.admin-bar) .probuilder-editor-main {
 }
 
 .probuilder-add-below-btn {
-    background: #344047;
+    background: linear-gradient(135deg, #92003b 0%, #c00050 100%);
     border: 2px solid #ffffff;
     color: #ffffff;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -1531,20 +1612,25 @@ body:not(.admin-bar) .probuilder-editor-main {
     justify-content: center;
     transition: all 0.2s ease;
     padding: 0;
-    box-shadow: 0 2px 8px rgba(146, 0, 59, 0.3);
+    box-shadow: 0 3px 10px rgba(146, 0, 59, 0.4);
 }
 
 .probuilder-add-below-btn:hover {
-    background: #d5006d;
-    transform: scale(1.15);
-    box-shadow: 0 4px 12px rgba(146, 0, 59, 0.5);
+    background: linear-gradient(135deg, #c00050 0%, #ff0066 100%);
+    transform: scale(1.2);
+    box-shadow: 0 5px 15px rgba(146, 0, 59, 0.6);
+}
+
+.probuilder-add-below-btn:active {
+    transform: scale(1.05);
 }
 
 .probuilder-add-below-btn .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
     line-height: 1;
+    pointer-events: none;
 }
 
 .probuilder-element-placeholder {
@@ -3056,4 +3142,51 @@ select:focus {
 
 .probuilder-widget-picker-card i {
     animation: none !important;
+}
+
+/* Responsive Visibility Classes - Editor & Preview */
+/* Default: show elements */
+.probuilder-hide-desktop,
+.probuilder-hide-tablet,
+.probuilder-hide-mobile {
+    display: inherit !important;
+}
+
+/* Hide on Desktop (>= 1025px) */
+@media (min-width: 1025px) {
+    .probuilder-hide-desktop {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}
+
+/* Hide on Tablet (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .probuilder-hide-tablet {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}
+
+/* Hide on Mobile (< 768px) */
+@media (max-width: 767px) {
+    .probuilder-hide-mobile {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}
+
+/* Compact Display Controls for Responsive Section */
+.probuilder-control-group.compact {
+    margin-bottom: 8px !important;
+}
+
+.probuilder-control-group.compact .probuilder-control-label {
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+    font-weight: 500 !important;
+}
+
+.probuilder-control-group.compact .probuilder-switcher {
+    transform: scale(0.85);
 }

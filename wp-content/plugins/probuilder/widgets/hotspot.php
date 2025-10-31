@@ -42,6 +42,11 @@ class ProBuilder_Hotspot_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        $this->render_custom_css();
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $image = $this->get_settings('image', '');
         $hotspots = $this->get_settings('hotspots', []);
         
@@ -50,7 +55,9 @@ class ProBuilder_Hotspot_Widget extends ProBuilder_Base_Widget {
             return;
         }
         
-        echo '<div style="position:relative;display:inline-block;max-width:100%">';
+        $style = 'position:relative;display:inline-block;max-width:100%;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-hotspot" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         echo '<img src="' . esc_url($image) . '" alt="Hotspot Image" style="width:100%;height:auto;display:block">';
         
         foreach ($hotspots as $index => $hotspot) {

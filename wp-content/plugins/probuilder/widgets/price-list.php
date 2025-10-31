@@ -38,12 +38,21 @@ class ProBuilder_Price_List_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $items = $this->get_settings('items', []);
         
-        echo '<div class="pb-price-list">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-price-list">';
         
         foreach ($items as $item) {
-            echo '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:20px 0;border-bottom:1px solid #eee">';
+            echo '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:20px 0;border-bottom:1px solid #eee' . ($inline_styles ? ' ' . $inline_styles : '') . '">';
             echo '<div style="flex:1">';
             echo '<h4 style="margin:0 0 8px;font-size:18px;font-weight:600">' . esc_html($item['title']) . '</h4>';
             if (!empty($item['description'])) {

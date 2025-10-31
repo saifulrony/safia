@@ -67,7 +67,9 @@ class ProBuilder_Widget_Woo_Categories extends ProBuilder_Base_Widget {
         $categories = get_terms($args);
         $columns = $settings['columns'] ?? 4;
         
-        echo '<div class="probuilder-woo-categories" style="display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: 20px;">';
+        $style = 'display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: 20px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-woo-categories" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         foreach ($categories as $category) {
             $thumbnail_id = get_term_meta($category->term_id, 'thumbnail_id', true);

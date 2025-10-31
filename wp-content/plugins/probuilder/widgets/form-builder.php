@@ -260,6 +260,13 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->get_settings_for_display();
         $form_id = 'probuilder-form-' . $this->get_id();
         
@@ -272,7 +279,8 @@ class ProBuilder_Widget_Form_Builder extends ProBuilder_Base_Widget {
             $form_style .= 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
         }
         
-        echo '<div class="probuilder-form-wrapper" style="' . $form_style . '">';
+        if ($inline_styles) $form_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-form-wrapper" ' . $wrapper_attributes . ' style="' . esc_attr($form_style) . '">';
         
         if (!empty($settings['form_title'])) {
             echo '<h3 class="probuilder-form-title" style="margin-top: 0; margin-bottom: 15px; color: #1e293b;">' . esc_html($settings['form_title']) . '</h3>';

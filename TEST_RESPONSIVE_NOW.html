@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Responsive Visibility</title>
+    <style>
+        /* Copy of ProBuilder responsive CSS */
+        .probuilder-hide-desktop,
+        .probuilder-hide-tablet,
+        .probuilder-hide-mobile {
+            display: inherit !important;
+        }
+
+        @media (min-width: 1025px) {
+            .probuilder-hide-desktop {
+                display: none !important;
+                visibility: hidden !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .probuilder-hide-tablet {
+                display: none !important;
+                visibility: hidden !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .probuilder-hide-mobile {
+                display: none !important;
+                visibility: hidden !important;
+            }
+        }
+        
+        /* Test styles */
+        .test-box {
+            padding: 20px;
+            margin: 10px;
+            background: #4ecdc4;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .info {
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007cba;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <strong>Responsive Visibility Test</strong><br>
+        Resize your browser window to test:<br>
+        • Desktop: > 1024px<br>
+        • Tablet: 768px - 1024px<br>
+        • Mobile: < 768px
+    </div>
+    
+    <div class="test-box">
+        Always Visible - No hide class
+    </div>
+    
+    <div class="test-box probuilder-hide-desktop">
+        HIDE ON DESKTOP (should disappear when width > 1024px)
+    </div>
+    
+    <div class="test-box probuilder-hide-tablet">
+        HIDE ON TABLET (should disappear when width 768-1024px)
+    </div>
+    
+    <div class="test-box probuilder-hide-mobile">
+        HIDE ON MOBILE (should disappear when width < 768px)
+    </div>
+    
+    <div class="info" style="margin-top: 30px;">
+        <strong>Current Window Width:</strong> <span id="width"></span>px
+    </div>
+    
+    <script>
+        function updateWidth() {
+            document.getElementById('width').textContent = window.innerWidth;
+        }
+        window.addEventListener('resize', updateWidth);
+        updateWidth();
+    </script>
+</body>
+</html>

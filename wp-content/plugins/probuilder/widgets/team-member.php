@@ -157,6 +157,9 @@ class ProBuilder_Widget_Team_Member extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $image = $this->get_settings('image', ['url' => 'https://via.placeholder.com/300x300']);
         $name = $this->get_settings('name', 'John Doe');
         $position = $this->get_settings('position', 'CEO & Founder');
@@ -176,14 +179,24 @@ class ProBuilder_Widget_Team_Member extends ProBuilder_Base_Widget {
         $name_color = $this->get_settings('name_color', '#333333');
         $position_color = $this->get_settings('position_color', '#92003b');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         // Container style
         $container_style = 'padding: 20px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff;';
+        
+        if ($inline_styles) {
+            $container_style .= ' ' . $inline_styles;
+        }
         
         if ($layout === 'center') {
             // Centered layout (image on top)
             $container_style .= ' text-align: ' . esc_attr($text_align) . '; display: flex; flex-direction: column; align-items: center;';
             
-            echo '<div class="probuilder-team-member probuilder-team-center" style="' . $container_style . '">';
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-team-member probuilder-team-center" ' . $wrapper_attributes . ' style="' . esc_attr($container_style) . '">';
             
             // Photo - centered
             echo '<div class="team-photo" style="margin-bottom: 20px; display: inline-block;">';
@@ -195,7 +208,7 @@ class ProBuilder_Widget_Team_Member extends ProBuilder_Base_Widget {
             $flex_direction = $layout === 'left' ? 'row' : 'row-reverse';
             $container_style .= ' display: flex; flex-direction: ' . $flex_direction . '; gap: 25px; align-items: flex-start;';
             
-            echo '<div class="probuilder-team-member probuilder-team-' . esc_attr($layout) . '" style="' . $container_style . '">';
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-team-member probuilder-team-' . esc_attr($layout) . '" ' . $wrapper_attributes . ' style="' . esc_attr($container_style) . '">';
             
             // Photo
             echo '<div class="team-photo" style="flex-shrink: 0;">';

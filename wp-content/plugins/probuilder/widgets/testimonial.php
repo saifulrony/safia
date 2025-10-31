@@ -78,6 +78,9 @@ class ProBuilder_Widget_Testimonial extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $content = $this->get_settings('content', '');
         $image = $this->get_settings('image', ['url' => 'https://via.placeholder.com/100x100']);
         $name = $this->get_settings('name', 'John Doe');
@@ -85,12 +88,21 @@ class ProBuilder_Widget_Testimonial extends ProBuilder_Base_Widget {
         $rating = $this->get_settings('rating', 5);
         $align = $this->get_settings('align', 'center');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         $box_style = 'text-align: ' . esc_attr($align) . '; padding: 30px; border: 1px solid #e5e5e5; background: #f9f9f9;';
         
-        echo '<div class="probuilder-testimonial" style="' . $box_style . '">';
+        if ($inline_styles) {
+            $box_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-testimonial" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . '">';
         
         // Quote icon
-        echo '<div class="probuilder-testimonial-icon" style="font-size: 48px; color: #0073aa; opacity: 0.3; margin-bottom: 20px;">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-testimonial-icon" style="font-size: 48px; color: #0073aa; opacity: 0.3; margin-bottom: 20px;">';
         echo '<i class="fa fa-quote-left"></i>';
         echo '</div>';
         

@@ -180,6 +180,9 @@ class ProBuilder_Widget_Flexbox extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         // Get settings
         $direction = $this->get_settings('direction', 'row');
         $justify_content = $this->get_settings('justify_content', 'flex-start');
@@ -196,6 +199,12 @@ class ProBuilder_Widget_Flexbox extends ProBuilder_Base_Widget {
         $border = $this->get_settings('border', ['width' => 0, 'style' => 'solid', 'color' => '#000000']);
         $border_radius = $this->get_settings('border_radius', 0);
         $box_shadow = $this->get_settings('box_shadow', 'no') === 'yes';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         // Build styles
         $flex_style = 'display: flex; ';
@@ -233,7 +242,10 @@ class ProBuilder_Widget_Flexbox extends ProBuilder_Base_Widget {
             $flex_style .= 'box-shadow: 0 4px 20px rgba(0,0,0,0.1); ';
         }
         
-        echo '<div class="probuilder-flexbox-container" style="' . $flex_style . '">';
+        if ($inline_styles) {
+            $flex_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-flexbox-container" ' . $wrapper_attributes . ' style="' . esc_attr($flex_style) . '">';
         echo '<div style="padding: 30px; background: rgba(255,255,255,0.9); border: 2px dashed #cbd5e1; border-radius: 8px; text-align: center; color: #64748b; flex: 1;">';
         echo '<i class="dashicons dashicons-plus" style="font-size: 48px; opacity: 0.4; margin-bottom: 10px;"></i>';
         echo '<div style="font-size: 16px; font-weight: 600;">Flexbox Container</div>';

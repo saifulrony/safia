@@ -21,8 +21,19 @@ class ProBuilder_Table_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<table class="pb-table' . ($s['stripe'] ? ' striped' : '') . ($s['border'] ? ' bordered' : '') . ($s['hover'] ? ' hover' : '') . '">';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $wrapper_style = '';
+        if ($inline_styles) $wrapper_style = ' style="' . esc_attr($inline_styles) . '"';
+        echo '<table class="' . esc_attr($wrapper_classes) . ' pb-table' . ($s['stripe'] ? ' striped' : '') . ($s['border'] ? ' bordered' : '') . ($s['hover'] ? ' hover' : '') . '" ' . $wrapper_attributes . $wrapper_style . '>';
         foreach ($s['rows'] as $row) {
             $cells = explode('|', $row['cells']);
             $tag = $row['is_header'] ? 'th' : 'td';

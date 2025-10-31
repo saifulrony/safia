@@ -69,7 +69,13 @@ class ProBuilder_Loop_Builder_Widget extends ProBuilder_Base_Widget {
         }
         
         $gap = 20;
-        echo '<div style="display:grid;grid-template-columns:repeat(' . esc_attr($columns) . ',1fr);gap:' . $gap . 'px">';
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'display:grid;grid-template-columns:repeat(' . esc_attr($columns) . ',1fr);gap:' . $gap . 'px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-loop-builder" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         while ($query->have_posts()) {
             $query->the_post();

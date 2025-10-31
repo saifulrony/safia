@@ -27,7 +27,7 @@ class ProBuilder_Widget_HTML_Code extends ProBuilder_Base_Widget {
         $this->add_control('html_code', [
             'label' => __('HTML Code', 'probuilder'),
             'type' => 'textarea',
-            'default' => '<div class="custom-element">\n  <h3>Custom HTML Element</h3>\n  <p>Add your custom HTML code here.</p>\n</div>',
+            'default' => '<div class="custom-element" <?php echo \$wrapper_attributes; ?> >\n  <h3>Custom HTML Element</h3>\n  <p>Add your custom HTML code here.</p>\n</div>',
             'description' => __('Enter your custom HTML code', 'probuilder'),
         ]);
         
@@ -91,7 +91,16 @@ class ProBuilder_Widget_HTML_Code extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $settings = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $id = 'html-code-' . uniqid();
         
         $html_code = $settings['html_code'] ?? '';
@@ -107,7 +116,7 @@ class ProBuilder_Widget_HTML_Code extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <div class="probuilder-html-code-widget" id="<?php echo esc_attr($id); ?>" style="<?php echo $container_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-html-code-widget" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php 
             // Output HTML (with proper escaping for safety in editor, but allow in frontend)
             if (is_admin() || (isset($_GET['probuilder']) && $_GET['probuilder'])) {

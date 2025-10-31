@@ -10,9 +10,18 @@ class ProBuilder_Post_Comments_Widget extends ProBuilder_Base_Widget {
         $this->add_control('show_count', ['label' => 'Show Comment Count', 'type' => 'switcher', 'default' => true]);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!is_single() && !is_page()) { echo '<p>View on a post/page</p>'; return; }
         $s = $this->get_settings();
-        echo '<div class="pb-post-comments">';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-post-comments">';
         if ($s['show_count']) echo '<h3>' . get_comments_number() . ' Comments</h3>';
         comments_template();
         echo '</div>';

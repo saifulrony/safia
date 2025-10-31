@@ -12,13 +12,24 @@ class ProBuilder_PayPal_Button_Widget extends ProBuilder_Base_Widget {
         $this->add_control('button_text', ['label' => 'Button Text', 'type' => 'text', 'default' => 'Buy Now']);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'background:#0070ba;color:#fff;padding:12px 30px;border:none;border-radius:4px;cursor:pointer;font-size:16px;font-weight:600;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" class="' . esc_attr($wrapper_classes) . ' pb-paypal-form" ' . $wrapper_attributes . '>
         <input type="hidden" name="cmd" value="_xclick">
         <input type="hidden" name="business" value="' . esc_attr($s['email']) . '">
         <input type="hidden" name="amount" value="' . esc_attr($s['amount']) . '">
         <input type="hidden" name="currency_code" value="' . esc_attr($s['currency']) . '">
-        <button type="submit" class="pb-paypal-btn" style="background:#0070ba;color:#fff;padding:12px 30px;border:none;border-radius:4px;cursor:pointer;font-size:16px;font-weight:600">' . esc_html($s['button_text']) . '</button>
+        <button type="submit" class="pb-paypal-btn" style="' . esc_attr($style) . '">' . esc_html($s['button_text']) . '</button>
         </form>';
     }
 }

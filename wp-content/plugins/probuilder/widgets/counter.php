@@ -104,10 +104,13 @@ class ProBuilder_Widget_Counter extends ProBuilder_Base_Widget {
         $id = 'probuilder-counter-' . uniqid();
         
         $box_style = 'text-align: ' . esc_attr($align) . '; padding: 20px;';
+        if ($inline_styles) {
+            $box_style .= ' ' . $inline_styles;
+        }
         $number_style = 'font-size: 48px; font-weight: bold; color: ' . esc_attr($number_color) . '; margin-bottom: 10px;';
         $title_style = 'font-size: 18px; color: ' . esc_attr($title_color) . ';';
         
-        echo '<div class="probuilder-counter" id="' . esc_attr($id) . '" style="' . $box_style . '" data-start="' . esc_attr($starting) . '" data-end="' . esc_attr($ending) . '" data-duration="' . esc_attr($duration) . '">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-counter" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($box_style) . '" data-start="' . esc_attr($starting) . '" data-end="' . esc_attr($ending) . '" data-duration="' . esc_attr($duration) . '">';
         echo '<div class="probuilder-counter-number" style="' . $number_style . '">';
         echo esc_html($prefix) . '<span class="counter-value">' . esc_html($ending) . '</span>' . esc_html($suffix);
         echo '</div>';

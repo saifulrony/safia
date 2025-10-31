@@ -13,8 +13,20 @@ class ProBuilder_Post_Title_Widget extends ProBuilder_Base_Widget {
         $this->end_style_tab();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<' . $s['tag'] . ' class="pb-post-title" style="color:' . $s['color'] . ';font-size:' . $s['size'] . 'px">' . get_the_title() . '</' . $s['tag'] . '>';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'color:' . $s['color'] . ';font-size:' . $s['size'] . 'px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        
+        echo '<' . $s['tag'] . ' class="' . esc_attr($wrapper_classes) . ' pb-post-title" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">' . get_the_title() . '</' . $s['tag'] . '>';
     }
 }
 ProBuilder_Widgets_Manager::instance()->register_widget(new ProBuilder_Post_Title_Widget());

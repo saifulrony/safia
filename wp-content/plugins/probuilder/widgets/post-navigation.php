@@ -30,6 +30,9 @@ class ProBuilder_Post_Navigation_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!is_single()) {
             echo '<p style="padding:20px;background:#f5f5f5">View on a single post</p>';
             return;
@@ -39,7 +42,14 @@ class ProBuilder_Post_Navigation_Widget extends ProBuilder_Base_Widget {
         $next = get_next_post();
         $show_thumbs = $this->get_settings('show_thumbnails', true);
         
-        echo '<div style="display:flex;gap:20px;justify-content:space-between">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'display:flex;gap:20px;justify-content:space-between;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-post-nav" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         if ($prev) {
             echo '<div style="flex:1;background:#f9f9f9;border-radius:8px;overflow:hidden">';

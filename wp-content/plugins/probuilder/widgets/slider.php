@@ -209,10 +209,19 @@ class ProBuilder_Widget_Slider extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->get_settings_for_display();
         $slider_id = 'probuilder-slider-' . $this->get_id();
         
-        echo '<div id="' . esc_attr($slider_id) . '" class="probuilder-slider" style="position: relative; height: ' . esc_attr($settings['slider_height']['size']) . 'px; overflow: hidden; border-radius: 8px;">';
+        $slider_style = 'position: relative; height: ' . esc_attr($settings['slider_height']['size']) . 'px; overflow: hidden; border-radius: 8px;';
+        if ($inline_styles) $slider_style .= ' ' . $inline_styles;
+        echo '<div id="' . esc_attr($slider_id) . '" class="' . esc_attr($wrapper_classes) . ' probuilder-slider" ' . $wrapper_attributes . ' style="' . esc_attr($slider_style) . '">';
         
         foreach ($settings['slides'] as $index => $slide) {
             $active_class = $index === 0 ? 'active' : '';

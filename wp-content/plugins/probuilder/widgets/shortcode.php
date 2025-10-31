@@ -123,6 +123,9 @@ class ProBuilder_Widget_Shortcode extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $shortcode = $this->get_settings('shortcode', '');
         $bg_color = $this->get_settings('bg_color', '');
         $padding = $this->get_settings('padding', ['top' => 20, 'right' => 20, 'bottom' => 20, 'left' => 20]);
@@ -131,6 +134,12 @@ class ProBuilder_Widget_Shortcode extends ProBuilder_Base_Widget {
         $text_align = $this->get_settings('text_align', 'left');
         $custom_class = $this->get_settings('custom_class', '');
         $custom_id = $this->get_settings('custom_id', '');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         // Build container style
         $container_style = 'text-align: ' . esc_attr($text_align) . '; ';
@@ -146,12 +155,18 @@ class ProBuilder_Widget_Shortcode extends ProBuilder_Base_Widget {
             $container_style .= 'border-radius: ' . esc_attr($border_radius) . 'px; ';
         }
         
+        // Build container style with inline_styles
+        if ($inline_styles) {
+            $container_style .= ' ' . $inline_styles;
+        }
+        
         // Build container attributes
-        $container_attrs = 'class="probuilder-shortcode-widget ' . esc_attr($custom_class) . '" ';
+        $container_attrs = 'class="' . esc_attr($wrapper_classes) . ' probuilder-shortcode-widget ' . esc_attr($custom_class) . '" ';
+        $container_attrs .= $wrapper_attributes . ' ';
         if ($custom_id) {
             $container_attrs .= 'id="' . esc_attr($custom_id) . '" ';
         }
-        $container_attrs .= 'style="' . $container_style . '"';
+        $container_attrs .= 'style="' . esc_attr($container_style) . '"';
         
         echo '<div ' . $container_attrs . '>';
         

@@ -1,230 +1,52 @@
 /**
  * ProBuilder Frontend Styles
+ * Applied to the actual website output (not editor)
  */
 
-/* Main Container */
-.probuilder-content {
-    width: 100%;
-    margin: 0;
-    padding: 0;
+/* Responsive Visibility Classes - WORKING */
+/* Default: show element */
+.probuilder-hide-desktop,
+.probuilder-hide-tablet,
+.probuilder-hide-mobile {
+    display: inherit !important;
 }
 
-.probuilder-element {
-    margin: 0;
-}
-
-/* Container */
-.probuilder-container {
-    width: 100%;
-}
-
-/* Heading */
-.probuilder-heading {
-    margin: 0 0 20px 0;
-}
-
-/* Text */
-.probuilder-text {
-    margin: 0 0 20px 0;
-}
-
-/* Button */
-.probuilder-button-wrapper {
-    margin: 0 0 20px 0;
-}
-
-.probuilder-button {
-    display: inline-block;
-    transition: all 0.3s;
-}
-
-.probuilder-button:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-}
-
-/* Image */
-.probuilder-image {
-    margin: 0 0 20px 0;
-}
-
-.probuilder-image img {
-    display: block;
-}
-
-/* Divider */
-.probuilder-divider {
-    margin: 20px 0;
-}
-
-/* Spacer */
-.probuilder-spacer {
-    width: 100%;
-}
-
-/* Tabs */
-.probuilder-tabs {
-    margin: 0 0 30px 0;
-}
-
-.probuilder-tabs-nav {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: -1px;
-}
-
-.probuilder-tab-title {
-    flex: 0 0 auto;
-    transition: all 0.3s;
-}
-
-.probuilder-tab-title:hover {
-    opacity: 0.8;
-}
-
-/* Accordion */
-.probuilder-accordion {
-    margin: 0 0 30px 0;
-}
-
-.probuilder-accordion-item {
-    margin-bottom: 10px;
-}
-
-.probuilder-accordion-title {
-    transition: all 0.3s;
-}
-
-.probuilder-accordion-title:hover {
-    opacity: 0.9;
-}
-
-/* Image Box */
-.probuilder-image-box {
-    margin: 0 0 30px 0;
-    transition: all 0.3s;
-}
-
-.probuilder-image-box:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-5px);
-}
-
-/* Icon Box */
-.probuilder-icon-box {
-    margin: 0 0 30px 0;
-}
-
-/* Carousel */
-.probuilder-carousel {
-    margin: 0 0 30px 0;
-}
-
-.probuilder-carousel-track {
-    width: 100%;
-}
-
-.probuilder-carousel button {
-    transition: all 0.3s;
-}
-
-.probuilder-carousel button:hover {
-    background: rgba(0, 0, 0, 0.7);
-}
-
-/* Gallery */
-.probuilder-gallery {
-    margin: 0 0 30px 0;
-}
-
-/* Icon List */
-.probuilder-icon-list {
-    margin: 0 0 30px 0;
-}
-
-/* Progress Bar */
-.probuilder-progress-bar {
-    margin: 0 0 30px 0;
-}
-
-/* Testimonial */
-.probuilder-testimonial {
-    margin: 0 0 30px 0;
-}
-
-/* Counter */
-.probuilder-counter {
-    margin: 0 0 30px 0;
-}
-
-/* Pricing Table */
-.probuilder-pricing-table {
-    margin: 0 0 30px 0;
-    transition: all 0.3s;
-}
-
-.probuilder-pricing-table:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-.probuilder-pricing-button {
-    transition: all 0.3s;
-}
-
-.probuilder-pricing-button:hover {
-    transform: scale(1.05);
-}
-
-/* Video */
-.probuilder-video {
-    margin: 0 0 30px 0;
-}
-
-/* Map */
-.probuilder-map {
-    margin: 0 0 30px 0;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .probuilder-tabs-nav {
-        flex-direction: column;
-    }
-    
-    .probuilder-tab-title {
-        width: 100%;
-    }
-    
-    .probuilder-gallery {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-    
-    .probuilder-carousel button {
-        padding: 8px 12px;
-        font-size: 16px;
+/* Hide on Desktop (>= 1025px) */
+@media (min-width: 1025px) {
+    .probuilder-hide-desktop {
+        display: none !important;
+        visibility: hidden !important;
     }
 }
 
-@media (max-width: 480px) {
-    .probuilder-gallery {
-        grid-template-columns: 1fr !important;
+/* Hide on Tablet (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .probuilder-hide-tablet {
+        display: none !important;
+        visibility: hidden !important;
     }
 }
 
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+/* Hide on Mobile (< 768px) */
+@media (max-width: 767px) {
+    .probuilder-hide-mobile {
+        display: none !important;
+        visibility: hidden !important;
     }
 }
 
-.probuilder-element {
-    animation: fadeIn 0.5s ease-out;
+/* ProBuilder Widget Base Styles */
+.probuilder-widget {
+    box-sizing: border-box;
+}
+
+/* Ensure transforms work */
+.probuilder-widget[style*="transform"] {
+    transform-origin: center center;
+}
+
+/* Ensure opacity transitions work */
+.probuilder-widget[style*="opacity"] {
+    transition: opacity 0.3s ease;
 }
 

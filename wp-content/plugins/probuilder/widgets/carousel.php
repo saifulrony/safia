@@ -123,9 +123,15 @@ class ProBuilder_Widget_Carousel extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        $this->render_custom_css();
+        
         $images = $this->get_settings('images', []);
         $autoplay = $this->get_settings('autoplay', 'yes');
         $autoplay_speed = $this->get_settings('autoplay_speed', 3000);
+        
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         
         if (empty($images)) {
             return;
@@ -133,7 +139,10 @@ class ProBuilder_Widget_Carousel extends ProBuilder_Base_Widget {
         
         $id = 'probuilder-carousel-' . uniqid();
         
-        echo '<div class="probuilder-carousel" id="' . esc_attr($id) . '" data-autoplay="' . esc_attr($autoplay) . '" data-speed="' . esc_attr($autoplay_speed) . '" style="position: relative; overflow: hidden;">';
+        $carousel_style = 'position: relative; overflow: hidden;';
+        if ($inline_styles) $carousel_style .= ' ' . $inline_styles;
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-carousel" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" data-autoplay="' . esc_attr($autoplay) . '" data-speed="' . esc_attr($autoplay_speed) . '" style="' . esc_attr($carousel_style) . '">';
         
         echo '<div class="probuilder-carousel-track" style="display: flex; transition: transform 0.5s ease;">';
         foreach ($images as $image) {

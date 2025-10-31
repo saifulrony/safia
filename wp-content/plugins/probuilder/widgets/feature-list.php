@@ -301,6 +301,13 @@ class ProBuilder_Widget_Feature_List extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->get_settings();
         $id = 'feature-list-' . uniqid();
         
@@ -373,7 +380,7 @@ class ProBuilder_Widget_Feature_List extends ProBuilder_Base_Widget {
         }
         
         ?>
-        <div class="probuilder-feature-list" id="<?php echo esc_attr($id); ?>" style="<?php echo $container_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-feature-list" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($container_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <?php foreach ($items as $item): 
                 $item_style = 'transition: all 0.3s ease; ';
                 

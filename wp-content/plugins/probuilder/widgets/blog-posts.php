@@ -205,17 +205,27 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
         
         $posts = get_posts($args);
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         if (empty($posts)) {
-            echo '<div class="probuilder-blog-posts" style="text-align: center; padding: 40px; color: #64748b;">';
+            $style = 'text-align: center; padding: 40px; color: #64748b;';
+            if ($inline_styles) $style .= ' ' . $inline_styles;
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-blog-posts" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
             echo '<p>No posts found. Create some blog posts to display them here.</p>';
             echo '</div>';
             return;
         }
         
-        $container_class = 'probuilder-blog-posts probuilder-blog-' . esc_attr($settings['post_layout']);
+        $container_class = $wrapper_classes . ' probuilder-blog-posts probuilder-blog-' . esc_attr($settings['post_layout']);
         $grid_columns = $settings['post_layout'] === 'grid' ? $settings['columns'] : '1';
         
-        echo '<div class="' . esc_attr($container_class) . '" style="display: grid; grid-template-columns: repeat(' . esc_attr($grid_columns) . ', 1fr); gap: 30px;">';
+        $grid_style = 'display: grid; grid-template-columns: repeat(' . esc_attr($grid_columns) . ', 1fr); gap: 30px;';
+        if ($inline_styles) $grid_style .= ' ' . $inline_styles;
+        
+        echo '<div class="' . esc_attr($container_class) . '" ' . $wrapper_attributes . ' style="' . esc_attr($grid_style) . '">';
         
         foreach ($posts as $post) {
             $this->render_post_card($post, $settings);

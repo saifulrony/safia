@@ -20,10 +20,21 @@ class ProBuilder_Back_To_Top_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $id = 'back-to-top-' . uniqid();
         $pos = explode('-', $s['position']);
-        echo '<div id="' . $id . '" class="pb-back-to-top" style="position:fixed;' . $pos[0] . ':' . $s['offset'] . 'px;' . $pos[1] . ':' . $s['offset'] . 'px;width:' . $s['size'] . 'px;height:' . $s['size'] . 'px;background:' . $s['button_color'] . ';color:' . $s['icon_color'] . ';border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:9999;box-shadow:0 2px 10px rgba(0,0,0,0.2)">↑</div>';
+        $style = 'position:fixed;' . $pos[0] . ':' . $s['offset'] . 'px;' . $pos[1] . ':' . $s['offset'] . 'px;width:' . $s['size'] . 'px;height:' . $s['size'] . 'px;background:' . $s['button_color'] . ';color:' . $s['icon_color'] . ';border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:9999;box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div id="' . $id . '" class="' . esc_attr($wrapper_classes) . ' pb-back-to-top" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">↑</div>';
         echo '<script>var btn=document.getElementById("' . $id . '");window.addEventListener("scroll",function(){btn.style.display=window.scrollY>' . $s['show_after'] . '?"flex":"none"});btn.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"})});</script>';
     }
 }

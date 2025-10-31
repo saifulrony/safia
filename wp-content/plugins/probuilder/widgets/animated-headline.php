@@ -82,6 +82,9 @@ class ProBuilder_Widget_Animated_Headline extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $before = $this->get_settings('before_text', 'We Are');
         $animated = $this->get_settings('animated_text', 'Creative, Professional, Innovative');
         $after = $this->get_settings('after_text', '');
@@ -90,13 +93,22 @@ class ProBuilder_Widget_Animated_Headline extends ProBuilder_Base_Widget {
         $font_size = $this->get_settings('font_size', 42);
         $align = $this->get_settings('align', 'center');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         $words = array_map('trim', explode(',', $animated));
         $id = 'animated-headline-' . uniqid();
         
         $style = 'text-align: ' . esc_attr($align) . '; font-size: ' . esc_attr($font_size) . 'px; ';
         $style .= 'color: ' . esc_attr($text_color) . '; font-weight: 700; line-height: 1.2;';
         
-        echo '<div class="probuilder-animated-headline" id="' . esc_attr($id) . '" style="' . $style . '">';
+        if ($inline_styles) {
+            $style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-animated-headline" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($style) . '">';
         
         if ($before) {
             echo '<span>' . esc_html($before) . ' </span>';

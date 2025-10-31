@@ -41,8 +41,17 @@ class ProBuilder_Mega_Menu_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $menu_id = $this->get_settings('menu', '');
         $layout = $this->get_settings('layout', 'horizontal');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         if (empty($menu_id)) {
             echo '<p style="padding:20px;background:#f5f5f5;text-align:center">Please select a menu from settings</p>';
@@ -53,7 +62,7 @@ class ProBuilder_Mega_Menu_Widget extends ProBuilder_Base_Widget {
             ? 'display:flex;flex-direction:row;gap:20px;list-style:none;padding:0;margin:0' 
             : 'display:flex;flex-direction:column;gap:10px;list-style:none;padding:0;margin:0';
         
-        echo '<div class="pb-mega-menu">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-mega-menu">';
         wp_nav_menu([
             'menu' => $menu_id,
             'container' => 'nav',

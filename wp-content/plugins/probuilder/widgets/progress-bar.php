@@ -176,6 +176,13 @@ class ProBuilder_Widget_Progress_Bar extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $title = $this->get_settings('title', 'My Skill');
         $percentage = $this->get_settings('percentage', 75);
         $show_percentage = $this->get_settings('show_percentage', 'yes');
@@ -196,7 +203,9 @@ class ProBuilder_Widget_Progress_Bar extends ProBuilder_Base_Widget {
         
         $id = 'progress-' . uniqid();
         
-        echo '<div class="probuilder-progress-bar" style="margin-bottom: 20px;">';
+        $wrapper_style = 'margin-bottom: 20px;';
+        if ($inline_styles) $wrapper_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-progress-bar" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
         
         // Title and Percentage
         echo '<div class="probuilder-progress-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';

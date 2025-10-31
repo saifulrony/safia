@@ -131,6 +131,13 @@ class ProBuilder_Widget_Pricing_Table extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $title = $this->get_settings('title', 'Basic Plan');
         $currency = $this->get_settings('currency', '$');
         $price = $this->get_settings('price', '29');
@@ -155,7 +162,8 @@ class ProBuilder_Widget_Pricing_Table extends ProBuilder_Base_Widget {
         $box_style = 'border: 2px solid ' . esc_attr($active_border_color) . '; ';
         $box_style .= 'padding: 40px 30px; text-align: center; background: #ffffff; position: relative; border-radius: 8px;';
         
-        echo '<div class="probuilder-pricing-table" style="' . $box_style . '">';
+        if ($inline_styles) $box_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-pricing-table" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . '">';
         
         if ($featured === 'yes') {
             echo '<div class="probuilder-pricing-badge" style="position: absolute; top: 20px; right: 20px; background: ' . esc_attr($featured_color) . '; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">POPULAR</div>';

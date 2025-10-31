@@ -129,16 +129,30 @@ class ProBuilder_Widget_Map extends ProBuilder_Base_Widget {
         
         $this->end_controls_section();
         
-        // ADVANCED
-        $this->start_controls_section('section_advanced', [
-            'label' => __('Advanced', 'probuilder'),
-            'tab' => 'advanced'
+        // STYLE TAB - Spacing
+        $this->start_controls_section('section_spacing', [
+            'label' => __('Spacing', 'probuilder'),
+            'tab' => 'style'
         ]);
         
         $this->add_control('margin', [
             'label' => __('Margin', 'probuilder'),
             'type' => 'dimensions',
             'default' => ['top' => 20, 'right' => 0, 'bottom' => 20, 'left' => 0]
+        ]);
+        
+        $this->add_control('padding', [
+            'label' => __('Padding', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]
+        ]);
+        
+        $this->end_controls_section();
+        
+        // ADVANCED
+        $this->start_controls_section('section_advanced', [
+            'label' => __('Advanced', 'probuilder'),
+            'tab' => 'advanced'
         ]);
         
         $this->add_control('entrance_animation', [
@@ -197,8 +211,11 @@ class ProBuilder_Widget_Map extends ProBuilder_Base_Widget {
         // Use Google Maps by default
         $map_url = $google_maps_url;
         
+        if ($inline_styles) {
+            $map_style .= ' ' . $inline_styles;
+        }
         ?>
-        <div class="probuilder-map-widget" id="<?php echo esc_attr($id); ?>" style="<?php echo $map_style; ?>">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-map-widget" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($map_style); ?>">
             <iframe 
                 width="100%" 
                 height="100%" 

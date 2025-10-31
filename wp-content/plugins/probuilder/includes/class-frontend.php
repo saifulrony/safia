@@ -19,21 +19,55 @@ class ProBuilder_Frontend {
     }
     
     private function __construct() {
-        add_filter('the_content', [$this, 'render_content'], 999);
+        // Use priority 9999 to ensure ProBuilder runs AFTER Elementor (which uses priority 9)
+        add_filter('the_content', [$this, 'render_content'], 9999);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_styles']);
+        
+        // Disable Elementor for ProBuilder pages
+        add_action('template_redirect', [$this, 'disable_elementor_for_probuilder'], 1);
+    }
+    
+    /**
+     * Disable Elementor rendering for ProBuilder pages
+     */
+    public function disable_elementor_for_probuilder() {
+        global $post;
+        
+        if (!is_singular() || !$post) {
+            return;
+        }
+        
+        // Check if this page uses ProBuilder
+        $probuilder_data = get_post_meta($post->ID, '_probuilder_data', true);
+        
+        if (!empty($probuilder_data)) {
+            // This is a ProBuilder page - disable Elementor
+            if (class_exists('\Elementor\Plugin')) {
+                remove_action('template_redirect', [\Elementor\Plugin::instance()->frontend, 'init'], 0);
+                add_filter('elementor/frontend/builder_content_data', '__return_null');
+            }
+            
+            // Remove Elementor edit mode flag if it exists
+            if (get_post_meta($post->ID, '_elementor_edit_mode', true) === 'builder') {
+                delete_post_meta($post->ID, '_elementor_edit_mode');
+            }
+        }
     }
     
     /**
      * Enqueue frontend styles
      */
     public function enqueue_frontend_styles() {
+        // Enqueue frontend CSS for all pages
+        wp_enqueue_style('probuilder-frontend', PROBUILDER_URL . 'assets/css/frontend.css', [], PROBUILDER_VERSION);
+        
         // Only on pages with ProBuilder data
         global $post;
         if ($post) {
             $probuilder_data = get_post_meta($post->ID, '_probuilder_data', true);
             if (!empty($probuilder_data)) {
                 // Add inline CSS to ensure content displays
-                wp_add_inline_style('wp-block-library', '
+                wp_add_inline_style('probuilder-frontend', '
                     .probuilder-content {
                         display: block !important;
                         visibility: visible !important;

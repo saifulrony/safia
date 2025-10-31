@@ -204,6 +204,13 @@ class ProBuilder_Widget_Timeline extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $settings = $this->get_settings_for_display();
         $timeline_id = 'probuilder-timeline-' . $this->get_id();
         
@@ -220,7 +227,9 @@ class ProBuilder_Widget_Timeline extends ProBuilder_Base_Widget {
         
         // Timeline Items
         if ($settings['layout'] === 'vertical') {
-            echo '<div class="probuilder-timeline-vertical" style="position: relative; max-width: 800px; margin: 0 auto;">';
+            $timeline_style = 'position: relative; max-width: 800px; margin: 0 auto;';
+            if ($inline_styles) $timeline_style .= ' ' . $inline_styles;
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-timeline-vertical" ' . $wrapper_attributes . ' style="' . esc_attr($timeline_style) . '">';
             
             if ($settings['show_connector'] === 'yes') {
                 echo '<div class="probuilder-timeline-line" style="position: absolute; left: 30px; top: 0; bottom: 0; width: 2px; background-color: ' . esc_attr($settings['connector_color']) . ';"></div>';

@@ -30,12 +30,21 @@ class ProBuilder_Table_Of_Contents_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!is_single() && !is_page()) {
             echo '<p style="padding:20px;background:#f5f5f5">View on a post or page</p>';
             return;
         }
         
         $title = $this->get_settings('title', 'Table of Contents');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $content = get_the_content();
         
         // Extract headings
@@ -46,7 +55,9 @@ class ProBuilder_Table_Of_Contents_Widget extends ProBuilder_Base_Widget {
             return;
         }
         
-        echo '<div style="background:#f9f9f9;padding:20px;border-radius:8px">';
+        $style = 'background:#f9f9f9;padding:20px;border-radius:8px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-toc" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         if ($title) {
             echo '<h4 style="margin:0 0 15px;font-size:18px">' . esc_html($title) . '</h4>';
         }

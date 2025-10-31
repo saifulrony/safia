@@ -10,8 +10,17 @@ class ProBuilder_Calendly_Widget extends ProBuilder_Base_Widget {
         $this->add_control('height', ['label' => 'Height', 'type' => 'slider', 'default' => 630, 'min' => 400, 'max' => 1000]);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div class="pb-calendly-widget"><iframe src="' . esc_url($s['url']) . '" width="100%" height="' . $s['height'] . '" frameborder="0"></iframe></div>';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-calendly-widget"><iframe src="' . esc_url($s['url']) . '" width="100%" height="' . $s['height'] . '" frameborder="0"></iframe></div>';
     }
 }
 ProBuilder_Widgets_Manager::instance()->register_widget(new ProBuilder_Calendly_Widget());

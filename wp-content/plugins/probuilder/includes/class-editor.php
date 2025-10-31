@@ -161,7 +161,24 @@ class ProBuilder_Editor {
         wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], time(), true);
         wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], time(), true);
         
-        // Localize script with all data
+        // Get saved ProBuilder data for this page
+        $saved_elements = get_post_meta($post_id, '_probuilder_data', true);
+        
+        // Ensure it's an array
+        if (!is_array($saved_elements)) {
+            if (is_string($saved_elements)) {
+                $decoded = json_decode($saved_elements, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $saved_elements = $decoded;
+                } else {
+                    $saved_elements = [];
+                }
+            } else {
+                $saved_elements = [];
+            }
+        }
+        
+        // Localize script with all data INCLUDING saved elements
         wp_localize_script('probuilder-editor-js', 'ProBuilderEditor', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('probuilder-editor'),
@@ -171,6 +188,7 @@ class ProBuilder_Editor {
             'plugin_url' => PROBUILDER_URL,
             'widgets' => ProBuilder_Widgets_Manager::instance()->get_widgets_config(),
             'templates' => ProBuilder_Templates::instance()->get_templates_list(),
+            'savedElements' => $saved_elements, // CRITICAL: Load saved elements!
             'i18n' => [
                 'save' => __('Save', 'probuilder'),
                 'preview' => __('Preview', 'probuilder'),

@@ -125,7 +125,10 @@ class ProBuilder_Widget_WP_Sidebar extends ProBuilder_Base_Widget {
             $wrapper_style .= 'box-shadow: 0 4px 15px rgba(0,0,0,0.1); ';
         }
         
-        echo '<div class="probuilder-wp-sidebar-wrapper" style="' . $wrapper_style . '">';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-wp-sidebar-wrapper" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
         
         if (!empty($sidebar_id) && is_active_sidebar($sidebar_id)) {
             dynamic_sidebar($sidebar_id);

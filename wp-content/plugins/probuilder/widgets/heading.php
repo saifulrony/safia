@@ -96,15 +96,6 @@ class ProBuilder_Widget_Heading extends ProBuilder_Base_Widget {
             ],
         ]);
         
-        $this->add_control('line_height', [
-            'label' => __('Line Height', 'probuilder'),
-            'type' => 'slider',
-            'default' => 1.3,
-            'min' => 0.5,
-            'max' => 3,
-            'step' => 0.1,
-        ]);
-        
         $this->end_controls_section();
         
         // TEXT PATH/EFFECTS SECTION
@@ -129,6 +120,7 @@ class ProBuilder_Widget_Heading extends ProBuilder_Base_Widget {
                 'wave' => __('Wave', 'probuilder'),
                 'circle' => __('Circle', 'probuilder'),
             ],
+            'condition' => ['enable_text_path' => 'yes'],
         ]);
         
         $this->add_control('curve_amount', [
@@ -139,56 +131,39 @@ class ProBuilder_Widget_Heading extends ProBuilder_Base_Widget {
                 'px' => ['min' => -100, 'max' => 100, 'step' => 5],
             ],
             'description' => __('Positive = curve up, Negative = curve down', 'probuilder'),
+            'condition' => ['enable_text_path' => 'yes'],
         ]);
         
         $this->end_controls_section();
         
-        // ADVANCED TAB
-        $this->start_controls_section('section_advanced', [
-            'label' => __('Advanced', 'probuilder'),
-            'tab' => 'advanced'
-        ]);
-        
-        $this->add_control('margin', [
-            'label' => __('Margin', 'probuilder'),
-            'type' => 'dimensions',
-            'default' => ['top' => '0', 'right' => '0', 'bottom' => '20', 'left' => '0'],
-        ]);
-        
-        $this->add_control('padding', [
-            'label' => __('Padding', 'probuilder'),
-            'type' => 'dimensions',
-            'default' => ['top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0'],
-        ]);
-        
-        $this->add_control('css_classes', [
-            'label' => __('CSS Classes', 'probuilder'),
-            'type' => 'text',
-            'default' => '',
-            'placeholder' => 'my-class another-class',
-        ]);
-        
-        $this->end_controls_section();
+        // Note: Spacing, Advanced Options, Responsive, and Custom CSS sections
+        // are automatically added by the base class
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $title = $this->get_settings('title', 'This is a heading');
         $tag = $this->get_settings('html_tag', 'h2');
         $align = $this->get_settings('align', 'left');
         $color = $this->get_settings('color', '#333333');
         $font_size = $this->get_settings('font_size', 32);
         $font_weight = $this->get_settings('font_weight', '600');
-        $line_height = $this->get_settings('line_height', 1.3);
         $enable_text_path = $this->get_settings('enable_text_path', 'no') === 'yes';
         $path_type = $this->get_settings('path_type', 'curve');
         $curve_amount = $this->get_settings('curve_amount', 50);
-        $margin = $this->get_settings('margin', ['top' => '0', 'right' => '0', 'bottom' => '20', 'left' => '0']);
-        $padding = $this->get_settings('padding', ['top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0']);
-        $css_classes = $this->get_settings('css_classes', '');
         
-        $wrapper_style = 'text-align: ' . esc_attr($align) . '; ';
-        $wrapper_style .= 'margin: ' . esc_attr($margin['top']) . 'px ' . esc_attr($margin['right']) . 'px ' . esc_attr($margin['bottom']) . 'px ' . esc_attr($margin['left']) . 'px; ';
-        $wrapper_style .= 'padding: ' . esc_attr($padding['top']) . 'px ' . esc_attr($padding['right']) . 'px ' . esc_attr($padding['bottom']) . 'px ' . esc_attr($padding['left']) . 'px; ';
+        // Get wrapper classes and attributes from base class (includes opacity, z-index, etc.)
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        
+        // Build additional inline styles
+        $inline_styles = $this->get_inline_styles(); // Gets margin, padding, opacity, z-index
+        $wrapper_style = 'text-align: ' . esc_attr($align) . ';';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
         
         if ($enable_text_path) {
             // Generate unique ID
@@ -210,7 +185,7 @@ class ProBuilder_Widget_Heading extends ProBuilder_Base_Widget {
                 $path_d = "M 0,{$svg_height} A {$radius},{$radius} 0 0,1 {$text_length},{$svg_height}";
             }
             
-            echo '<div class="probuilder-heading-path-wrapper" style="' . $wrapper_style . '">';
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-heading-path-wrapper" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
             echo '<svg width="100%" height="' . $svg_height . '" viewBox="0 0 ' . $text_length . ' ' . $svg_height . '" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">';
             echo '<defs>';
             echo '<path id="' . esc_attr($id) . '" d="' . esc_attr($path_d) . '" fill="transparent"/>';
@@ -223,24 +198,37 @@ class ProBuilder_Widget_Heading extends ProBuilder_Base_Widget {
             echo '</svg>';
             echo '</div>';
         } else {
-            // Regular text
-            $style = 'color: ' . esc_attr($color) . '; ';
-            $style .= 'font-size: ' . esc_attr($font_size) . 'px; ';
-            $style .= 'font-weight: ' . esc_attr($font_weight) . '; ';
-            $style .= 'line-height: ' . esc_attr($line_height) . '; ';
-            $style .= 'margin: ' . esc_attr($margin['top']) . 'px ' . esc_attr($margin['right']) . 'px ' . esc_attr($margin['bottom']) . 'px ' . esc_attr($margin['left']) . 'px; ';
-            $style .= 'padding: ' . esc_attr($padding['top']) . 'px ' . esc_attr($padding['right']) . 'px ' . esc_attr($padding['bottom']) . 'px ' . esc_attr($padding['left']) . 'px; ';
-            $style .= 'text-align: ' . esc_attr($align) . ';';
+            // Regular text - combine all styles
+            $element_style = 'color: ' . esc_attr($color) . '; ';
+            $element_style .= 'font-size: ' . esc_attr($font_size) . 'px; ';
+            $element_style .= 'font-weight: ' . esc_attr($font_weight) . '; ';
+            $element_style .= 'text-align: ' . esc_attr($align) . '; ';
+            $element_style .= 'margin: 0; '; // Reset default margin
             
-            $class = 'probuilder-heading ' . esc_attr($css_classes);
+            // Merge with ALL wrapper styles (margin, padding, opacity, z-index, background, border, transform, etc.)
+            if ($inline_styles && !empty($inline_styles)) {
+                $element_style .= $inline_styles . '; ';
+            }
+            
+            $link = $this->get_settings('link', ['url' => '']);
+            $link_url = is_array($link) ? $link['url'] : $link;
+            
+            if (!empty($link_url)) {
+                echo '<a href="' . esc_url($link_url) . '" style="text-decoration: none; color: inherit; display: inline-block;">';
+            }
             
             printf(
-                '<%1$s class="%2$s" style="%3$s">%4$s</%1$s>',
+                '<%1$s class="%2$s" %3$s style="%4$s">%5$s</%1$s>',
                 esc_attr($tag),
-                trim($class),
-                $style,
+                esc_attr($wrapper_classes),
+                $wrapper_attributes,
+                esc_attr($element_style),
                 esc_html($title)
             );
+            
+            if (!empty($link_url)) {
+                echo '</a>';
+            }
         }
     }
 }

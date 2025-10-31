@@ -36,8 +36,17 @@ class ProBuilder_Breadcrumbs_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $home_text = $this->get_settings('home_text', 'Home');
         $separator = $this->get_settings('separator', '/');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         $breadcrumbs = [];
         $breadcrumbs[] = '<a href="' . home_url('/') . '" style="color:#0073aa;text-decoration:none">' . esc_html($home_text) . '</a>';
@@ -54,7 +63,9 @@ class ProBuilder_Breadcrumbs_Widget extends ProBuilder_Base_Widget {
             $breadcrumbs[] = '<span style="color:#666">' . single_cat_title('', false) . '</span>';
         }
         
-        echo '<nav style="font-size:14px;color:#666">';
+        $style = 'font-size:14px;color:#666;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<nav class="' . esc_attr($wrapper_classes) . ' pb-breadcrumbs" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         echo implode(' <span style="color:#999;margin:0 8px">' . esc_html($separator) . '</span> ', $breadcrumbs);
         echo '</nav>';
     }

@@ -59,10 +59,19 @@ class ProBuilder_Menu_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $menu_id = $this->get_settings('menu', '');
         $layout = $this->get_settings('layout', 'horizontal');
         $text_color = $this->get_settings('text_color', '#333333');
         $hover_color = $this->get_settings('hover_color', '#0073aa');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         if (empty($menu_id)) {
             echo '<p style="padding:20px;background:#f5f5f5;text-align:center">Please select a menu from settings</p>';
@@ -79,12 +88,14 @@ class ProBuilder_Menu_Widget extends ProBuilder_Base_Widget {
         .' . $menu_class . ' .sub-menu{list-style:none;padding:10px 0;margin:0}
         </style>';
         
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-menu-wrapper" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '">';
         wp_nav_menu([
             'menu' => $menu_id,
             'container' => 'nav',
             'menu_class' => $menu_class,
             'fallback_cb' => false,
         ]);
+        echo '</div>';
     }
     
     private function get_available_menus() {

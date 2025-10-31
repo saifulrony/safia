@@ -72,6 +72,9 @@ class ProBuilder_Widget_Newsletter extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $title = $this->get_settings('title', 'Subscribe to Our Newsletter');
         $description = $this->get_settings('description', '');
         $placeholder = $this->get_settings('placeholder', 'Enter your email');
@@ -79,9 +82,15 @@ class ProBuilder_Widget_Newsletter extends ProBuilder_Base_Widget {
         $layout = $this->get_settings('layout', 'inline');
         $button_color = $this->get_settings('button_color', '#92003b');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         $form_style = $layout === 'inline' ? 'display: flex; gap: 10px;' : 'display: flex; flex-direction: column; gap: 10px;';
         
-        echo '<div class="probuilder-newsletter" style="padding: 40px; background: #f9f9f9; border-radius: 8px; text-align: center;">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-newsletter" style="padding: 40px; background: #f9f9f9; border-radius: 8px; text-align: center;' . ($inline_styles ? ' ' . $inline_styles : '') . '">';
         
         // Title
         echo '<h3 style="margin: 0 0 10px 0; font-size: 24px; color: #333;">' . esc_html($title) . '</h3>';

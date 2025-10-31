@@ -119,11 +119,20 @@ class ProBuilder_Widget_Blockquote extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $quote = $this->get_settings('quote_text', '');
         $author = $this->get_settings('author', '');
         $author_title = $this->get_settings('author_title', '');
         $style_type = $this->get_settings('quote_style', 'border');
         $border_color = $this->get_settings('border_color', '#92003b');
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         $box_style = '';
         
@@ -135,7 +144,10 @@ class ProBuilder_Widget_Blockquote extends ProBuilder_Base_Widget {
             $box_style = 'font-style: italic; padding: 20px 0;';
         }
         
-        echo '<blockquote class="probuilder-blockquote" style="' . $box_style . ' margin: 20px 0;">';
+        if ($inline_styles) {
+            $box_style .= ' ' . $inline_styles;
+        }
+        echo '<blockquote class="' . esc_attr($wrapper_classes) . ' probuilder-blockquote" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . ' margin: 20px 0;">';
         
         // Quote icon
         echo '<div style="font-size: 40px; color: ' . esc_attr($border_color) . '; opacity: 0.3; margin-bottom: 15px;">';

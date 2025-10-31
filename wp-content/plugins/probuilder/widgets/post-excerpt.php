@@ -11,9 +11,18 @@ class ProBuilder_Post_Excerpt_Widget extends ProBuilder_Base_Widget {
         $this->add_control('more_text', ['label' => 'Read More Text', 'type' => 'text', 'default' => 'Read More']);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $excerpt = wp_trim_words(get_the_excerpt(), $s['length']);
-        echo '<div class="pb-post-excerpt">' . $excerpt;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-post-excerpt">' . $excerpt;
         if ($s['show_more']) echo ' <a href="' . get_permalink() . '">' . esc_html($s['more_text']) . '</a>';
         echo '</div>';
     }

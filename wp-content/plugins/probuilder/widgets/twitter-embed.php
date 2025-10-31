@@ -10,8 +10,17 @@ class ProBuilder_Twitter_Embed_Widget extends ProBuilder_Base_Widget {
         $this->add_control('theme', ['label' => 'Theme', 'type' => 'select', 'options' => ['light' => 'Light', 'dark' => 'Dark'], 'default' => 'light']);
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div class="pb-twitter-embed"><blockquote class="twitter-tweet" data-theme="' . $s['theme'] . '"><a href="' . esc_url($s['url']) . '"></a></blockquote></div>';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-twitter-embed"><blockquote class="twitter-tweet" data-theme="' . $s['theme'] . '"><a href="' . esc_url($s['url']) . '"></a></blockquote></div>';
         echo '<script async src="https://platform.twitter.com/widgets.js"></script>';
     }
 }

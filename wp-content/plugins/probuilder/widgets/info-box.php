@@ -219,7 +219,10 @@ class ProBuilder_Widget_Info_Box extends ProBuilder_Base_Widget {
         $icon_container_style .= 'display: flex; align-items: center; justify-content: center; ';
         $icon_container_style .= 'font-size: ' . ($icon_size * 0.4) . 'px; font-weight: bold;';
         
-        echo '<div class="probuilder-info-box" id="' . esc_attr($id) . '" style="' . $container_style . '">';
+        if ($inline_styles) {
+            $container_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-info-box" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($container_style) . '">';
         
         // Icon/Number
         echo '<div class="info-icon" style="' . $icon_container_style . '">';

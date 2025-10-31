@@ -312,9 +312,9 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
             }
         </style>
         
-        <div class="<?php echo esc_attr($wrapper_class); ?>" id="<?php echo esc_attr($id); ?>">
+        <div class="<?php echo esc_attr($wrapper_classes . ' ' . $wrapper_class); ?>" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($inline_styles . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             <!-- Tab Navigation -->
-            <div class="probuilder-tabs-nav">
+            <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-tabs-nav" ' . $wrapper_attributes . ' >
                 <?php foreach ($tabs as $index => $tab): ?>
                     <div class="probuilder-tab-title <?php echo $index === 0 ? 'active' : ''; ?>" 
                          data-tab="<?php echo esc_attr($index); ?>">

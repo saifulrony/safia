@@ -156,6 +156,9 @@ class ProBuilder_Widget_Accordion extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $items = $this->get_settings('items', []);
         $allow_multiple = $this->get_settings('allow_multiple', 'no');
         $default_open = $this->get_settings('default_open', 1);
@@ -170,14 +173,23 @@ class ProBuilder_Widget_Accordion extends ProBuilder_Base_Widget {
         $padding = $this->get_settings('padding', ['top' => 20, 'right' => 0, 'bottom' => 20, 'left' => 0]);
         $margin = $this->get_settings('margin', ['top' => 20, 'right' => 0, 'bottom' => 20, 'left' => 0]);
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
         if (empty($items)) {
             return;
         }
         
         $id = 'probuilder-accordion-' . uniqid();
         $container_style = 'margin: ' . $margin['top'] . 'px ' . $margin['right'] . 'px ' . $margin['bottom'] . 'px ' . $margin['left'] . 'px;';
+        if ($inline_styles) {
+            $container_style .= ' ' . $inline_styles;
+        }
         
-        echo '<div class="probuilder-accordion" id="' . esc_attr($id) . '" style="' . $container_style . '" data-allow-multiple="' . esc_attr($allow_multiple) . '">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-accordion" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($container_style) . '" data-allow-multiple="' . esc_attr($allow_multiple) . '">';
         
         foreach ($items as $index => $item) {
             $item_id = $id . '-' . $index;
@@ -189,7 +201,7 @@ class ProBuilder_Widget_Accordion extends ProBuilder_Base_Widget {
             $title_style .= 'padding: 15px 20px; cursor: pointer; border: 1px solid ' . esc_attr($border_color) . '; margin-bottom: 0; position: relative; ';
             $title_style .= 'border-radius: ' . esc_attr($border_radius) . 'px; transition: all 0.3s ease;';
             
-            echo '<div class="probuilder-accordion-item" style="margin-bottom: 10px;">';
+            echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-accordion-item" ' . $wrapper_attributes . '  style="margin-bottom: 10px;">';
             echo '<div class="probuilder-accordion-title" data-item="' . esc_attr($item_id) . '" style="' . $title_style . '">';
             echo '<span style="font-weight: 600;">' . esc_html($item['title']) . '</span>';
             echo '<span class="probuilder-accordion-icon" style="position: absolute; right: 20px; font-size: 18px; transition: all 0.3s;">' . ($is_open ? '−' : '+') . '</span>';

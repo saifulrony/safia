@@ -62,15 +62,28 @@ class ProBuilder_Icon_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $icon = $this->get_settings('icon', 'fa fa-star');
         $size = $this->get_settings('size', 50);
         $color = $this->get_settings('color', '#0073aa');
         $align = $this->get_settings('align', 'center');
         $link = $this->get_settings('link', '');
         
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $wrapper_style = 'text-align:' . esc_attr($align) . ';';
+        if ($inline_styles) {
+            $wrapper_style .= ' ' . $inline_styles;
+        }
+        
         $icon_html = '<i class="' . esc_attr($icon) . '" style="font-size:' . $size . 'px;color:' . $color . ';display:inline-block;transition:transform 0.3s" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'"></i>';
         
-        echo '<div style="text-align:' . $align . '">';
+        echo '<div class="' . esc_attr($wrapper_classes) . '" ' . $wrapper_attributes . ' style="' . $wrapper_style . '">';
         
         if ($link) {
             echo '<a href="' . esc_url($link) . '" style="display:inline-block">' . $icon_html . '</a>';

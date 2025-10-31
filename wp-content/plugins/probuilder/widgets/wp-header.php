@@ -148,7 +148,10 @@ class ProBuilder_Widget_WP_Header extends ProBuilder_Base_Widget {
             $header_style .= ' position: sticky; top: 0; z-index: 999;';
         }
         
-        echo '<div class="probuilder-wp-header" id="' . esc_attr($id) . '" style="' . $header_style . '">';
+        if ($inline_styles) {
+            $header_style .= ' ' . $inline_styles;
+        }
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-wp-header" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($header_style) . '">';
         
         // Logo
         if ($show_logo) {

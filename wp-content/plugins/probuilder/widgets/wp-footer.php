@@ -137,6 +137,13 @@ class ProBuilder_Widget_WP_Footer extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $footer_id = $this->get_settings('footer_id', '');
         $footer_layout = $this->get_settings('footer_layout', 'columns');
         $columns = $this->get_settings('columns', '3');
@@ -156,7 +163,8 @@ class ProBuilder_Widget_WP_Footer extends ProBuilder_Base_Widget {
         $footer_style .= 'color: ' . esc_attr($text_color) . '; ';
         $footer_style .= 'padding: ' . esc_attr($padding['top']) . 'px ' . esc_attr($padding['right']) . 'px ' . esc_attr($padding['bottom']) . 'px ' . esc_attr($padding['left']) . 'px;';
         
-        echo '<div class="probuilder-wp-footer" id="' . esc_attr($id) . '" style="' . $footer_style . '">';
+        if ($inline_styles) $footer_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-wp-footer" ' . $wrapper_attributes . ' id="' . esc_attr($id) . '" style="' . esc_attr($footer_style) . '">';
         
         if (!empty($footer_id) && is_active_sidebar($footer_id)) {
             $content_style = $footer_layout === 'columns' ? 

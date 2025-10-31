@@ -48,7 +48,9 @@ class ProBuilder_Widget_Contact_Form extends ProBuilder_Base_Widget {
         $button_text = $this->get_settings('button_text', 'Send Message');
         $button_color = $this->get_settings('button_color', '#92003b');
         
-        echo '<div class="probuilder-contact-form" style="padding: 30px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px;">';
+        $style = 'padding: 30px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-contact-form" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         
         if ($form_title) {
             echo '<h3 style="margin: 0 0 25px 0; font-size: 24px; color: #333;">' . esc_html($form_title) . '</h3>';

@@ -76,6 +76,13 @@ class ProBuilder_Widget_Icon_Box extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+                // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
         $icon = $this->get_settings('icon', 'fa fa-star');
         $icon_color = $this->get_settings('icon_color', '#0073aa');
         $icon_size = $this->get_settings('icon_size', 48);
@@ -86,7 +93,8 @@ class ProBuilder_Widget_Icon_Box extends ProBuilder_Base_Widget {
         $box_style = 'text-align: ' . esc_attr($align) . '; padding: 30px;';
         $icon_style = 'color: ' . esc_attr($icon_color) . '; font-size: ' . esc_attr($icon_size) . 'px; margin-bottom: 20px;';
         
-        echo '<div class="probuilder-icon-box" style="' . $box_style . '">';
+        if ($inline_styles) $box_style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-icon-box" ' . $wrapper_attributes . ' style="' . esc_attr($box_style) . '">';
         
         if ($icon) {
             echo '<div class="probuilder-icon-box-icon" style="' . $icon_style . '">';

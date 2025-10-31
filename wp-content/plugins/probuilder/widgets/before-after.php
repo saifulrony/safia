@@ -58,7 +58,7 @@ class ProBuilder_Widget_Before_After extends ProBuilder_Base_Widget {
         $id = 'before-after-' . uniqid();
         
         ?>
-        <div class="probuilder-before-after" id="<?php echo esc_attr($id); ?>" style="position: relative; overflow: hidden; border-radius: 8px; max-width: 100%;">
+        <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-before-after" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr('position: relative; overflow: hidden; border-radius: 8px; max-width: 100%;' . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
             
             <!-- After Image (bottom layer) -->
             <img src="<?php echo esc_url($after['url']); ?>" alt="After" style="width: 100%; display: block;">

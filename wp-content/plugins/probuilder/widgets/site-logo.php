@@ -13,11 +13,22 @@ class ProBuilder_Site_Logo_Widget extends ProBuilder_Base_Widget {
         $this->end_style_tab();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $logo = !empty($s['logo']) ? $s['logo'] : get_theme_mod('custom_logo');
         if (!$logo) $logo = get_bloginfo('name');
-        $img = is_numeric($logo) ? wp_get_attachment_image($logo, 'full', false, ['style' => 'width:' . $s['width'] . 'px;height:auto']) : '<span>' . $logo . '</span>';
-        echo $s['link'] ? '<a href="' . home_url() . '">' . $img . '</a>' : $img;
+        $img_style = 'width:' . $s['width'] . 'px;height:auto;';
+        $img = is_numeric($logo) ? wp_get_attachment_image($logo, 'full', false, ['style' => $img_style]) : '<span>' . $logo . '</span>';
+        $output = $s['link'] ? '<a href="' . home_url() . '">' . $img . '</a>' : $img;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-site-logo" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '">' . $output . '</div>';
     }
 }
 ProBuilder_Widgets_Manager::instance()->register_widget(new ProBuilder_Site_Logo_Widget());

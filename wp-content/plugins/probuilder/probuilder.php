@@ -83,6 +83,7 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-templates.php';
         require_once PROBUILDER_PATH . 'includes/class-templates-library.php';
         require_once PROBUILDER_PATH . 'includes/class-theme-integration.php';
+        require_once PROBUILDER_PATH . 'includes/class-uninstall-feedback.php';
         
         // Advanced Features
         require_once PROBUILDER_PATH . 'includes/class-navigator.php';
@@ -282,9 +283,66 @@ final class ProBuilder {
         add_action('admin_enqueue_scripts', [$this, 'admin_scripts']);
         add_action('wp_enqueue_scripts', [$this, 'frontend_scripts']);
         
+        // Auto-fix permalinks on admin load (once per day)
+        add_action('admin_init', [$this, 'auto_check_permalinks']);
+        
         // Add edit with ProBuilder button
         add_filter('page_row_actions', [$this, 'add_edit_button'], 10, 2);
         add_filter('post_row_actions', [$this, 'add_edit_button'], 10, 2);
+    }
+    
+    /**
+     * Auto-check and fix permalink structure
+     * Runs once per day to ensure pretty URLs work
+     */
+    public function auto_check_permalinks() {
+        // Only check once per day to avoid performance impact
+        $last_check = get_option('probuilder_permalink_check', 0);
+        if (time() - $last_check < 86400) {
+            return; // Checked within last 24 hours
+        }
+        
+        // Update check time
+        update_option('probuilder_permalink_check', time());
+        
+        $current_structure = get_option('permalink_structure');
+        
+        // If using Plain permalinks or index.php structure, auto-fix
+        if (empty($current_structure) || strpos($current_structure, 'index.php') !== false) {
+            // Set to Post name structure
+            update_option('permalink_structure', '/%postname%/');
+            
+            // Flush rewrite rules
+            flush_rewrite_rules(false);
+            
+            // Create/update .htaccess
+            $this->ensure_htaccess();
+        }
+    }
+    
+    /**
+     * Ensure .htaccess exists and has proper rewrite rules
+     */
+    private function ensure_htaccess() {
+        $htaccess_file = ABSPATH . '.htaccess';
+        
+        // Only create if it doesn't exist
+        if (!file_exists($htaccess_file)) {
+            $htaccess_content = "# BEGIN WordPress\n";
+            $htaccess_content .= "<IfModule mod_rewrite.c>\n";
+            $htaccess_content .= "RewriteEngine On\n";
+            $htaccess_content .= "RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\n";
+            $htaccess_content .= "RewriteBase /\n";
+            $htaccess_content .= "RewriteRule ^index\.php$ - [L]\n";
+            $htaccess_content .= "RewriteCond %{REQUEST_FILENAME} !-f\n";
+            $htaccess_content .= "RewriteCond %{REQUEST_FILENAME} !-d\n";
+            $htaccess_content .= "RewriteRule . /index.php [L]\n";
+            $htaccess_content .= "</IfModule>\n";
+            $htaccess_content .= "# END WordPress\n";
+            
+            @file_put_contents($htaccess_file, $htaccess_content);
+            @chmod($htaccess_file, 0644);
+        }
     }
     
     /**
@@ -543,6 +601,69 @@ final class ProBuilder {
         return $actions;
     }
 }
+
+/**
+ * Plugin Activation Hook
+ * Automatically configure WordPress for ProBuilder
+ */
+function probuilder_activate() {
+    // 1. Set permalink structure to Post name (pretty URLs without index.php)
+    $current_structure = get_option('permalink_structure');
+    
+    // Only change if it's Plain or includes index.php
+    if (empty($current_structure) || strpos($current_structure, 'index.php') !== false) {
+        update_option('permalink_structure', '/%postname%/');
+    }
+    
+    // 2. Flush rewrite rules to apply new structure
+    flush_rewrite_rules(true);
+    
+    // 3. Create .htaccess if it doesn't exist
+    $htaccess_file = ABSPATH . '.htaccess';
+    if (!file_exists($htaccess_file)) {
+        $htaccess_content = "# BEGIN WordPress\n";
+        $htaccess_content .= "<IfModule mod_rewrite.c>\n";
+        $htaccess_content .= "RewriteEngine On\n";
+        $htaccess_content .= "RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\n";
+        $htaccess_content .= "RewriteBase /\n";
+        $htaccess_content .= "RewriteRule ^index\.php$ - [L]\n";
+        $htaccess_content .= "RewriteCond %{REQUEST_FILENAME} !-f\n";
+        $htaccess_content .= "RewriteCond %{REQUEST_FILENAME} !-d\n";
+        $htaccess_content .= "RewriteRule . /index.php [L]\n";
+        $htaccess_content .= "</IfModule>\n";
+        $htaccess_content .= "# END WordPress\n";
+        
+        @file_put_contents($htaccess_file, $htaccess_content);
+        @chmod($htaccess_file, 0644);
+    }
+    
+    // 4. Enable pages and posts for ProBuilder by default
+    $enabled_types = get_option('probuilder_post_types', []);
+    if (empty($enabled_types)) {
+        update_option('probuilder_post_types', ['page', 'post']);
+    }
+    
+    // 5. Set activation flag for first-time setup notice
+    update_option('probuilder_activated', true);
+    update_option('probuilder_activation_time', time());
+    
+    // 6. Create feedback table
+    if (class_exists('ProBuilder_Uninstall_Feedback')) {
+        ProBuilder_Uninstall_Feedback::instance()->create_feedback_table();
+    }
+}
+
+/**
+ * Plugin Deactivation Hook
+ */
+function probuilder_deactivate() {
+    // Don't flush rewrite rules on deactivation
+    // This allows pages to still work if plugin is temporarily disabled
+}
+
+// Register activation and deactivation hooks
+register_activation_hook(__FILE__, 'probuilder_activate');
+register_deactivation_hook(__FILE__, 'probuilder_deactivate');
 
 /**
  * Initialize ProBuilder

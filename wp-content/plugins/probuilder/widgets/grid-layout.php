@@ -131,9 +131,32 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         ]);
         
         $this->end_controls_section();
+        
+        // Spacing Section
+        $this->start_controls_section('section_spacing', [
+            'label' => __('Spacing', 'probuilder'),
+            'tab' => 'style'
+        ]);
+        
+        $this->add_control('padding', [
+            'label' => __('Padding', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 20, 'right' => 20, 'bottom' => 20, 'left' => 20],
+        ]);
+        
+        $this->add_control('margin', [
+            'label' => __('Margin', 'probuilder'),
+            'type' => 'dimensions',
+            'default' => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+        ]);
+        
+        $this->end_controls_section();
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $settings = $this->settings;
         $pattern = $this->get_settings('grid_pattern', 'pattern-1');
         $gap = $this->get_settings('gap', 20);
@@ -143,6 +166,16 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         $border_width = $this->get_settings('border_width', 1);
         $border_radius = $this->get_settings('border_radius', 8);
         $enable_resize = $this->get_settings('enable_resize', true);
+        
+        // Get spacing settings
+        $padding = $this->get_settings('padding', ['top' => 20, 'right' => 20, 'bottom' => 20, 'left' => 20]);
+        $margin = $this->get_settings('margin', ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]);
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         $grid_id = 'probuilder-grid-' . uniqid();
         
@@ -158,6 +191,8 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 gap: <?php echo esc_attr($gap); ?>px;
                 width: 100%;
                 position: relative;
+                padding: <?php echo esc_attr($padding['top']); ?>px <?php echo esc_attr($padding['right']); ?>px <?php echo esc_attr($padding['bottom']); ?>px <?php echo esc_attr($padding['left']); ?>px;
+                margin: <?php echo esc_attr($margin['top']); ?>px <?php echo esc_attr($margin['right']); ?>px <?php echo esc_attr($margin['bottom']); ?>px <?php echo esc_attr($margin['left']); ?>px;
             }
             
             #<?php echo $grid_id; ?> .grid-cell {
@@ -269,7 +304,7 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             }
         </style>
         
-        <div id="<?php echo $grid_id; ?>" class="probuilder-grid-layout" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>">
+        <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo esc_attr($inline_styles); ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>">
             <?php for ($i = 0; $i < count($grid_template['areas']); $i++): ?>
                 <div class="grid-cell grid-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>">
                     <?php if ($enable_resize): ?>

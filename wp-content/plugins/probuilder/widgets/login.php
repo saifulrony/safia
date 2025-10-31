@@ -36,9 +36,18 @@ class ProBuilder_Login_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         if (is_user_logged_in()) {
             $user = wp_get_current_user();
-            echo '<div style="background:#f9f9f9;padding:20px;border-radius:8px;text-align:center">';
+            $style = 'background:#f9f9f9;padding:20px;border-radius:8px;text-align:center;';
+            if ($inline_styles) $style .= ' ' . $inline_styles;
+            echo '<div class="' . esc_attr($wrapper_classes) . ' pb-login" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
             echo '<p style="margin:0 0 15px">Welcome, <strong>' . $user->display_name . '</strong>!</p>';
             echo '<a href="' . wp_logout_url() . '" style="color:#0073aa;text-decoration:none">Logout</a>';
             echo '</div>';
@@ -48,7 +57,15 @@ class ProBuilder_Login_Widget extends ProBuilder_Base_Widget {
         $show_labels = $this->get_settings('show_labels', true);
         $show_remember = $this->get_settings('show_remember', true);
         
-        echo '<div style="max-width:400px;margin:0 auto">';
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        
+        $style = 'max-width:400px;margin:0 auto;';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-login-form" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
         wp_login_form([
             'echo' => true,
             'label_username' => $show_labels ? __('Username', 'probuilder') : '',

@@ -12,9 +12,20 @@ class ProBuilder_Archive_Title_Widget extends ProBuilder_Base_Widget {
         $this->end_style_tab();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         if (!is_archive()) { echo '<p>View on archive page</p>'; return; }
         $s = $this->get_settings();
-        echo '<' . $s['tag'] . ' class="pb-archive-title" style="color:' . $s['color'] . '">' . get_the_archive_title() . '</' . $s['tag'] . '>';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        $style = 'color:' . $s['color'] . ';';
+        if ($inline_styles) $style .= ' ' . $inline_styles;
+        echo '<' . $s['tag'] . ' class="' . esc_attr($wrapper_classes) . ' pb-archive-title" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">' . get_the_archive_title() . '</' . $s['tag'] . '>';
     }
 }
 ProBuilder_Widgets_Manager::instance()->register_widget(new ProBuilder_Archive_Title_Widget());

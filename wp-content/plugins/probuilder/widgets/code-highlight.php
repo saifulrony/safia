@@ -15,9 +15,18 @@ class ProBuilder_Code_Highlight_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $lines = explode("\n", $s['code']);
-        echo '<div class="pb-code-highlight theme-' . $s['theme'] . '"><pre><code class="language-' . $s['language'] . '">';
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-code-highlight theme-' . $s['theme'] . '"><pre><code class="language-' . $s['language'] . '">';
         if ($s['show_line_numbers']) {
             foreach ($lines as $i => $line) {
                 echo '<span class="line-number">' . ($i+1) . '</span>' . esc_html($line) . "\n";

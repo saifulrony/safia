@@ -138,7 +138,9 @@ class ProBuilder_Recent_Posts_Widget extends ProBuilder_Base_Widget {
         $date_color = isset($settings['date_color']) ? $settings['date_color'] : '#999999';
         $gap = isset($settings['gap']) ? $settings['gap'] : 20;
         
-        echo '<div class="probuilder-recent-posts">';
+        $wrapper_style = '';
+        if ($inline_styles) $wrapper_style = $inline_styles;
+        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-recent-posts" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
         
         while ($recent_posts->have_posts()) {
             $recent_posts->the_post();

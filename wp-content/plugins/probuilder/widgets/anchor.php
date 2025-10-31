@@ -12,8 +12,17 @@ class ProBuilder_Anchor_Widget extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div id="' . esc_attr($s['anchor_id']) . '" class="pb-anchor"></div>';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div id="' . esc_attr($s['anchor_id']) . '" class="' . esc_attr($wrapper_classes) . ' pb-anchor" ' . $wrapper_attributes . ' style="' . esc_attr($inline_styles) . '"></div>';
     }
 }
 

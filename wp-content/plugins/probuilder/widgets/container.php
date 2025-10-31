@@ -226,8 +226,10 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         
         $this->end_controls_section();
         
+        // STYLE TAB - Spacing
         $this->start_controls_section('section_spacing', [
             'label' => __('Spacing', 'probuilder'),
+            'tab' => 'style'
         ]);
         
         $this->add_control('padding', [
@@ -244,8 +246,10 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         
         $this->end_controls_section();
         
+        // STYLE TAB - Border
         $this->start_controls_section('section_border', [
             'label' => __('Border', 'probuilder'),
+            'tab' => 'style'
         ]);
         
         $this->add_control('border', [
@@ -273,6 +277,9 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $settings = $this->get_settings();
         $layout = $this->get_settings('layout', 'boxed');
         $columns_count = $this->get_settings('columns_count', '2');
@@ -306,6 +313,12 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         $border = $this->get_settings('border', ['width' => 0, 'style' => 'solid', 'color' => '#000000']);
         $border_radius = $this->get_settings('border_radius', 0);
         $box_shadow = $this->get_settings('box_shadow', ['x' => 0, 'y' => 0, 'blur' => 0, 'color' => 'rgba(0,0,0,0)']);
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         
         // Build container style
         $style = '';
@@ -413,7 +426,10 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         </style>
         <?php
         
-        echo '<div id="' . esc_attr($container_id) . '" class="probuilder-container probuilder-container-' . esc_attr($layout) . '" style="' . $style . '" data-columns="' . esc_attr($columns_count) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '" data-enable-rows="' . esc_attr($enable_rows) . '">';
+        if ($inline_styles) {
+            $style .= ' ' . $inline_styles;
+        }
+        echo '<div id="' . esc_attr($container_id) . '" class="' . esc_attr($wrapper_classes) . ' probuilder-container probuilder-container-' . esc_attr($layout) . '" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '" data-columns="' . esc_attr($columns_count) . '" data-columns-tablet="' . esc_attr($columns_tablet) . '" data-columns-mobile="' . esc_attr($columns_mobile) . '" data-enable-rows="' . esc_attr($enable_rows) . '">';
         
         if ($enable_rows === 'yes' && !empty($rows)) {
             // Render multiple rows
@@ -434,7 +450,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 } else {
                     // Show empty column placeholders
                     for ($i = 0; $i < $row['row_columns']; $i++) {
-                        echo '<div class="probuilder-column" style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
+                        echo '<div class="probuilder-column" ' . $wrapper_attributes . '  style="min-height: 50px; border: 1px dashed #ddd; padding: 10px; text-align: center; color: #999;">Column ' . ($i + 1) . '</div>';
                     }
                 }
                 

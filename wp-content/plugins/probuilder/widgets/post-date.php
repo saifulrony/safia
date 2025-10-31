@@ -13,8 +13,17 @@ class ProBuilder_Post_Date_Widget extends ProBuilder_Base_Widget {
         $this->end_style_tab();
     }
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
         $s = $this->get_settings();
-        echo '<div class="pb-post-date" style="color:' . $s['color'] . '">';
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
+        echo '<div class="' . esc_attr($wrapper_classes) . ' pb-post-date" style="color:' . ($inline_styles ? ' ' . $inline_styles : '') . '' . $s['color'] . '">';
         if ($s['show_icon']) echo '<i class="pb-icon-calendar"></i> ';
         echo get_the_date($s['format']);
         echo '</div>';
