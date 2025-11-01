@@ -133,33 +133,37 @@ class ProBuilder_Editor {
         if (!$post_id && isset($_GET['post'])) {
             $post_id = intval($_GET['post']);
         }
+        // Also support ?p=ID when opening editor from frontend
+        if (!$post_id && isset($_GET['p'])) {
+            $post_id = intval($_GET['p']);
+        }
         
         // Dequeue unnecessary scripts that might conflict
         wp_dequeue_style('wp-block-library');
         wp_dequeue_style('wp-block-library-theme');
         wp_dequeue_style('wc-block-style');
         
-        // Enqueue our styles - Force reload
-        wp_enqueue_style('probuilder-editor', PROBUILDER_URL . 'assets/css/editor.css', [], time());
-        wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], time());
-        wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], time());
-        wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], time());
-        wp_enqueue_style('probuilder-navigator', PROBUILDER_URL . 'assets/css/navigator.css', ['probuilder-editor'], time());
-        wp_enqueue_style('probuilder-history-panel', PROBUILDER_URL . 'assets/css/history-panel.css', ['probuilder-editor'], time());
+        // Enqueue our styles - Use plugin version for caching
+        wp_enqueue_style('probuilder-editor', PROBUILDER_URL . 'assets/css/editor.css', [], PROBUILDER_VERSION);
+        wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], PROBUILDER_VERSION);
+        wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], PROBUILDER_VERSION);
+        wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], PROBUILDER_VERSION);
+        wp_enqueue_style('probuilder-navigator', PROBUILDER_URL . 'assets/css/navigator.css', ['probuilder-editor'], PROBUILDER_VERSION);
+        wp_enqueue_style('probuilder-history-panel', PROBUILDER_URL . 'assets/css/history-panel.css', ['probuilder-editor'], PROBUILDER_VERSION);
         wp_enqueue_style('probuilder-icons', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', [], '6.4.0');
         wp_enqueue_style('animate-css', 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css', [], '4.1.1');
         
-        // Enqueue scripts - Force reload
+        // Enqueue scripts - Use plugin version for caching
         wp_enqueue_media();
         wp_enqueue_script('jquery');
         wp_enqueue_script('jquery-ui-core');
         wp_enqueue_script('jquery-ui-draggable');
         wp_enqueue_script('jquery-ui-droppable');
         wp_enqueue_script('jquery-ui-sortable');
-        wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], time(), true);
-        wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], time(), true);
-        wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], time(), true);
-        wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], time(), true);
+        wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], PROBUILDER_VERSION, true);
+        wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
+        wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
+        wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
         
         // Get saved ProBuilder data for this page
         $saved_elements = get_post_meta($post_id, '_probuilder_data', true);

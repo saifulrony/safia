@@ -79,6 +79,16 @@ class ProBuilder_Frontend {
                         display: block !important;
                         visibility: visible !important;
                     }
+                    /* Responsive visibility */
+                    @media (min-width: 1025px) {
+                        .probuilder-hide-desktop { display: none !important; }
+                    }
+                    @media (min-width: 768px) and (max-width: 1024px) {
+                        .probuilder-hide-tablet { display: none !important; }
+                    }
+                    @media (max-width: 767px) {
+                        .probuilder-hide-mobile { display: none !important; }
+                    }
                 ');
             }
         }

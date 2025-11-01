@@ -388,6 +388,9 @@
     if (!$current_post_id && isset($_GET['post'])) {
         $current_post_id = intval($_GET['post']);
     }
+    if (!$current_post_id && isset($_GET['p'])) {
+        $current_post_id = intval($_GET['p']);
+    }
     ?>
     <input type="hidden" id="probuilder-post-id" value="<?php echo esc_attr($current_post_id); ?>">
     <input type="hidden" id="probuilder-data" value='<?php echo esc_attr(get_post_meta($current_post_id, '_probuilder_data', true) ? json_encode(get_post_meta($current_post_id, '_probuilder_data', true)) : '[]'); ?>'>

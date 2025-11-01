@@ -192,6 +192,16 @@ class ProBuilder_Ajax {
             error_log('ProBuilder Save - Elements count: ' . count($elements));
         }
         
+        // If this content was created as a blog post by mistake, convert it to a Page
+        if ($post->post_type !== 'page') {
+            wp_update_post([
+                'ID' => $post_id,
+                'post_type' => 'page',
+            ]);
+            // Refresh $post after type change
+            $post = get_post($post_id);
+        }
+
         // Save ProBuilder data (save as array, WordPress will serialize it)
         $updated = update_post_meta($post_id, '_probuilder_data', $elements);
         update_post_meta($post_id, '_probuilder_edit_mode', 'probuilder');
@@ -232,8 +242,8 @@ class ProBuilder_Ajax {
             ]);
         }
         
-        // Flush rewrite rules to ensure new URLs work immediately
-        flush_rewrite_rules(false);
+        // Do not flush rewrite rules on every save; it's expensive and unnecessary
+        // Slug/permalink changes are already handled in save_page_settings()
         
         // Clear any cache
         clean_post_cache($post_id);

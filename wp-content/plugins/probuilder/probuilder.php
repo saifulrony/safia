@@ -283,12 +283,68 @@ final class ProBuilder {
         add_action('admin_enqueue_scripts', [$this, 'admin_scripts']);
         add_action('wp_enqueue_scripts', [$this, 'frontend_scripts']);
         
+        // Redirect "Add New Page" to ProBuilder editor by default
+        add_action('load-post-new.php', [$this, 'maybe_redirect_add_new_to_probuilder']);
+        
         // Auto-fix permalinks on admin load (once per day)
         add_action('admin_init', [$this, 'auto_check_permalinks']);
         
         // Add edit with ProBuilder button
         add_filter('page_row_actions', [$this, 'add_edit_button'], 10, 2);
         add_filter('post_row_actions', [$this, 'add_edit_button'], 10, 2);
+    }
+
+    /**
+     * When adding a new Page in admin, create a draft and open ProBuilder by default
+     */
+    public function maybe_redirect_add_new_to_probuilder() {
+        // Only run in admin screen load for creating new items
+        if (!is_admin()) {
+            return;
+        }
+        
+        // Respect explicit requests for other editors
+        if (isset($_GET['classic-editor']) || isset($_GET['block-editor'])) {
+            return;
+        }
+        
+        // Determine target post type (default WP uses 'post')
+        $post_type = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : 'post';
+        if ($post_type !== 'page') {
+            return; // Only auto-open ProBuilder for Pages by default
+        }
+        
+        // Ensure user has permission to create pages
+        if (!current_user_can('edit_pages')) {
+            return;
+        }
+        
+        // Ensure ProBuilder is enabled for this post type
+        $enabled_post_types = get_option('probuilder_post_types', ['page', 'post']);
+        if (!in_array('page', $enabled_post_types, true)) {
+            return;
+        }
+        
+        // Create a new draft page
+        $post_id = wp_insert_post([
+            'post_type'   => 'page',
+            'post_status' => 'draft',
+            'post_title'  => __('(Draft) New Page', 'probuilder'),
+            'post_author' => get_current_user_id(),
+        ]);
+        
+        if (is_wp_error($post_id) || !$post_id) {
+            return; // Fallback to default editor if creation fails
+        }
+        
+        // Redirect to frontend ProBuilder editor for the new page
+        $probuilder_url = add_query_arg([
+            'p' => $post_id,
+            'probuilder' => 'true',
+        ], home_url('/'));
+        
+        wp_safe_redirect($probuilder_url);
+        exit;
     }
     
     /**

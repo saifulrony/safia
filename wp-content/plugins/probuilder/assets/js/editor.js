@@ -1556,6 +1556,15 @@
                 self.startColumnResize($(this), e);
             });
             
+            // Responsive visibility: re-apply on resize (compact and efficient)
+            let respTimer = null;
+            $(window).on('resize', function() {
+                clearTimeout(respTimer);
+                respTimer = setTimeout(function() {
+                    self.applyResponsiveVisibilityToAll();
+                }, 100);
+            });
+            
             // Column resize handles (resize individual columns)
             $(document).on('mousedown', '.column-resize-handle', function(e) {
                 e.stopPropagation();
@@ -3822,13 +3831,17 @@
                     $element.find('.probuilder-element-preview').css('height', element.settings._height);
                 }
                 
-                // Apply margin and padding styles
+                // Apply spacing and common styles to preview container
                 const spacingStyles = this.getSpacingStyles(element.settings);
-                if (spacingStyles) {
-                    $element.find('.probuilder-element-preview').attr('style', 
-                        ($element.find('.probuilder-element-preview').attr('style') || '') + '; ' + spacingStyles
-                    );
+                const commonStyles = this.getCommonInlineStyles(element.settings);
+                const combinedInitStyles = [spacingStyles, commonStyles].filter(Boolean).join('; ');
+                if (combinedInitStyles) {
+                    const $previewInit = $element.find('.probuilder-element-preview');
+                    $previewInit.attr('style', (($previewInit.attr('style') || '') + '; ' + combinedInitStyles).trim());
                 }
+
+                // Apply responsive visibility initially
+                this.applyResponsiveVisibility(element, $element);
                 
                 // Edit button
                 $element.find('.probuilder-element-edit').on('click', function(e) {
@@ -4772,6 +4785,113 @@
             
             return spacing.join('; ');
         },
+
+        /**
+         * Build common inline styles from settings
+         * Mirrors PHP get_inline_styles: background, border, radius, shadow, transform, opacity, z-index
+         */
+        getCommonInlineStyles: function(settings) {
+            const styles = [];
+            const s = settings || {};
+            
+            // Background
+            const bgType = s.background_type || 'none';
+            if (bgType !== 'none') {
+                if (bgType === 'color') {
+                    if (s.background_color) styles.push(`background-color: ${s.background_color}`);
+                } else if (bgType === 'gradient') {
+                    const start = s.background_gradient_start || '#667eea';
+                    const end = s.background_gradient_end || '#764ba2';
+                    const angle = (typeof s.background_gradient_angle !== 'undefined') ? s.background_gradient_angle : 135;
+                    styles.push(`background: linear-gradient(${parseInt(angle, 10)}deg, ${start}, ${end})`);
+                } else if (bgType === 'image') {
+                    const bg = s.background_image || {};
+                    if (bg.url) {
+                        styles.push(`background-image: url(${bg.url})`);
+                        styles.push(`background-size: ${s.background_size || 'cover'}`);
+                        styles.push(`background-position: ${s.background_position || 'center center'}`);
+                        styles.push(`background-repeat: ${s.background_repeat || 'no-repeat'}`);
+                    }
+                }
+            }
+            
+            // Border
+            const borderStyle = s.border_style || 'none';
+            if (borderStyle !== 'none') {
+                const bw = s.border_width || {top: '1', right: '1', bottom: '1', left: '1'};
+                const bc = s.border_color || '#000000';
+                styles.push(`border-style: ${borderStyle}`);
+                styles.push(`border-width: ${bw.top || 0}px ${bw.right || 0}px ${bw.bottom || 0}px ${bw.left || 0}px`);
+                styles.push(`border-color: ${bc}`);
+            }
+            
+            // Border radius
+            const br = s.border_radius;
+            if (br && typeof br === 'object') {
+                const any = (val) => val !== undefined && val !== '' && val !== '0';
+                if (any(br.top) || any(br.right) || any(br.bottom) || any(br.left)) {
+                    styles.push(`border-radius: ${br.top || 0}px ${br.right || 0}px ${br.bottom || 0}px ${br.left || 0}px`);
+                }
+            }
+            
+            // Box shadow
+            if (s.box_shadow_enable === 'yes') {
+                const h = parseInt(s.box_shadow_h || 0, 10);
+                const v = parseInt(s.box_shadow_v || 5, 10);
+                const blur = parseInt(s.box_shadow_blur || 15, 10);
+                const spread = parseInt(s.box_shadow_spread || 0, 10);
+                const color = s.box_shadow_color || 'rgba(0,0,0,0.2)';
+                styles.push(`box-shadow: ${h}px ${v}px ${blur}px ${spread}px ${color}`);
+            }
+            
+            // Transform
+            const t = [];
+            if (typeof s.rotate !== 'undefined' && s.rotate != 0) t.push(`rotate(${s.rotate}deg)`);
+            if (typeof s.scale !== 'undefined' && s.scale != 1) t.push(`scale(${s.scale})`);
+            if ((typeof s.skew_x !== 'undefined' && s.skew_x != 0) || (typeof s.skew_y !== 'undefined' && s.skew_y != 0)) {
+                const sx = s.skew_x || 0; const sy = s.skew_y || 0;
+                t.push(`skew(${sx}deg, ${sy}deg)`);
+            }
+            if (t.length) styles.push(`transform: ${t.join(' ')}`);
+            
+            // Opacity
+            if (typeof s.opacity !== 'undefined' && s.opacity !== '' && s.opacity != 1) styles.push(`opacity: ${s.opacity}`);
+            
+            // Z-index
+            if (typeof s.z_index !== 'undefined' && s.z_index !== '') styles.push(`z-index: ${parseInt(s.z_index, 10)}`);
+            
+            return styles.join('; ');
+        },
+
+        /**
+         * Responsive visibility handling (compact, no extra CSS files)
+         */
+        applyResponsiveVisibility: function(element, $element) {
+            try {
+                const s = element.settings || {};
+                const ww = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                
+                let shouldHide = false;
+                if (ww <= 767 && s.hide_mobile === 'yes') shouldHide = true;
+                if (ww >= 768 && ww <= 1024 && s.hide_tablet === 'yes') shouldHide = true;
+                if (ww >= 1025 && s.hide_desktop === 'yes') shouldHide = true;
+                
+                const $target = $element && $element.length ? $element : $(`.probuilder-element[data-id="${element.id}"]`);
+                if ($target.length) {
+                    $target.toggle(shouldHide ? false : true);
+                }
+            } catch (e) {
+                console.error('applyResponsiveVisibility error:', e);
+            }
+        },
+        
+        applyResponsiveVisibilityToAll: function() {
+            if (!Array.isArray(this.elements)) return;
+            const self = this;
+            this.elements.forEach(function(el) {
+                self.applyResponsiveVisibility(el);
+            });
+        },
         
         /**
          * Generate preview HTML
@@ -4800,6 +4920,60 @@
                     case 'heading':
                         const headingTag = settings.html_tag || 'h2';
                         const headingColor = settings.color || this.getGlobalColor('primary') || '#344047';
+                        const enableTextPath = (settings.enable_text_path === 'yes');
+                        const pathTypeHeading = settings.path_type || 'curve';
+                        const curveAmountHeading = settings.curve_amount || 50;
+                        
+                        // Advanced visual styles
+                        const opacityStyle = (typeof settings.opacity !== 'undefined' && settings.opacity !== '' && settings.opacity !== 1)
+                            ? `opacity: ${settings.opacity};` : '';
+                        const transforms = [];
+                        if (typeof settings.rotate !== 'undefined' && settings.rotate != 0) transforms.push(`rotate(${settings.rotate}deg)`);
+                        if (typeof settings.scale !== 'undefined' && settings.scale != 1) transforms.push(`scale(${settings.scale})`);
+                        if ((typeof settings.skew_x !== 'undefined' && settings.skew_x != 0) || (typeof settings.skew_y !== 'undefined' && settings.skew_y != 0)) {
+                            const sx = settings.skew_x || 0; const sy = settings.skew_y || 0;
+                            transforms.push(`skew(${sx}deg, ${sy}deg)`);
+                        }
+                        const transformStyle = transforms.length ? `transform: ${transforms.join(' ')};` : '';
+                        
+                        // Include spacing styles (margin/padding)
+                        const combinedSpacing = spacingStyles ? `${spacingStyles};` : '';
+                        
+                        // Render as Text Path if enabled
+                        if (enableTextPath) {
+                            const titleText = (settings.title || 'This is a heading').toString();
+                            const fontSize = settings.font_size || 32;
+                            const fontWeight = settings.font_weight || 600;
+                            const textAlign = settings.align || 'left';
+                            const svgId = 'heading-path-preview-' + element.id;
+                            const svgHeight = fontSize * 3;
+                            const textLength = Math.max(10, titleText.length) * fontSize * 0.6;
+                            let pathD = '';
+                            if (pathTypeHeading === 'curve') {
+                                const controlY = (svgHeight / 2) - curveAmountHeading;
+                                pathD = `M 0,${svgHeight} Q ${textLength / 2},${controlY} ${textLength},${svgHeight}`;
+                            } else if (pathTypeHeading === 'wave') {
+                                const waveHeight = Math.abs(curveAmountHeading);
+                                pathD = `M 0,${svgHeight / 2} Q ${textLength * 0.25},${(svgHeight / 2) - waveHeight} ${textLength * 0.5},${svgHeight / 2} T ${textLength},${svgHeight / 2}`;
+                            } else { // circle
+                                const radius = textLength / 2;
+                                pathD = `M 0,${svgHeight} A ${radius},${radius} 0 0,1 ${textLength},${svgHeight}`;
+                            }
+                            return `
+                                <div style="text-align: ${textAlign}; ${combinedSpacing} ${opacityStyle} ${transformStyle}">
+                                    <svg width="100%" height="${svgHeight}px" viewBox="0 0 ${textLength} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                                        <defs>
+                                            <path id="${svgId}" d="${pathD}" fill="transparent"/>
+                                        </defs>
+                                        <text style="fill: ${headingColor}; font-size: ${fontSize}px; font-weight: ${fontWeight};">
+                                            <textPath href="#${svgId}" startOffset="50%" text-anchor="middle">${titleText}</textPath>
+                                        </text>
+                                    </svg>
+                                </div>
+                            `;
+                        }
+                        
+                        // Regular heading style
                         const headingStyle = `
                             color: ${headingColor};
                             font-size: ${settings.font_size || 32}px;
@@ -4807,6 +4981,9 @@
                             text-align: ${settings.align || 'left'};
                             margin: 0;
                             line-height: 1.3;
+                            ${combinedSpacing}
+                            ${opacityStyle}
+                            ${transformStyle}
                         `;
                         return `<${headingTag} style="${headingStyle}">${settings.title || 'This is a heading'}</${headingTag}>`;
                     
@@ -9854,9 +10031,10 @@
             console.log('Controls to render:', Object.keys(allControls).length);
             
             const self = this;
-            let controlsRendered = 0;
+			let controlsRendered = 0;
+			let responsiveRowRendered = false;
             
-            Object.keys(allControls).forEach(key => {
+			Object.keys(allControls).forEach(key => {
                 const control = allControls[key];
                 
                 // Filter by tab - only show controls for active tab
@@ -9870,11 +10048,81 @@
                     return; // Skip controls not in active tab
                 }
                 
-                if (control.type === 'section_start') {
+				if (control.type === 'section_start') {
                     console.log(`    ↳ Adding section header: ${control.label}`);
                     $content.append(`<div class="probuilder-control-section"><h4>${control.label}</h4></div>`);
                     return;
                 }
+
+				// Compact Responsive Row: group Desktop / Tablet / Mobile in one row
+				if (activeTab === 'style' && !responsiveRowRendered && key === 'hide_desktop') {
+					const vDesktop = (element.settings['hide_desktop'] === 'yes');
+					const vTablet = (element.settings['hide_tablet'] === 'yes');
+					const vMobile = (element.settings['hide_mobile'] === 'yes');
+					
+					const stateDesktop = vDesktop ? 'Hide' : (element.settings['hide_desktop'] === 'no' ? 'Show' : 'Undefined');
+					const stateTablet = vTablet ? 'Hide' : (element.settings['hide_tablet'] === 'no' ? 'Show' : 'Undefined');
+					const stateMobile = vMobile ? 'Hide' : (element.settings['hide_mobile'] === 'no' ? 'Show' : 'Undefined');
+					const btnStyle = (state) => {
+						if (state === 'Hide') return 'background:#fee2e2;border:1px solid #ef4444;color:#991b1b;';
+						if (state === 'Show') return 'background:#dcfce7;border:1px solid #22c55e;color:#14532d;';
+						return 'background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;';
+					};
+					const rowHtml = `
+						<div class="probuilder-control">
+							<label>Responsive</label>
+							<div class="probuilder-responsive-row" style="display: flex; gap: 10px; align-items: center; flex-wrap: nowrap;">
+								<div class="probuilder-responsive-item" data-device="desktop" style="display:flex; align-items:center; gap:6px;">
+									<i class="dashicons dashicons-desktop" style="opacity:.7"></i>
+									<button type="button" class="probuilder-toggle-btn" data-device="desktop" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateDesktop)}">${stateDesktop}</button>
+									<button type="button" class="probuilder-responsive-undef" data-device="desktop" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
+								</div>
+								<div class="probuilder-responsive-item" data-device="tablet" style="display:flex; align-items:center; gap:6px;">
+									<i class="dashicons dashicons-tablet" style="opacity:.7"></i>
+									<button type="button" class="probuilder-toggle-btn" data-device="tablet" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateTablet)}">${stateTablet}</button>
+									<button type="button" class="probuilder-responsive-undef" data-device="tablet" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
+								</div>
+								<div class="probuilder-responsive-item" data-device="mobile" style="display:flex; align-items:center; gap:6px;">
+									<i class="dashicons dashicons-smartphone" style="opacity:.7"></i>
+									<button type="button" class="probuilder-toggle-btn" data-device="mobile" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateMobile)}">${stateMobile}</button>
+									<button type="button" class="probuilder-responsive-undef" data-device="mobile" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
+								</div>
+							</div>
+						</div>`;
+					
+					const $row = $(rowHtml);
+					const keyMap = { desktop: 'hide_desktop', tablet: 'hide_tablet', mobile: 'hide_mobile' };
+					$row.find('.probuilder-toggle-btn').on('click', (e) => {
+						const device = $(e.currentTarget).data('device');
+						const settingKey = keyMap[device];
+						const current = element.settings[settingKey];
+						const next = current === 'yes' ? 'no' : 'yes'; // toggle Hide <-> Show
+						element.settings[settingKey] = next;
+						const state = next === 'yes' ? 'Hide' : 'Show';
+						$(e.currentTarget).text(state).attr('style', `padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(state)}`);
+						console.log('✅ Responsive toggled:', settingKey, element.settings[settingKey]);
+						ProBuilder.applyResponsiveVisibility(element);
+					});
+					$row.find('.probuilder-responsive-undef').on('click', (e) => {
+						const device = $(e.currentTarget).data('device');
+						const settingKey = keyMap[device];
+						delete element.settings[settingKey];
+						// Update the main button text and style
+						const $btn = $row.find(`.probuilder-toggle-btn[data-device="${device}"]`);
+						$btn.text('Undefined').attr('style', `padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle('Undefined')}`);
+						console.log('✅ Responsive set undefined:', settingKey);
+						ProBuilder.applyResponsiveVisibility(element);
+					});
+					
+					$content.append($row);
+					controlsRendered++;
+					responsiveRowRendered = true;
+					return; // skip default rendering for hide_desktop (we handled the row)
+				}
+				// Skip individual responsive controls if compact row already rendered
+				if (responsiveRowRendered && (key === 'hide_tablet' || key === 'hide_mobile')) {
+					return;
+				}
                 
                 const value = element.settings[key] !== undefined ? element.settings[key] : control.default;
                 
@@ -11318,6 +11566,18 @@
             
             const newPreview = this.generatePreview(element);
             $element.find('.probuilder-element-preview').html(newPreview);
+            
+            // Re-apply spacing and all common styles on preview container
+            const spacingAfter = this.getSpacingStyles(element.settings || {});
+            const commonAfter = this.getCommonInlineStyles(element.settings || {});
+            const combinedStyleStr = [spacingAfter, commonAfter].filter(Boolean).join('; ');
+            if (combinedStyleStr) {
+                const $preview = $element.find('.probuilder-element-preview');
+                $preview.attr('style', (($preview.attr('style') || '') + '; ' + combinedStyleStr).trim());
+            }
+            
+            // Apply responsive visibility after preview update
+            this.applyResponsiveVisibility(element, $element);
             
             // Apply motion/animation styles if set
             this.applyMotionStyles(element, $element);
