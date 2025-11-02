@@ -40,7 +40,7 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
             'label' => 'Number of Posts',
             'type' => 'slider',
             'range' => ['px' => ['min' => 1, 'max' => 12]],
-            'default' => ['size' => 6]
+            'default' => 6
         ]);
         
         $this->add_control('post_layout', [
@@ -89,7 +89,7 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
             'label' => 'Excerpt Length',
             'type' => 'slider',
             'range' => ['px' => ['min' => 10, 'max' => 200]],
-            'default' => ['size' => 100],
+            'default' => 100,
             'condition' => ['show_excerpt' => 'yes']
         ]);
         
@@ -137,7 +137,7 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
             'label' => 'Card Border Radius',
             'type' => 'slider',
             'range' => ['px' => ['min' => 0, 'max' => 20]],
-            'default' => ['size' => 8]
+            'default' => 8
         ]);
         
         $this->add_control('card_box_shadow', [
@@ -191,36 +191,46 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
-        $settings = $this->get_settings_for_display();
+        $this->render_custom_css();
         
-        $args = [
-            'post_type' => 'post',
-            'posts_per_page' => $settings['posts_per_page']['size'],
-            'post_status' => 'publish'
-        ];
-        
-        if (!empty($settings['category_filter'])) {
-            $args['cat'] = $settings['category_filter'];
-        }
-        
-        $posts = get_posts($args);
-        
-        // Get wrapper classes and attributes from base class
         $wrapper_classes = $this->get_wrapper_classes();
         $wrapper_attributes = $this->get_wrapper_attributes();
         $inline_styles = $this->get_inline_styles();
+        
+        $per_page = $this->get_settings('posts_per_page', 6);
+        $category = $this->get_settings('category_filter', 0);
+        
+        $args = [
+            'post_type' => 'post',
+            'posts_per_page' => intval($per_page),
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ];
+        
+        if ($category > 0) {
+            $args['cat'] = $category;
+        }
+        
+        $posts = get_posts($args);
         
         if (empty($posts)) {
             $style = 'text-align: center; padding: 40px; color: #64748b;';
             if ($inline_styles) $style .= ' ' . $inline_styles;
             echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-blog-posts" ' . $wrapper_attributes . ' style="' . esc_attr($style) . '">';
-            echo '<p>No posts found. Create some blog posts to display them here.</p>';
-            echo '</div>';
+            echo '<div style="background: #f8f9fa; padding: 40px; border-radius: 8px; border: 2px dashed #cbd5e1;">';
+            echo '<i class="dashicons dashicons-admin-post" style="font-size: 48px; opacity: 0.3; color: #94a3b8;"></i>';
+            echo '<p style="margin: 10px 0 0; font-weight: 600;">No posts found</p>';
+            echo '<p style="margin: 5px 0 0; font-size: 14px;">Create some blog posts to display them here.</p>';
+            echo '</div></div>';
             return;
         }
         
-        $container_class = $wrapper_classes . ' probuilder-blog-posts probuilder-blog-' . esc_attr($settings['post_layout']);
-        $grid_columns = $settings['post_layout'] === 'grid' ? $settings['columns'] : '1';
+        $layout = $this->get_settings('post_layout', 'grid');
+        $columns = $this->get_settings('columns', 3);
+        $grid_columns = $layout === 'grid' ? $columns : '1';
+        
+        $container_class = $wrapper_classes . ' probuilder-blog-posts probuilder-blog-' . esc_attr($layout);
         
         $grid_style = 'display: grid; grid-template-columns: repeat(' . esc_attr($grid_columns) . ', 1fr); gap: 30px;';
         if ($inline_styles) $grid_style .= ' ' . $inline_styles;
@@ -228,29 +238,49 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
         echo '<div class="' . esc_attr($container_class) . '" ' . $wrapper_attributes . ' style="' . esc_attr($grid_style) . '">';
         
         foreach ($posts as $post) {
-            $this->render_post_card($post, $settings);
+            $this->render_post_card($post);
         }
         
         echo '</div>';
     }
     
-    private function render_post_card($post, $settings) {
+    private function render_post_card($post) {
+        $card_bg = $this->get_settings('card_bg_color', '#ffffff');
+        $border_radius = $this->get_settings('card_border_radius', 8);
+        $box_shadow = $this->get_settings('card_box_shadow', 'yes');
+        $title_color = $this->get_settings('title_color', '#1e293b');
+        $excerpt_color = $this->get_settings('excerpt_color', '#64748b');
+        $meta_color = $this->get_settings('meta_color', '#94a3b8');
+        $read_more_bg = $this->get_settings('read_more_bg_color', '#92003b');
+        $read_more_text = $this->get_settings('read_more_text_color', '#ffffff');
+        $read_more_label = $this->get_settings('read_more_text', 'Read More');
+        $excerpt_length = $this->get_settings('excerpt_length', 100);
+        
+        $show_image = $this->get_settings('show_image', 'yes') !== 'no';
+        $show_title = $this->get_settings('show_title', 'yes') !== 'no';
+        $show_excerpt = $this->get_settings('show_excerpt', 'yes') !== 'no';
+        $show_meta = $this->get_settings('show_meta', 'yes') !== 'no';
+        $show_read_more = $this->get_settings('show_read_more', 'yes') !== 'no';
+        
         $card_style = '';
-        $card_style .= 'background-color: ' . esc_attr($settings['card_bg_color']) . ';';
-        $card_style .= 'border-radius: ' . esc_attr($settings['card_border_radius']['size']) . 'px;';
+        $card_style .= 'background-color: ' . esc_attr($card_bg) . ';';
+        $card_style .= 'border-radius: ' . esc_attr($border_radius) . 'px;';
         $card_style .= 'overflow: hidden;';
         
-        if ($settings['card_box_shadow'] === 'yes') {
+        if ($box_shadow === 'yes') {
             $card_style .= 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
         }
         
         echo '<article class="probuilder-blog-post" style="' . $card_style . '">';
         
         // Featured Image
-        if ($settings['show_image'] === 'yes') {
+        if ($show_image) {
             $thumbnail_url = get_the_post_thumbnail_url($post->ID, 'large');
             if (!$thumbnail_url) {
-                $thumbnail_url = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800';
+                // Simple colored placeholder
+                $colors = ['#92003b', '#667eea', '#4facfe', '#764ba2', '#f093fb', '#00f2fe'];
+                $color = $colors[abs(crc32($post->post_title)) % count($colors)];
+                $thumbnail_url = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'400\'%3E%3Crect fill=\'' . $color . '\' width=\'800\' height=\'400\'/%3E%3C/svg%3E';
             }
             
             echo '<div class="probuilder-post-image" style="position: relative; height: 200px; background-image: url(' . esc_url($thumbnail_url) . '); background-size: cover; background-position: center;">';
@@ -261,35 +291,35 @@ class ProBuilder_Widget_Blog_Posts extends ProBuilder_Base_Widget {
         echo '<div class="probuilder-post-content" style="padding: 25px;">';
         
         // Meta Information
-        if ($settings['show_meta'] === 'yes') {
-            echo '<div class="probuilder-post-meta" style="margin-bottom: 15px; font-size: 14px; color: ' . esc_attr($settings['meta_color']) . ';">';
+        if ($show_meta) {
+            echo '<div class="probuilder-post-meta" style="margin-bottom: 15px; font-size: 14px; color: ' . esc_attr($meta_color) . ';">';
             echo '<span>' . esc_html(get_the_date('F j, Y', $post->ID)) . '</span>';
             echo ' • <span>' . esc_html(get_the_author_meta('display_name', $post->post_author)) . '</span>';
             echo '</div>';
         }
         
         // Title
-        if ($settings['show_title'] === 'yes') {
-            echo '<h3 class="probuilder-post-title" style="margin: 0 0 15px 0; font-size: 20px; line-height: 1.4;">';
-            echo '<a href="' . esc_url(get_permalink($post->ID)) . '" style="color: ' . esc_attr($settings['title_color']) . '; text-decoration: none;">' . esc_html($post->post_title) . '</a>';
+        if ($show_title) {
+            echo '<h3 class="probuilder-post-title" style="margin: 0 0 15px 0; font-size: 20px; font-weight: 600; line-height: 1.4;">';
+            echo '<a href="' . esc_url(get_permalink($post->ID)) . '" style="color: ' . esc_attr($title_color) . '; text-decoration: none;">' . esc_html($post->post_title) . '</a>';
             echo '</h3>';
         }
         
         // Excerpt
-        if ($settings['show_excerpt'] === 'yes') {
+        if ($show_excerpt) {
             $excerpt = $post->post_excerpt;
             if (empty($excerpt)) {
-                $excerpt = wp_trim_words($post->post_content, $settings['excerpt_length']['size']);
+                $excerpt = wp_trim_words(strip_tags($post->post_content), intval($excerpt_length));
             }
             
-            echo '<div class="probuilder-post-excerpt" style="color: ' . esc_attr($settings['excerpt_color']) . '; line-height: 1.6; margin-bottom: 20px;">';
+            echo '<div class="probuilder-post-excerpt" style="color: ' . esc_attr($excerpt_color) . '; line-height: 1.6; margin-bottom: 20px;">';
             echo esc_html($excerpt);
             echo '</div>';
         }
         
         // Read More Button
-        if ($settings['show_read_more'] === 'yes') {
-            echo '<a href="' . esc_url(get_permalink($post->ID)) . '" class="probuilder-read-more" style="display: inline-block; background-color: ' . esc_attr($settings['read_more_bg_color']) . '; color: ' . esc_attr($settings['read_more_text_color']) . '; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px; transition: all 0.3s ease;">' . esc_html($settings['read_more_text']) . '</a>';
+        if ($show_read_more) {
+            echo '<a href="' . esc_url(get_permalink($post->ID)) . '" class="probuilder-read-more" style="display: inline-block; background-color: ' . esc_attr($read_more_bg) . '; color: ' . esc_attr($read_more_text) . '; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif;">' . esc_html($read_more_label) . '</a>';
         }
         
         echo '</div>';

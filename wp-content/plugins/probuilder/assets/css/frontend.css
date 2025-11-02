@@ -50,3 +50,49 @@
     transition: opacity 0.3s ease;
 }
 
+/* Fix for Full Screen Slider - Ensure page is scrollable and content below is visible */
+body {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.probuilder-content {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow: visible !important;
+}
+
+.probuilder-element {
+    position: relative;
+    display: block !important;
+    visibility: visible !important;
+    width: 100%;
+    min-height: 1px; /* Ensure element has height even if empty */
+}
+
+/* Full Screen Slider fixes */
+.probuilder-slider.probuilder-slider-full-screen {
+    position: relative !important;
+    height: 100vh !important;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* Ensure content below full-screen slider is visible */
+.probuilder-element:not(.probuilder-widget-slider) {
+    position: relative !important;
+    z-index: 1;
+    margin-top: 0;
+}
+
+/* Make sure elements after slider are visible */
+.probuilder-widget-slider ~ .probuilder-element {
+    position: relative !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: 0;
+    padding-top: 20px;
+}
+

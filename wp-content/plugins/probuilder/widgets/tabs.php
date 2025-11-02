@@ -178,6 +178,14 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $tabs = $this->get_settings('tabs', []);
         $orientation = $this->get_settings('tab_orientation', 'horizontal');
         $alignment = $this->get_settings('tab_alignment', 'left');
@@ -199,6 +207,9 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
         
         $id = 'probuilder-tabs-' . uniqid();
         $wrapper_class = 'probuilder-tabs probuilder-tabs-' . esc_attr($orientation);
+        
+        // Enqueue jQuery
+        wp_enqueue_script('jquery');
         
         ?>
         <style>
@@ -241,6 +252,8 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
                     border-bottom: none;
                     margin-bottom: -<?php echo esc_attr($border_width); ?>px;
                     text-align: left;
+                    display: block;
+                    width: 100%;
                 <?php else: ?>
                     display: inline-block;
                     border-bottom: none;
@@ -253,6 +266,18 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
                     <?php endif; ?>
                 <?php endif; ?>
             }
+            
+            <?php if ($orientation === 'vertical'): ?>
+            #<?php echo $id; ?> .probuilder-tab-title:first-child {
+                border-top-left-radius: <?php echo esc_attr($border_radius); ?>px;
+            }
+            
+            #<?php echo $id; ?> .probuilder-tab-title:last-child {
+                border-bottom-left-radius: <?php echo esc_attr($border_radius); ?>px;
+                border-bottom: <?php echo esc_attr($border_width); ?>px solid <?php echo esc_attr($border_color); ?>;
+                margin-bottom: 0;
+            }
+            <?php endif; ?>
             
             #<?php echo $id; ?> .probuilder-tab-title.active {
                 background: <?php echo esc_attr($tab_active_bg); ?>;
@@ -312,9 +337,9 @@ class ProBuilder_Widget_Tabs extends ProBuilder_Base_Widget {
             }
         </style>
         
-        <div class="<?php echo esc_attr($wrapper_classes . ' ' . $wrapper_class); ?>" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($inline_styles . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
+        <div class="<?php echo esc_attr($wrapper_classes . ' ' . $wrapper_class); ?>" <?php echo $wrapper_attributes; ?> id="<?php echo esc_attr($id); ?>" style="<?php echo esc_attr($inline_styles); ?>">
             <!-- Tab Navigation -->
-            <div class="<?php echo esc_attr($wrapper_classes); ?> probuilder-tabs-nav" ' . $wrapper_attributes . ' >
+            <div class="probuilder-tabs-nav">
                 <?php foreach ($tabs as $index => $tab): ?>
                     <div class="probuilder-tab-title <?php echo $index === 0 ? 'active' : ''; ?>" 
                          data-tab="<?php echo esc_attr($index); ?>">

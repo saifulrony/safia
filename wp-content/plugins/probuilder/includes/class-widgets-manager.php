@@ -147,6 +147,16 @@ class ProBuilder_Widgets_Manager {
             'ProBuilder_Post_Date_Widget',
             'ProBuilder_Post_Author_Widget',
             'ProBuilder_Post_Comments_Widget',
+            
+            // Chart Widgets
+            'ProBuilder_Widget_Pie_Chart',
+            'ProBuilder_Widget_Donut_Chart',
+            'ProBuilder_Widget_Line_Chart',
+            'ProBuilder_Widget_Bar_Chart',
+            'ProBuilder_Widget_Area_Chart',
+            
+            // WordPress Widgets
+            'ProBuilder_Widget_Archives',
         ];
         
         foreach ($widget_classes as $class) {

@@ -204,15 +204,15 @@ class ProBuilder_Widget_Timeline extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
-                // Render custom CSS if any
+        // Render custom CSS if any
         $this->render_custom_css();
         
         // Get wrapper classes and attributes from base class
         $wrapper_classes = $this->get_wrapper_classes();
         $wrapper_attributes = $this->get_wrapper_attributes();
         $inline_styles = $this->get_inline_styles();
-        $settings = $this->get_settings_for_display();
-        $timeline_id = 'probuilder-timeline-' . $this->get_id();
+        $settings = $this->get_settings(); // Fixed: Changed from get_settings_for_display()
+        $timeline_id = 'probuilder-timeline-' . uniqid();
         
         echo '<div id="' . esc_attr($timeline_id) . '" class="probuilder-timeline probuilder-timeline-' . esc_attr($settings['layout']) . '">';
         

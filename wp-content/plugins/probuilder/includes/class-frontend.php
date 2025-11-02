@@ -180,113 +180,32 @@ class ProBuilder_Frontend {
         
         ob_start();
         
-        // Debug comment for logged-in users
-        if (current_user_can('edit_posts')) {
-            echo '<!-- ProBuilder Content Start - ' . count($elements) . ' element(s) -->' . "\n";
-            
-            // Add visible debug panel for admins
-            echo '<div style="background: #344047; color: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; font-family: monospace; font-size: 12px;">';
-            echo '<strong style="font-size: 14px;">🔍 ProBuilder Debug (Admin Only)</strong><br>';
-            echo 'Post ID: ' . get_the_ID() . '<br>';
-            echo 'Post Title: ' . get_the_title() . '<br>';
-            echo 'Post Slug: ' . $post->post_name . '<br>';
-            echo 'Elements: ' . count($elements) . '<br>';
-            echo '<details style="margin-top: 10px;"><summary style="cursor: pointer;">Show Element Details</summary>';
-            echo '<div style="background: rgba(255,255,255,0.1); padding: 10px; margin-top: 10px; border-radius: 4px;">';
-            foreach ($elements as $index => $element) {
-                echo 'Element ' . ($index + 1) . ': ' . (isset($element['widgetType']) ? $element['widgetType'] : 'unknown');
-                if (isset($element['widgetType']) && $element['widgetType'] === 'heading' && isset($element['settings']['title'])) {
-                    echo ' - <span style="color: #4ade80;">"' . esc_html($element['settings']['title']) . '"</span>';
-                }
-                echo '<br>';
-            }
-            echo '</div></details>';
-            echo '</div>';
-        }
-        
         echo '<div class="probuilder-content" style="width: 100%; display: block; visibility: visible; opacity: 1;">';
         
         foreach ($elements as $index => $element) {
-            if (current_user_can('edit_posts')) {
-                echo '<!-- Element ' . ($index + 1) . ': ' . (isset($element['widgetType']) ? $element['widgetType'] : 'unknown') . ' -->' . "\n";
-            }
             $this->render_element($element);
         }
         
         echo '</div>';
         
         if (current_user_can('edit_posts')) {
-            echo "\n" . '<!-- ProBuilder Content End -->';
-            
-            // Add floating debug panel for easy access
+            // Add simple floating edit button
             global $post;
-            echo '
-            <div id="probuilder-debug-panel" style="
+            echo '<a href="' . add_query_arg(['p' => $post->ID, 'probuilder' => 'true'], home_url('/')) . '" style="
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                background: #344047;
+                background: #92003b;
                 color: white;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                padding: 12px 20px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 z-index: 99999;
-                max-width: 350px;
                 font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                font-size: 13px;
-                line-height: 1.6;
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <strong style="font-size: 15px;">🔍 ProBuilder Debug</strong>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: rgba(255,255,255,0.2);
-                        border: none;
-                        color: white;
-                        width: 24px;
-                        height: 24px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 16px;
-                    ">×</button>
-                </div>
-                <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                    <strong>📄 Page Info:</strong><br>
-                    ID: ' . $post->ID . '<br>
-                    Title: ' . esc_html($post->post_title) . '<br>
-                    Slug: ' . esc_html($post->post_name) . '
-                </div>
-                <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                    <strong>🎨 ProBuilder:</strong><br>
-                    Elements: ' . count($elements) . '<br>
-                    Status: <span style="color: #4ade80;">Active ✓</span>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <a href="' . add_query_arg(['p' => $post->ID, 'probuilder' => 'true'], home_url('/')) . '" style="
-                        flex: 1;
-                        background: #22c55e;
-                        color: white;
-                        padding: 10px;
-                        text-align: center;
-                        border-radius: 6px;
-                        text-decoration: none;
-                        font-weight: 600;
-                        font-size: 12px;
-                    ">✏️ Edit</a>
-                    <a href="' . admin_url('plugins.php?page=probuilder-clear-cache&post_id=' . $post->ID) . '" style="
-                        background: #dc2626;
-                        color: white;
-                        padding: 10px 12px;
-                        text-align: center;
-                        border-radius: 6px;
-                        text-decoration: none;
-                        font-weight: 600;
-                        font-size: 12px;
-                    ">🗑️</a>
-                </div>
-                <div style="margin-top: 10px; font-size: 11px; color: rgba(255,255,255,0.7); text-align: center;">
-                    Admin only • Not visible to visitors
-                </div>
-            </div>';
+            ">✏️ Edit with ProBuilder</a>';
         }
         
         return ob_get_clean();

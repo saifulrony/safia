@@ -31,6 +31,15 @@ class ProBuilder_Ajax {
         
         // Upload image
         add_action('wp_ajax_probuilder_upload_image', [$this, 'upload_image']);
+        
+        // Get WooCommerce products for preview
+        add_action('wp_ajax_probuilder_get_woo_products', [$this, 'get_woo_products']);
+        
+        // Get WooCommerce categories for preview
+        add_action('wp_ajax_probuilder_get_woo_categories', [$this, 'get_woo_categories']);
+        
+        // Get blog posts for preview
+        add_action('wp_ajax_probuilder_get_blog_posts', [$this, 'get_blog_posts']);
     }
     
     /**
@@ -315,6 +324,267 @@ class ProBuilder_Ajax {
             'id' => $attachment_id,
             'url' => $image_url
         ]);
+    }
+    
+    /**
+     * Get WooCommerce products for editor preview (with caching)
+     */
+    public function get_woo_products() {
+        check_ajax_referer('probuilder-editor', 'nonce');
+        
+        if (!class_exists('WooCommerce')) {
+            wp_send_json_error(['message' => __('WooCommerce not active', 'probuilder')]);
+        }
+        
+        $query_type = isset($_POST['query_type']) ? sanitize_text_field($_POST['query_type']) : 'recent';
+        $per_page = min(isset($_POST['per_page']) ? intval($_POST['per_page']) : 8, 20); // Max 20 for performance
+        $orderby = isset($_POST['orderby']) ? sanitize_text_field($_POST['orderby']) : 'date';
+        $order = isset($_POST['order']) ? sanitize_text_field($_POST['order']) : 'DESC';
+        
+        // Check cache first (5 minute cache)
+        $cache_key = 'probuilder_woo_' . md5($query_type . $per_page . $orderby . $order);
+        $cached = get_transient($cache_key);
+        
+        if ($cached !== false) {
+            wp_send_json_success($cached);
+            return;
+        }
+        
+        $args = [
+            'post_type' => 'product',
+            'posts_per_page' => $per_page,
+            'post_status' => 'publish',
+            'fields' => 'ids', // Only get IDs first for speed
+        ];
+        
+        // Query modifications based on type
+        switch ($query_type) {
+            case 'featured':
+                $args['tax_query'] = [
+                    [
+                        'taxonomy' => 'product_visibility',
+                        'field' => 'name',
+                        'terms' => 'featured',
+                    ]
+                ];
+                $args['orderby'] = $orderby;
+                $args['order'] = $order;
+                break;
+                
+            case 'sale':
+                $sale_ids = wc_get_product_ids_on_sale();
+                if (!empty($sale_ids)) {
+                    $args['post__in'] = array_slice($sale_ids, 0, $per_page);
+                } else {
+                    // No sale products, return empty
+                    $result = ['products' => [], 'count' => 0];
+                    set_transient($cache_key, $result, 300);
+                    wp_send_json_success($result);
+                    return;
+                }
+                unset($args['fields']); // Need full posts for sale check
+                $args['orderby'] = $orderby;
+                $args['order'] = $order;
+                break;
+                
+            case 'best_selling':
+                $args['meta_key'] = 'total_sales';
+                $args['orderby'] = 'meta_value_num';
+                $args['order'] = $order; // Use user's order preference
+                unset($args['fields']);
+                break;
+                
+            case 'top_rated':
+                $args['meta_key'] = '_wc_average_rating';
+                $args['orderby'] = 'meta_value_num';
+                $args['order'] = $order; // Use user's order preference
+                unset($args['fields']);
+                break;
+                
+            default: // recent
+                $args['orderby'] = $orderby;
+                $args['order'] = $order;
+                break;
+        }
+        
+        $products_query = new WP_Query($args);
+        $products = [];
+        
+        if ($products_query->have_posts()) {
+            $ids = isset($args['fields']) ? $products_query->posts : wp_list_pluck($products_query->posts, 'ID');
+            
+            foreach ($ids as $id) {
+                $product = wc_get_product($id);
+                
+                if ($product) {
+                    $image_id = $product->get_image_id();
+                    $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : wc_placeholder_img_src('medium');
+                    
+                    // Clean price display - just show formatted price without extra text
+                    $price_html = $product->get_price_html();
+                    // Remove verbose text like "Original price was" and "Current price is"
+                    $price_html = preg_replace('/Original price was:.*?\./i', '', $price_html);
+                    $price_html = preg_replace('/Current price is:.*?\./i', '', $price_html);
+                    $price_html = trim($price_html);
+                    // If on sale, show sale price and regular price cleanly
+                    if ($product->is_on_sale()) {
+                        $regular_price = $product->get_regular_price();
+                        $sale_price = $product->get_sale_price();
+                        $price_html = '<span style="text-decoration: line-through; opacity: 0.6; margin-right: 8px;">' . wc_price($regular_price) . '</span><span>' . wc_price($sale_price) . '</span>';
+                    } else {
+                        $price_html = wc_price($product->get_price());
+                    }
+                    
+                    $products[] = [
+                        'id' => $product->get_id(),
+                        'title' => $product->get_name(),
+                        'price' => $price_html,
+                        'image' => $image_url,
+                        'permalink' => $product->get_permalink(),
+                        'sale' => $product->is_on_sale(),
+                        'rating' => round($product->get_average_rating()),
+                    ];
+                }
+            }
+        }
+        
+        wp_reset_postdata();
+        
+        $result = [
+            'products' => $products,
+            'count' => count($products)
+        ];
+        
+        // Cache for 5 minutes
+        set_transient($cache_key, $result, 300);
+        
+        wp_send_json_success($result);
+    }
+    
+    /**
+     * Get WooCommerce categories for editor preview (with caching)
+     */
+    public function get_woo_categories() {
+        check_ajax_referer('probuilder-editor', 'nonce');
+        
+        if (!class_exists('WooCommerce')) {
+            wp_send_json_error(['message' => __('WooCommerce not active', 'probuilder')]);
+        }
+        
+        $hide_empty = isset($_POST['hide_empty']) && $_POST['hide_empty'] === 'true';
+        
+        // Check cache first (5 minute cache)
+        $cache_key = 'probuilder_woo_cat_' . ($hide_empty ? 'nonempty' : 'all');
+        $cached = get_transient($cache_key);
+        
+        if ($cached !== false) {
+            wp_send_json_success($cached);
+            return;
+        }
+        
+        $args = [
+            'taxonomy' => 'product_cat',
+            'hide_empty' => $hide_empty,
+            'orderby' => 'name',
+            'order' => 'ASC',
+        ];
+        
+        $terms = get_terms($args);
+        $categories = [];
+        
+        if (!is_wp_error($terms) && !empty($terms)) {
+            foreach ($terms as $term) {
+                $thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
+                $image = $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : '';
+                
+                $categories[] = [
+                    'id' => $term->term_id,
+                    'name' => $term->name,
+                    'count' => $term->count,
+                    'image' => $image,
+                    'link' => get_term_link($term),
+                ];
+            }
+        }
+        
+        $result = [
+            'categories' => $categories,
+            'count' => count($categories)
+        ];
+        
+        // Cache for 5 minutes
+        set_transient($cache_key, $result, 300);
+        
+        wp_send_json_success($result);
+    }
+    
+    /**
+     * Get blog posts for editor preview (with caching)
+     */
+    public function get_blog_posts() {
+        check_ajax_referer('probuilder-editor', 'nonce');
+        
+        $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 6;
+        $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
+        
+        // Check cache first (5 minute cache)
+        $cache_key = 'probuilder_blog_' . $per_page . '_' . $category;
+        $cached = get_transient($cache_key);
+        
+        if ($cached !== false) {
+            wp_send_json_success($cached);
+            return;
+        }
+        
+        $args = [
+            'post_type' => 'post',
+            'posts_per_page' => $per_page,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ];
+        
+        if ($category > 0) {
+            $args['cat'] = $category;
+        }
+        
+        $posts_query = get_posts($args);
+        $posts = [];
+        
+        foreach ($posts_query as $post) {
+            $thumbnail = get_the_post_thumbnail_url($post->ID, 'medium');
+            if (!$thumbnail) {
+                // Create simple colored placeholder
+                $colors = ['#92003b', '#667eea', '#4facfe', '#764ba2', '#f093fb', '#00f2fe'];
+                $color = $colors[abs(crc32($post->post_title)) % count($colors)];
+                $thumbnail = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'400\'%3E%3Crect fill=\'' . $color . '\' width=\'800\' height=\'400\'/%3E%3C/svg%3E';
+            }
+            
+            $excerpt = $post->post_excerpt;
+            if (empty($excerpt)) {
+                $excerpt = wp_trim_words(strip_tags($post->post_content), 30);
+            }
+            
+            $posts[] = [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'excerpt' => $excerpt,
+                'image' => $thumbnail,
+                'permalink' => get_permalink($post->ID),
+                'date' => get_the_date('F j, Y', $post->ID),
+                'author' => get_the_author_meta('display_name', $post->post_author),
+            ];
+        }
+        
+        $result = [
+            'posts' => $posts,
+            'count' => count($posts)
+        ];
+        
+        // Cache for 5 minutes
+        set_transient($cache_key, $result, 300);
+        
+        wp_send_json_success($result);
     }
 }
 

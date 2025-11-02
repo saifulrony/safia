@@ -4847,15 +4847,21 @@
             // Transform
             const t = [];
             if (typeof s.rotate !== 'undefined' && s.rotate != 0) t.push(`rotate(${s.rotate}deg)`);
-            if (typeof s.scale !== 'undefined' && s.scale != 1) t.push(`scale(${s.scale})`);
+            if (typeof s.scale !== 'undefined' && s.scale != 100) {
+                const scaleDecimal = parseFloat(s.scale) / 100;
+                t.push(`scale(${scaleDecimal})`);
+            }
             if ((typeof s.skew_x !== 'undefined' && s.skew_x != 0) || (typeof s.skew_y !== 'undefined' && s.skew_y != 0)) {
                 const sx = s.skew_x || 0; const sy = s.skew_y || 0;
                 t.push(`skew(${sx}deg, ${sy}deg)`);
             }
             if (t.length) styles.push(`transform: ${t.join(' ')}`);
             
-            // Opacity
-            if (typeof s.opacity !== 'undefined' && s.opacity !== '' && s.opacity != 1) styles.push(`opacity: ${s.opacity}`);
+            // Opacity - convert percentage (0-100) to decimal (0-1)
+            if (typeof s.opacity !== 'undefined' && s.opacity !== '' && s.opacity != 100) {
+                const opacityDecimal = parseFloat(s.opacity) / 100;
+                styles.push(`opacity: ${opacityDecimal}`);
+            }
             
             // Z-index
             if (typeof s.z_index !== 'undefined' && s.z_index !== '') styles.push(`z-index: ${parseInt(s.z_index, 10)}`);
@@ -4925,11 +4931,14 @@
                         const curveAmountHeading = settings.curve_amount || 50;
                         
                         // Advanced visual styles
-                        const opacityStyle = (typeof settings.opacity !== 'undefined' && settings.opacity !== '' && settings.opacity !== 1)
-                            ? `opacity: ${settings.opacity};` : '';
+                        const opacityStyle = (typeof settings.opacity !== 'undefined' && settings.opacity !== '' && settings.opacity !== 100)
+                            ? `opacity: ${parseFloat(settings.opacity) / 100};` : '';
                         const transforms = [];
                         if (typeof settings.rotate !== 'undefined' && settings.rotate != 0) transforms.push(`rotate(${settings.rotate}deg)`);
-                        if (typeof settings.scale !== 'undefined' && settings.scale != 1) transforms.push(`scale(${settings.scale})`);
+                        if (typeof settings.scale !== 'undefined' && settings.scale != 100) {
+                            const scaleVal = parseFloat(settings.scale) / 100;
+                            transforms.push(`scale(${scaleVal})`);
+                        }
                         if ((typeof settings.skew_x !== 'undefined' && settings.skew_x != 0) || (typeof settings.skew_y !== 'undefined' && settings.skew_y != 0)) {
                             const sx = settings.skew_x || 0; const sy = settings.skew_y || 0;
                             transforms.push(`skew(${sx}deg, ${sy}deg)`);
@@ -7573,6 +7582,7 @@
                     
                     tabsItems.forEach((tab, index) => {
                         const isActive = index === 0;
+                        const isLast = index === tabsItems.length - 1;
                         tabsPreviewHTML += `
                             <div style="
                                 padding: ${tabPadding}px ${tabPadding * 1.5}px;
@@ -7582,10 +7592,16 @@
                                 cursor: pointer;
                                 ${tabOrientation === 'horizontal' ? `
                                     display: inline-block;
+                                    border-top-left-radius: ${tabBorderRadius}px;
+                                    border-top-right-radius: ${tabBorderRadius}px;
                                     ${tabAlignment === 'justified' ? 'flex: 1; text-align: center;' : ''}
                                 ` : ''}
                                 ${tabOrientation === 'vertical' ? `
-                                    border-bottom: ${tabBorderWidth}px solid ${tabBorderColor};
+                                    display: block;
+                                    width: 100%;
+                                    ${index === 0 ? `border-top-left-radius: ${tabBorderRadius}px;` : ''}
+                                    ${isLast ? `border-bottom-left-radius: ${tabBorderRadius}px;` : ''}
+                                    ${!isLast ? `border-bottom: ${tabBorderWidth}px solid ${tabBorderColor};` : ''}
                                     text-align: left;
                                 ` : ''}
                             ">
@@ -7604,6 +7620,11 @@
                             padding: ${contentPadding}px;
                             background: ${tabActiveBg};
                             min-height: 150px;
+                            ${tabOrientation === 'vertical' ? `
+                                border-radius: 0 ${tabBorderRadius}px ${tabBorderRadius}px 0;
+                            ` : `
+                                border-radius: 0 0 ${tabBorderRadius}px ${tabBorderRadius}px;
+                            `}
                         ">
                             <div style="color: #666; line-height: 1.6;">
                                 ${tabsItems[0].tab_content}
@@ -8257,6 +8278,457 @@
                     counterHTML += `</div>`;
                     return counterHTML;
                     
+                case 'pie-chart':
+                    const pieTitle = settings.chart_title || 'Sales Distribution';
+                    const pieShowTitle = settings.show_title !== 'no';
+                    const pieHeight = settings.chart_height || 400;
+                    const pieData = settings.chart_data || "Product A, 30\nProduct B, 25\nProduct C, 20\nProduct D, 15\nProduct E, 10";
+                    const pieColorScheme = settings.colors_scheme || 'vibrant';
+                    const pieCustomColors = settings.custom_colors || '#FF6384, #36A2EB, #FFCE56, #4BC0C0, #9966FF';
+                    const pieShowLegend = settings.show_legend !== 'no';
+                    const pieLegendPos = settings.legend_position || 'bottom';
+                    
+                    // Parse data
+                    const pieLines = pieData.split('\n').filter(line => line.trim());
+                    const pieLabels = [];
+                    const pieValues = [];
+                    pieLines.forEach(line => {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            pieLabels.push(parts[0]);
+                            pieValues.push(parseFloat(parts[1]) || 0);
+                        }
+                    });
+                    
+                    // Get colors
+                    const pieColorSchemes = {
+                        'vibrant': ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                        'pastel': ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA', '#FFD4BA', '#E0BBE4'],
+                        'monochrome': ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999']
+                    };
+                    const pieColors = pieColorScheme === 'custom' 
+                        ? pieCustomColors.split(',').map(c => c.trim())
+                        : pieColorSchemes[pieColorScheme] || pieColorSchemes['vibrant'];
+                    
+                    // Calculate total and percentages
+                    const pieTotal = pieValues.reduce((sum, val) => sum + val, 0);
+                    
+                    // Generate SVG pie slices
+                    let pieCurrentAngle = -90; // Start at top
+                    let pieSVGPaths = '';
+                    pieValues.forEach((value, i) => {
+                        const percentage = (value / pieTotal) * 100;
+                        const angle = (value / pieTotal) * 360;
+                        const endAngle = pieCurrentAngle + angle;
+                        
+                        const startX = 100 + 80 * Math.cos(pieCurrentAngle * Math.PI / 180);
+                        const startY = 100 + 80 * Math.sin(pieCurrentAngle * Math.PI / 180);
+                        const endX = 100 + 80 * Math.cos(endAngle * Math.PI / 180);
+                        const endY = 100 + 80 * Math.sin(endAngle * Math.PI / 180);
+                        
+                        const largeArc = angle > 180 ? 1 : 0;
+                        const color = pieColors[i % pieColors.length];
+                        
+                        pieSVGPaths += `<path d="M 100 100 L ${startX} ${startY} A 80 80 0 ${largeArc} 1 ${endX} ${endY} Z" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+                        pieCurrentAngle = endAngle;
+                    });
+                    
+                    let pieHTML = `<div style="padding: 20px; text-align: center;">`;
+                    if (pieShowTitle && pieTitle) {
+                        pieHTML += `<h3 style="margin-bottom: 20px; font-size: 24px; font-weight: 600;">${pieTitle}</h3>`;
+                    }
+                    
+                    const legendHTML = pieShowLegend ? `
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 15px 0;">
+                            ${pieLabels.map((label, i) => `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 12px; height: 12px; background: ${pieColors[i % pieColors.length]}; border-radius: 2px;"></div>
+                                    <span style="font-size: 13px; color: #666;">${label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '';
+                    
+                    if (pieLegendPos === 'top') pieHTML += legendHTML;
+                    
+                    pieHTML += `<div style="display: flex; justify-content: center; align-items: center; height: ${pieHeight}px; background: #f9f9f9; border-radius: 8px;">`;
+                    pieHTML += `<svg width="250" height="250" viewBox="0 0 200 200">${pieSVGPaths}</svg>`;
+                    pieHTML += `</div>`;
+                    
+                    if (pieLegendPos === 'bottom') pieHTML += legendHTML;
+                    
+                    pieHTML += `</div>`;
+                    return pieHTML;
+                    
+                case 'donut-chart':
+                    const donutTitle = settings.chart_title || 'Market Share';
+                    const donutShowTitle = settings.show_title !== 'no';
+                    const donutHeight = settings.chart_height || 400;
+                    const donutCenterText = settings.center_text || '';
+                    const donutData = settings.chart_data || "Product A, 35\nProduct B, 30\nProduct C, 20\nProduct D, 15";
+                    const donutColorScheme = settings.colors_scheme || 'vibrant';
+                    const donutCustomColors = settings.custom_colors || '#FF6384, #36A2EB, #FFCE56, #4BC0C0, #9966FF';
+                    const donutShowLegend = settings.show_legend !== 'no';
+                    const donutLegendPos = settings.legend_position || 'bottom';
+                    const donutCutout = settings.cutout_percentage || 50;
+                    
+                    // Parse data
+                    const donutLines = donutData.split('\n').filter(line => line.trim());
+                    const donutLabels = [];
+                    const donutValues = [];
+                    donutLines.forEach(line => {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            donutLabels.push(parts[0]);
+                            donutValues.push(parseFloat(parts[1]) || 0);
+                        }
+                    });
+                    
+                    // Get colors
+                    const donutColorSchemes = {
+                        'vibrant': ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                        'pastel': ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA', '#FFD4BA', '#E0BBE4'],
+                        'monochrome': ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999']
+                    };
+                    const donutColors = donutColorScheme === 'custom' 
+                        ? donutCustomColors.split(',').map(c => c.trim())
+                        : donutColorSchemes[donutColorScheme] || donutColorSchemes['vibrant'];
+                    
+                    // Calculate total
+                    const donutTotal = donutValues.reduce((sum, val) => sum + val, 0);
+                    
+                    // Generate donut paths
+                    const donutStrokeWidth = 80 * (1 - donutCutout / 100);
+                    let donutCurrentAngle = -90;
+                    let donutSVGPaths = '';
+                    donutValues.forEach((value, i) => {
+                        const angle = (value / donutTotal) * 360;
+                        const endAngle = donutCurrentAngle + angle;
+                        
+                        const radius = 80 - donutStrokeWidth / 2;
+                        const startX = 100 + radius * Math.cos(donutCurrentAngle * Math.PI / 180);
+                        const startY = 100 + radius * Math.sin(donutCurrentAngle * Math.PI / 180);
+                        const endX = 100 + radius * Math.cos(endAngle * Math.PI / 180);
+                        const endY = 100 + radius * Math.sin(endAngle * Math.PI / 180);
+                        
+                        const largeArc = angle > 180 ? 1 : 0;
+                        const color = donutColors[i % donutColors.length];
+                        
+                        donutSVGPaths += `<path d="M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}" fill="none" stroke="${color}" stroke-width="${donutStrokeWidth}"/>`;
+                        donutCurrentAngle = endAngle;
+                    });
+                    
+                    let donutHTML = `<div style="padding: 20px; text-align: center;">`;
+                    if (donutShowTitle && donutTitle) {
+                        donutHTML += `<h3 style="margin-bottom: 20px; font-size: 24px; font-weight: 600;">${donutTitle}</h3>`;
+                    }
+                    
+                    const donutLegendHTML = donutShowLegend ? `
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 15px 0;">
+                            ${donutLabels.map((label, i) => `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 12px; height: 12px; background: ${donutColors[i % donutColors.length]}; border-radius: 2px;"></div>
+                                    <span style="font-size: 13px; color: #666;">${label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '';
+                    
+                    if (donutLegendPos === 'top') donutHTML += donutLegendHTML;
+                    
+                    donutHTML += `<div style="position: relative; display: flex; justify-content: center; align-items: center; height: ${donutHeight}px; background: #f9f9f9; border-radius: 8px;">`;
+                    donutHTML += `<svg width="250" height="250" viewBox="0 0 200 200">${donutSVGPaths}</svg>`;
+                    if (donutCenterText) {
+                        donutHTML += `<div style="position: absolute; font-size: 24px; font-weight: 600;">${donutCenterText}</div>`;
+                    }
+                    donutHTML += `</div>`;
+                    
+                    if (donutLegendPos === 'bottom') donutHTML += donutLegendHTML;
+                    
+                    donutHTML += `</div>`;
+                    return donutHTML;
+                    
+                case 'line-chart':
+                    const lineTitle = settings.chart_title || 'Monthly Revenue';
+                    const lineShowTitle = settings.show_title !== 'no';
+                    const lineHeight = settings.chart_height || 400;
+                    const lineColor = settings.line_color || '#36A2EB';
+                    const lineData = settings.chart_data || "Jan, 4500\nFeb, 5200\nMar, 6100\nApr, 5800\nMay, 7200\nJun, 8500";
+                    const lineWidth = settings.line_width || 3;
+                    const showPoints = settings.show_points !== 'no';
+                    const fillArea = settings.fill_area === 'yes';
+                    const fillColor = settings.fill_color || 'rgba(54, 162, 235, 0.2)';
+                    
+                    // Parse data
+                    const lineLines = lineData.split('\n').filter(line => line.trim());
+                    const lineLabels = [];
+                    const lineValues = [];
+                    lineLines.forEach(line => {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            lineLabels.push(parts[0]);
+                            lineValues.push(parseFloat(parts[1]) || 0);
+                        }
+                    });
+                    
+                    // Calculate points
+                    const lineMaxValue = Math.max(...lineValues);
+                    const lineMinValue = Math.min(...lineValues);
+                    const lineRange = lineMaxValue - lineMinValue || 1;
+                    const svgWidth = 400;
+                    const svgHeight = 200;
+                    const padding = 30;
+                    const plotWidth = svgWidth - 2 * padding;
+                    const plotHeight = svgHeight - 2 * padding;
+                    
+                    let linePoints = lineValues.map((value, i) => {
+                        const x = padding + (i / (lineValues.length - 1 || 1)) * plotWidth;
+                        const y = padding + plotHeight - ((value - lineMinValue) / lineRange) * plotHeight;
+                        return {x, y};
+                    });
+                    
+                    const linePolylinePoints = linePoints.map(p => `${p.x},${p.y}`).join(' ');
+                    
+                    let lineHTML = `<div style="padding: 20px; text-align: center;">`;
+                    if (lineShowTitle && lineTitle) {
+                        lineHTML += `<h3 style="margin-bottom: 20px; font-size: 24px; font-weight: 600;">${lineTitle}</h3>`;
+                    }
+                    
+                    lineHTML += `<div style="display: flex; justify-content: center; align-items: center; height: ${lineHeight}px; background: #f9f9f9; border-radius: 8px; padding: 20px;">`;
+                    lineHTML += `<svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight + 40}">`;
+                    
+                    // Fill area if enabled
+                    if (fillArea && linePoints.length > 0) {
+                        const areaPoints = `${padding},${padding + plotHeight} ${linePolylinePoints} ${linePoints[linePoints.length-1].x},${padding + plotHeight}`;
+                        lineHTML += `<polygon points="${areaPoints}" fill="${fillColor}" stroke="none"/>`;
+                    }
+                    
+                    // Draw line
+                    lineHTML += `<polyline points="${linePolylinePoints}" fill="none" stroke="${lineColor}" stroke-width="${lineWidth}"/>`;
+                    
+                    // Draw points if enabled
+                    if (showPoints) {
+                        linePoints.forEach(p => {
+                            lineHTML += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${lineColor}"/>`;
+                        });
+                    }
+                    
+                    // Draw labels
+                    lineLabels.forEach((label, i) => {
+                        const x = padding + (i / (lineLabels.length - 1 || 1)) * plotWidth;
+                        lineHTML += `<text x="${x}" y="${svgHeight}" text-anchor="middle" font-size="11" fill="#666">${label}</text>`;
+                    });
+                    
+                    lineHTML += `</svg>`;
+                    lineHTML += `</div></div>`;
+                    return lineHTML;
+                    
+                case 'bar-chart':
+                    const barTitle = settings.chart_title || 'Sales by Category';
+                    const barShowTitle = settings.show_title !== 'no';
+                    const barHeight = settings.chart_height || 400;
+                    const barColorMode = settings.color_mode || 'single';
+                    const barColor = settings.bar_color || '#36A2EB';
+                    const barGradientColor = settings.gradient_color || '#9966FF';
+                    const barMultiColors = settings.multi_colors || '#FF6384, #36A2EB, #FFCE56, #4BC0C0, #9966FF, #FF9F40';
+                    const barData = settings.chart_data || "Electronics, 12500\nClothing, 9800\nHome & Garden, 7600\nSports, 6400\nBooks, 5200";
+                    const barRadius = settings.border_radius || 4;
+                    const barOrientation = settings.orientation || 'vertical';
+                    const barShowValues = settings.show_values_on_bars === 'yes';
+                    const barValueFormat = settings.value_format || 'number';
+                    
+                    // Parse data
+                    const barLines = barData.split('\n').filter(line => line.trim());
+                    const barLabels = [];
+                    const barValues = [];
+                    barLines.forEach(line => {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            barLabels.push(parts[0]);
+                            barValues.push(parseFloat(parts[1]) || 0);
+                        }
+                    });
+                    
+                    if (barValues.length === 0) {
+                        return '<div style="padding: 20px; text-align: center; color: #999;">Enter chart data to see preview</div>';
+                    }
+                    
+                    const barMaxValue = Math.max(...barValues);
+                    
+                    // Get colors based on mode
+                    let barColors = [];
+                    if (barColorMode === 'multi') {
+                        const multiColorArray = barMultiColors.split(',').map(c => c.trim());
+                        barColors = barLabels.map((_, i) => multiColorArray[i % multiColorArray.length]);
+                    } else if (barColorMode === 'gradient') {
+                        // For preview, use gradient on each bar
+                        barColors = barLabels.map(() => `linear-gradient(180deg, ${barColor}, ${barGradientColor})`);
+                    } else {
+                        barColors = barLabels.map(() => barColor);
+                    }
+                    
+                    let barHTML = `<div style="padding: 20px; text-align: center;">`;
+                    if (barShowTitle && barTitle) {
+                        barHTML += `<h3 style="margin-bottom: 20px; font-size: 24px; font-weight: 600;">${barTitle}</h3>`;
+                    }
+                    
+                    if (barOrientation === 'vertical') {
+                        barHTML += `<div style="display: flex; justify-content: center; align-items: flex-end; gap: 10px; height: ${barHeight}px; background: #f9f9f9; border-radius: 8px; padding: 40px 20px 40px;">`;
+                        barValues.forEach((value, i) => {
+                            const heightPercent = (value / barMaxValue) * 80;
+                            let formattedValue = value.toLocaleString();
+                            if (barValueFormat === 'currency') formattedValue = '$' + formattedValue;
+                            if (barValueFormat === 'percentage') formattedValue = formattedValue + '%';
+                            
+                            barHTML += `<div style="flex: 1; max-width: 80px; display: flex; flex-direction: column; align-items: center; gap: 8px;">`;
+                            if (barShowValues) {
+                                barHTML += `<span style="font-size: 11px; color: #666; font-weight: 600;">${formattedValue}</span>`;
+                            }
+                            barHTML += `<div style="width: 100%; height: ${heightPercent}%; background: ${barColors[i]}; border-radius: ${barRadius}px ${barRadius}px 0 0;"></div>`;
+                            barHTML += `<span style="font-size: 11px; color: #666; text-align: center; word-break: break-word;">${barLabels[i]}</span>`;
+                            barHTML += `</div>`;
+                        });
+                        barHTML += `</div>`;
+                    } else {
+                        barHTML += `<div style="display: flex; flex-direction: column; justify-content: center; gap: 15px; height: ${barHeight}px; background: #f9f9f9; border-radius: 8px; padding: 20px;">`;
+                        barValues.forEach((value, i) => {
+                            const widthPercent = (value / barMaxValue) * 85;
+                            let formattedValue = value.toLocaleString();
+                            if (barValueFormat === 'currency') formattedValue = '$' + formattedValue;
+                            if (barValueFormat === 'percentage') formattedValue = formattedValue + '%';
+                            
+                            barHTML += `<div style="display: flex; align-items: center; gap: 10px;">`;
+                            barHTML += `<span style="font-size: 12px; color: #666; min-width: 100px; text-align: right;">${barLabels[i]}</span>`;
+                            barHTML += `<div style="display: flex; align-items: center; width: ${widthPercent}%; height: 30px; background: ${barColors[i]}; border-radius: 0 ${barRadius}px ${barRadius}px 0; position: relative;">`;
+                            if (barShowValues) {
+                                barHTML += `<span style="position: absolute; right: -50px; font-size: 11px; color: #666; font-weight: 600; white-space: nowrap;">${formattedValue}</span>`;
+                            }
+                            barHTML += `</div>`;
+                            barHTML += `</div>`;
+                        });
+                        barHTML += `</div>`;
+                    }
+                    
+                    barHTML += `</div>`;
+                    return barHTML;
+                    
+                case 'area-chart':
+                    const areaTitle = settings.chart_title || 'Website Traffic';
+                    const areaShowTitle = settings.show_title !== 'no';
+                    const areaHeight = settings.chart_height || 400;
+                    const areaLineColor = settings.line_color || '#4BC0C0';
+                    const areaData = settings.chart_data || "Week 1, 2400\nWeek 2, 3200\nWeek 3, 2800\nWeek 4, 4100\nWeek 5, 3900\nWeek 6, 5200";
+                    const areaLineWidth = settings.line_width || 3;
+                    const areaShowPoints = settings.show_points !== 'no';
+                    const areaFillOpacity = (settings.fill_opacity || 40) / 100;
+                    
+                    // Parse data
+                    const areaLines = areaData.split('\n').filter(line => line.trim());
+                    const areaLabels = [];
+                    const areaValues = [];
+                    areaLines.forEach(line => {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            areaLabels.push(parts[0]);
+                            areaValues.push(parseFloat(parts[1]) || 0);
+                        }
+                    });
+                    
+                    // Calculate points
+                    const areaMaxValue = Math.max(...areaValues);
+                    const areaMinValue = Math.min(...areaValues);
+                    const areaRange = areaMaxValue - areaMinValue || 1;
+                    const areaSvgWidth = 400;
+                    const areaSvgHeight = 200;
+                    const areaPadding = 30;
+                    const areaPlotWidth = areaSvgWidth - 2 * areaPadding;
+                    const areaPlotHeight = areaSvgHeight - 2 * areaPadding;
+                    
+                    let areaPoints = areaValues.map((value, i) => {
+                        const x = areaPadding + (i / (areaValues.length - 1 || 1)) * areaPlotWidth;
+                        const y = areaPadding + areaPlotHeight - ((value - areaMinValue) / areaRange) * areaPlotHeight;
+                        return {x, y};
+                    });
+                    
+                    const areaPolylinePoints = areaPoints.map(p => `${p.x},${p.y}`).join(' ');
+                    const areaPolygonPoints = `${areaPadding},${areaPadding + areaPlotHeight} ${areaPolylinePoints} ${areaPoints[areaPoints.length-1].x},${areaPadding + areaPlotHeight}`;
+                    
+                    const gradId = 'areaGrad' + Date.now();
+                    
+                    let areaHTML = `<div style="padding: 20px; text-align: center;">`;
+                    if (areaShowTitle && areaTitle) {
+                        areaHTML += `<h3 style="margin-bottom: 20px; font-size: 24px; font-weight: 600;">${areaTitle}</h3>`;
+                    }
+                    
+                    areaHTML += `<div style="display: flex; justify-content: center; align-items: center; height: ${areaHeight}px; background: #f9f9f9; border-radius: 8px; padding: 20px;">`;
+                    areaHTML += `<svg width="100%" height="100%" viewBox="0 0 ${areaSvgWidth} ${areaSvgHeight + 40}">`;
+                    
+                    // Gradient definition
+                    areaHTML += `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="0%" y2="100%">`;
+                    areaHTML += `<stop offset="0%" style="stop-color:${areaLineColor};stop-opacity:${areaFillOpacity}" />`;
+                    areaHTML += `<stop offset="100%" style="stop-color:${areaLineColor};stop-opacity:0.05" />`;
+                    areaHTML += `</linearGradient></defs>`;
+                    
+                    // Fill area
+                    areaHTML += `<polygon points="${areaPolygonPoints}" fill="url(#${gradId})"/>`;
+                    
+                    // Draw line
+                    areaHTML += `<polyline points="${areaPolylinePoints}" fill="none" stroke="${areaLineColor}" stroke-width="${areaLineWidth}"/>`;
+                    
+                    // Draw points if enabled
+                    if (areaShowPoints) {
+                        areaPoints.forEach(p => {
+                            areaHTML += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${areaLineColor}"/>`;
+                        });
+                    }
+                    
+                    // Draw labels
+                    areaLabels.forEach((label, i) => {
+                        const x = areaPadding + (i / (areaLabels.length - 1 || 1)) * areaPlotWidth;
+                        areaHTML += `<text x="${x}" y="${areaSvgHeight}" text-anchor="middle" font-size="11" fill="#666">${label}</text>`;
+                    });
+                    
+                    areaHTML += `</svg>`;
+                    areaHTML += `</div></div>`;
+                    return areaHTML;
+                    
+                case 'archives':
+                    const archivesTitle = settings.title || 'Archives';
+                    const archivesShowTitle = settings.show_title !== 'no';
+                    const archivesFormat = settings.format || 'html';
+                    const archivesShowCount = settings.show_post_count !== 'no';
+                    const archivesTitleSize = settings.title_size || 24;
+                    const archivesTitleColor = settings.title_color || '#333333';
+                    const archivesLinkColor = settings.link_color || '#0073aa';
+                    const archivesTextSize = settings.text_size || 15;
+                    const archivesItemSpacing = settings.item_spacing || 10;
+                    
+                    let archivesHTML = `<div style="padding: 20px;">`;
+                    if (archivesShowTitle && archivesTitle) {
+                        archivesHTML += `<h3 style="margin: 0 0 20px 0; font-size: ${archivesTitleSize}px; color: ${archivesTitleColor}; font-weight: 600;">${archivesTitle}</h3>`;
+                    }
+                    
+                    if (archivesFormat === 'option') {
+                        archivesHTML += `<select style="width: 100%; padding: 10px; font-size: ${archivesTextSize}px; border: 1px solid #ddd; border-radius: 4px;">`;
+                        archivesHTML += `<option>Select Month</option>`;
+                        archivesHTML += `<option>November 2025 ${archivesShowCount ? '(12)' : ''}</option>`;
+                        archivesHTML += `<option>October 2025 ${archivesShowCount ? '(15)' : ''}</option>`;
+                        archivesHTML += `<option>September 2025 ${archivesShowCount ? '(8)' : ''}</option>`;
+                        archivesHTML += `<option>August 2025 ${archivesShowCount ? '(21)' : ''}</option>`;
+                        archivesHTML += `</select>`;
+                    } else {
+                        archivesHTML += `<ul style="margin: 0; padding: 0; list-style-type: disc; padding-left: 20px;">`;
+                        archivesHTML += `<li style="margin-bottom: ${archivesItemSpacing}px; font-size: ${archivesTextSize}px;"><a href="#" style="color: ${archivesLinkColor}; text-decoration: none;">November 2025</a>${archivesShowCount ? '<span style="color: #999; margin-left: 5px;">(12)</span>' : ''}</li>`;
+                        archivesHTML += `<li style="margin-bottom: ${archivesItemSpacing}px; font-size: ${archivesTextSize}px;"><a href="#" style="color: ${archivesLinkColor}; text-decoration: none;">October 2025</a>${archivesShowCount ? '<span style="color: #999; margin-left: 5px;">(15)</span>' : ''}</li>`;
+                        archivesHTML += `<li style="margin-bottom: ${archivesItemSpacing}px; font-size: ${archivesTextSize}px;"><a href="#" style="color: ${archivesLinkColor}; text-decoration: none;">September 2025</a>${archivesShowCount ? '<span style="color: #999; margin-left: 5px;">(8)</span>' : ''}</li>`;
+                        archivesHTML += `<li style="margin-bottom: ${archivesItemSpacing}px; font-size: ${archivesTextSize}px;"><a href="#" style="color: ${archivesLinkColor}; text-decoration: none;">August 2025</a>${archivesShowCount ? '<span style="color: #999; margin-left: 5px;">(21)</span>' : ''}</li>`;
+                        archivesHTML += `<li style="margin-bottom: ${archivesItemSpacing}px; font-size: ${archivesTextSize}px;"><a href="#" style="color: ${archivesLinkColor}; text-decoration: none;">July 2025</a>${archivesShowCount ? '<span style="color: #999; margin-left: 5px;">(9)</span>' : ''}</li>`;
+                        archivesHTML += `</ul>`;
+                    }
+                    
+                    archivesHTML += `</div>`;
+                    return archivesHTML;
+                    
                 case 'contact-form':
                     const formTitle = settings.form_title || 'Get in Touch';
                     const formButtonText = settings.button_text || 'Send Message';
@@ -8715,119 +9187,156 @@
                     return fbFormHTML;
                     
                 case 'slider':
+                    const slSlides = settings.slides || [
+                        {
+                            image: {url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200'},
+                            title: 'Welcome to Our Website',
+                            description: 'Discover amazing products and services',
+                            button_text: 'Get Started',
+                            content_position: 'center'
+                        }
+                    ];
+                    const slSliderStyle = settings.slider_style || 'classic';
                     const slSliderHeight = settings.slider_height || {size: 500};
                     const slShowArrows = settings.show_arrows !== 'no';
                     const slShowDots = settings.show_dots !== 'no';
+                    const slShowProgressBar = settings.show_progress_bar === 'yes';
+                    const slShowFraction = settings.show_fraction === 'yes';
+                    
+                    // Overlay settings
+                    const slOverlayType = settings.overlay_type || 'color';
                     const slOverlayColor = settings.overlay_color || 'rgba(0,0,0,0.4)';
+                    const slOverlayGradStart = settings.overlay_gradient_start || 'rgba(0,0,0,0.6)';
+                    const slOverlayGradEnd = settings.overlay_gradient_end || 'rgba(0,0,0,0.2)';
+                    
+                    // Typography
                     const slTitleColor = settings.title_color || '#ffffff';
-                    const slDescriptionColor = settings.description_color || '#ffffff';
+                    const slTitleSize = settings.title_size || 48;
+                    const slTitleWeight = settings.title_weight || '700';
+                    const slDescColor = settings.description_color || '#ffffff';
+                    const slDescSize = settings.description_size || 18;
+                    const slContentMaxWidth = settings.content_max_width || 600;
+                    const slContentBgEnable = settings.content_bg_enable === 'yes';
+                    const slContentBgColor = settings.content_bg_color || 'rgba(255,255,255,0.1)';
+                    const slContentBgBlur = settings.content_bg_blur === 'yes';
+                    
+                    // Button
                     const slButtonBgColor = settings.button_bg_color || '#92003b';
                     const slButtonTextColor = settings.button_text_color || '#ffffff';
-                    const slArrowColor = settings.arrow_color || '#ffffff';
-                    const slDotColor = settings.dot_color || '#ffffff';
-                    const slActiveDotColor = settings.active_dot_color || '#92003b';
+                    const slButtonSize = settings.button_size || 'medium';
+                    const slButtonRadius = settings.button_border_radius || 5;
                     
-                    let slSliderHTML = `<div style="position: relative; height: ${slSliderHeight.size}px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">`;
+                    // Navigation
+                    const slArrowStyle = settings.arrow_style || 'circle';
+                    const slArrowSize = settings.arrow_size || 50;
+                    const slArrowColor = settings.arrow_color || '#ffffff';
+                    const slArrowBgColor = settings.arrow_bg_color || 'rgba(0,0,0,0.5)';
+                    const slDotStyle = settings.dot_style || 'circle';
+                    const slDotSize = settings.dot_size || 12;
+                    const slDotColor = settings.dot_color || 'rgba(255,255,255,0.5)';
+                    const slActiveDotColor = settings.active_dot_color || '#ffffff';
+                    
+                    // Get first slide for preview
+                    const firstSlide = slSlides[0] || {};
+                    const slideImage = firstSlide.image?.url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200';
+                    const slideTitle = firstSlide.title || 'Slide Title';
+                    const slideDesc = firstSlide.description || 'Slide description goes here...';
+                    const slideButton = firstSlide.button_text || 'Learn More';
+                    const slidePosition = firstSlide.content_position || 'center';
+                    
+                    const heightValue = slSliderHeight.size || 500;
+                    const contentAlign = slidePosition === 'left' ? 'flex-start' : (slidePosition === 'right' ? 'flex-end' : 'center');
+                    
+                    // Overlay style
+                    let overlayStyle = '';
+                    if (slOverlayType === 'gradient') {
+                        overlayStyle = `background: linear-gradient(135deg, ${slOverlayGradStart}, ${slOverlayGradEnd});`;
+                    } else if (slOverlayType === 'color') {
+                        overlayStyle = `background-color: ${slOverlayColor};`;
+                    }
+                    
+                    // Content container style
+                    let contentContainerStyle = `max-width: ${slContentMaxWidth}px; padding: 40px; text-align: ${slidePosition};`;
+                    if (slContentBgEnable) {
+                        contentContainerStyle += ` background-color: ${slContentBgColor}; border-radius: 12px;`;
+                        if (slContentBgBlur) {
+                            contentContainerStyle += ` backdrop-filter: blur(10px);`;
+                        }
+                    }
+                    
+                    // Button size
+                    const buttonPadding = slButtonSize === 'small' ? '10px 20px' : (slButtonSize === 'large' ? '18px 40px' : '15px 30px');
+                    const buttonFontSize = slButtonSize === 'small' ? '14px' : (slButtonSize === 'large' ? '18px' : '16px');
+                    
+                    // Arrow style
+                    const arrowBorderRadius = slArrowStyle === 'circle' ? '50%' : (slArrowStyle === 'rounded' ? '8px' : (slArrowStyle === 'square' ? '0' : '50%'));
+                    const arrowBackground = slArrowStyle === 'chevron' || slArrowStyle === 'minimal' ? 'transparent' : slArrowBgColor;
+                    const arrowPadding = (slArrowSize / 3) + 'px';
+                    const arrowFontSize = (slArrowSize / 2) + 'px';
+                    
+                    // Dot shape
+                    const dotBorderRadius = slDotStyle === 'circle' ? '50%' : (slDotStyle === 'square' ? '0' : '2px');
+                    const dotWidth = slDotStyle === 'line' ? (slDotSize * 3) + 'px' : (slDotStyle === 'dash' ? (slDotSize * 2) + 'px' : slDotSize + 'px');
+                    const dotHeight = slDotStyle === 'line' ? (slDotSize / 2) + 'px' : (slDotStyle === 'dash' ? (slDotSize / 2) + 'px' : slDotSize + 'px');
+                    
+                    let slSliderHTML = `<div style="position: relative; height: ${heightValue}px; background-image: url('${slideImage}'); background-size: cover; background-position: center; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: ${contentAlign};">`;
                     
                     // Overlay
-                    slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: ${slOverlayColor};"></div>`;
+                    if (slOverlayType !== 'none') {
+                        slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; ${overlayStyle}"></div>`;
+                    }
                     
                     // Content
-                    slSliderHTML += `<div style="position: relative; z-index: 2; text-align: center; color: white; padding: 40px;">
-                        <h2 style="color: ${slTitleColor}; font-size: 36px; font-weight: 700; margin: 0 0 20px 0; line-height: 1.2;">Welcome to Our Website</h2>
-                        <p style="color: ${slDescriptionColor}; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">Discover amazing products and services that will transform your business.</p>
-                        <a href="#" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 16px;">Get Started</a>
-                    </div>`;
+                    slSliderHTML += `<div style="position: relative; z-index: 2; ${contentContainerStyle}">`;
+                    if (slideTitle) {
+                        slSliderHTML += `<h2 style="color: ${slTitleColor}; font-size: ${slTitleSize}px; font-weight: ${slTitleWeight}; margin: 0 0 20px 0; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">${slideTitle}</h2>`;
+                    }
+                    if (slideDesc) {
+                        slSliderHTML += `<p style="color: ${slDescColor}; font-size: ${slDescSize}px; margin: 0 0 30px 0; line-height: 1.6;">${slideDesc}</p>`;
+                    }
+                    if (slideButton) {
+                        slSliderHTML += `<a href="#" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: ${buttonPadding}; text-decoration: none; border-radius: ${slButtonRadius}px; font-weight: 600; font-size: ${buttonFontSize}; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">${slideButton}</a>`;
+                    }
+                    slSliderHTML += `</div>`;
                     
                     // Navigation Arrows
                     if (slShowArrows) {
-                        slSliderHTML += `<button style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: ${slArrowColor}; font-size: 24px; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 3;">‹</button>`;
-                        slSliderHTML += `<button style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: ${slArrowColor}; font-size: 24px; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 3;">›</button>`;
+                        slSliderHTML += `<button style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; padding: ${arrowPadding}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3;">‹</button>`;
+                        slSliderHTML += `<button style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; padding: ${arrowPadding}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3;">›</button>`;
                     }
                     
                     // Dots Navigation
                     if (slShowDots) {
-                        slSliderHTML += `<div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3;">
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slActiveDotColor}; cursor: pointer;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slDotColor}; opacity: 0.5; cursor: pointer;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${slDotColor}; opacity: 0.5; cursor: pointer;"></div>
-                        </div>`;
+                        slSliderHTML += `<div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3;">`;
+                        slSlides.forEach((slide, index) => {
+                            const isActive = index === 0;
+                            const dotColor = isActive ? slActiveDotColor : slDotColor;
+                            slSliderHTML += `<div style="width: ${dotWidth}; height: ${dotHeight}; border-radius: ${dotBorderRadius}; background-color: ${dotColor}; cursor: pointer;"></div>`;
+                        });
+                        slSliderHTML += `</div>`;
+                    }
+                    
+                    // Progress Bar
+                    if (slShowProgressBar) {
+                        const progressBarColor = settings.progress_bar_color || '#92003b';
+                        slSliderHTML += `<div style="position: absolute; bottom: 0; left: 0; width: 30%; height: 4px; background-color: ${progressBarColor}; z-index: 4;"></div>`;
+                    }
+                    
+                    // Fraction Counter
+                    if (slShowFraction) {
+                        const fractionColor = settings.fraction_color || '#ffffff';
+                        slSliderHTML += `<div style="position: absolute; top: 20px; right: 20px; color: ${fractionColor}; font-size: 14px; font-weight: 600; z-index: 3; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 20px;">1 / ${slSlides.length}</div>`;
+                    }
+                    
+                    // Slide indicator (total slides)
+                    if (slSlides.length > 1) {
+                        slSliderHTML += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; z-index: 3;">${slSlides.length} Slides</div>`;
                     }
                     
                     slSliderHTML += `</div>`;
                     return slSliderHTML;
                     
-                case 'blog-posts':
-                    const bpPostsPerPage = settings.posts_per_page || {size: 6};
-                    const bpPostLayout = settings.post_layout || 'grid';
-                    const bpColumns = settings.columns || '3';
-                    const bpShowImage = settings.show_image !== 'no';
-                    const bpShowTitle = settings.show_title !== 'no';
-                    const bpShowExcerpt = settings.show_excerpt !== 'no';
-                    const bpShowMeta = settings.show_meta !== 'no';
-                    const bpShowReadMore = settings.show_read_more !== 'no';
-                    const bpReadMoreText = settings.read_more_text || 'Read More';
-                    const bpCardBgColor = settings.card_bg_color || '#ffffff';
-                    const bpCardBorderRadius = settings.card_border_radius || {size: 8};
-                    const bpCardBoxShadow = settings.card_box_shadow !== 'no';
-                    const bpTitleColor = settings.title_color || '#1e293b';
-                    const bpExcerptColor = settings.excerpt_color || '#64748b';
-                    const bpMetaColor = settings.meta_color || '#94a3b8';
-                    const bpReadMoreBgColor = settings.read_more_bg_color || '#92003b';
-                    const bpReadMoreTextColor = settings.read_more_text_color || '#ffffff';
-                    
-                    const bpGridColumns = bpPostLayout === 'grid' ? bpColumns : '1';
-                    const bpCardStyle = `
-                        background-color: ${bpCardBgColor};
-                        border-radius: ${bpCardBorderRadius.size}px;
-                        overflow: hidden;
-                        ${bpCardBoxShadow ? 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);' : ''}
-                    `;
-                    
-                    let bpBlogHTML = `<div style="display: grid; grid-template-columns: repeat(${bpGridColumns}, 1fr); gap: 30px;">`;
-                    
-                    // Sample blog posts
-                    const samplePosts = [
-                        {title: 'Getting Started with ProBuilder', excerpt: 'A complete guide for beginners who want to create stunning websites without coding knowledge.', category: 'Design', date: 'March 15, 2024', author: 'John Doe'},
-                        {title: 'Advanced Design Techniques', excerpt: 'Pro tips and tricks for creating professional-looking websites with advanced features.', category: 'Development', date: 'March 12, 2024', author: 'Jane Smith'},
-                        {title: 'Performance Optimization', excerpt: 'Learn how to speed up your website and improve user experience with these optimization tips.', category: 'Marketing', date: 'March 10, 2024', author: 'Mike Johnson'}
-                    ];
-                    
-                    samplePosts.forEach((post, index) => {
-                        bpBlogHTML += `<article style="${bpCardStyle}">`;
-                        
-                        if (bpShowImage) {
-                            const gradients = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'];
-                            bpBlogHTML += `<div style="height: 200px; background: ${gradients[index]}; position: relative;">
-                                <div style="position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px;">${post.category}</div>
-                            </div>`;
-                        }
-                        
-                        bpBlogHTML += `<div style="padding: 25px;">`;
-                        
-                        if (bpShowMeta) {
-                            bpBlogHTML += `<div style="margin-bottom: 15px; font-size: 14px; color: ${bpMetaColor};">${post.date} • ${post.author}</div>`;
-                        }
-                        
-                        if (bpShowTitle) {
-                            bpBlogHTML += `<h3 style="margin: 0 0 15px 0; font-size: 18px; line-height: 1.4;">
-                                <a href="#" style="color: ${bpTitleColor}; text-decoration: none;">${post.title}</a>
-                            </h3>`;
-                        }
-                        
-                        if (bpShowExcerpt) {
-                            bpBlogHTML += `<p style="color: ${bpExcerptColor}; line-height: 1.6; margin: 0 0 20px 0; font-size: 14px;">${post.excerpt}</p>`;
-                        }
-                        
-                        if (bpShowReadMore) {
-                            bpBlogHTML += `<a href="#" style="display: inline-block; background-color: ${bpReadMoreBgColor}; color: ${bpReadMoreTextColor}; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">${bpReadMoreText}</a>`;
-                        }
-                        
-                        bpBlogHTML += `</div></article>`;
-                    });
-                    
-                    bpBlogHTML += `</div>`;
-                    return bpBlogHTML;
+                // Note: blog-posts preview is handled later in this switch with AJAX loading
                     
                 case 'faq':
                     const fqFaqTitle = settings.faq_title || 'Frequently Asked Questions';
@@ -9778,6 +10287,308 @@
                         </div>`;
                     }
                 
+                case 'woo-products':
+                    const wooColumns = parseInt(settings.columns || 4);
+                    const wooGap = parseInt(settings.column_gap || 20);
+                    const wooRowGap = parseInt(settings.row_gap || 30);
+                    const wooBorderRadius = parseInt(settings.product_border_radius || 8);
+                    const wooCardBg = settings.card_bg_color || '#ffffff';
+                    const wooTitleColor = settings.title_color || '#344047';
+                    const wooPriceColor = settings.price_color || '#92003b';
+                    const wooBtnBg = settings.button_bg_color || '#92003b';
+                    const wooBtnText = settings.button_text_color || '#ffffff';
+                    const wooPerPage = parseInt(settings.products_per_page || 8);
+                    const wooShowImage = settings.show_image !== 'no';
+                    const wooShowTitle = settings.show_title !== 'no';
+                    const wooShowPrice = settings.show_price !== 'no';
+                    const wooShowRating = settings.show_rating !== 'no';
+                    const wooShowCart = settings.show_cart_button !== 'no';
+                    const wooShowBadge = settings.show_badge !== 'no';
+                    const wooQueryType = settings.query_type || 'recent';
+                    const wooOrderBy = settings.orderby || 'date';
+                    const wooOrder = settings.order || 'DESC';
+                    
+                    // Create container that will be populated with real products
+                    const wooContainerId = 'woo-products-' + element.id;
+                    let wooHTML = `<div id="${wooContainerId}" style="min-height: 100px;">
+                        <div style="text-align: center; padding: 30px; color: #92003b;">
+                            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f4f6; border-top-color: #92003b; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 10px; font-size: 13px; font-weight: 600;">Loading products...</p>
+                        </div>
+                    </div>
+                    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
+                    
+                    // Load real products immediately
+                    setTimeout(() => {
+                        $.ajax({
+                            url: ProBuilderEditor.ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'probuilder_get_woo_products',
+                                nonce: ProBuilderEditor.nonce,
+                                query_type: wooQueryType,
+                                per_page: wooPerPage,
+                                orderby: wooOrderBy,
+                                order: wooOrder
+                            },
+                            success: function(response) {
+                                if (response.success && response.data.products && response.data.products.length > 0) {
+                                    const products = response.data.products;
+                                    let productsHTML = `<div style="display: grid; grid-template-columns: repeat(${wooColumns}, 1fr); gap: ${wooRowGap}px ${wooGap}px;">`;
+                                    
+                                    products.forEach(product => {
+                                        productsHTML += `<div class="probuilder-product-card" style="border-radius: ${wooBorderRadius}px; overflow: hidden; background: ${wooCardBg}; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;">`;
+                                        
+                                        if (wooShowImage) {
+                                            productsHTML += `<div class="product-image" style="position: relative; background: #f8f9fa;">`;
+                                            productsHTML += `<img src="${product.image}" style="width: 100%; height: auto; display: block;" alt="${product.title}">`;
+                                            if (wooShowBadge && product.sale) {
+                                                productsHTML += `<span class="sale-badge" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Sale</span>`;
+                                            }
+                                            productsHTML += `</div>`;
+                                        }
+                                        
+                                        productsHTML += `<div class="product-content" style="padding: 20px;">`;
+                                        
+                                        if (wooShowTitle) {
+                                            productsHTML += `<h3 class="product-title" style="margin: 0 0 10px; font-size: 16px; font-weight: 600; line-height: 1.4; color: ${wooTitleColor};"><a href="${product.permalink}" style="color: inherit; text-decoration: none;">${product.title}</a></h3>`;
+                                        }
+                                        
+                                        if (wooShowRating && product.rating > 0) {
+                                            productsHTML += `<div class="product-rating" style="margin-bottom: 10px; color: #fbbf24; font-size: 14px;">`;
+                                            for (let i = 0; i < 5; i++) {
+                                                productsHTML += i < product.rating ? '★' : '☆';
+                                            }
+                                            productsHTML += `</div>`;
+                                        }
+                                        
+                                        if (wooShowPrice) {
+                                            productsHTML += `<div class="product-price" style="margin-bottom: 15px; font-size: 18px; font-weight: 700; color: ${wooPriceColor}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${product.price}</div>`;
+                                        }
+                                        
+                                        if (wooShowCart) {
+                                            productsHTML += `<a href="${product.permalink}" class="button product_type_simple add_to_cart_button ajax_add_to_cart" style="background: ${wooBtnBg}; color: ${wooBtnText}; padding: 12px 24px; text-decoration: none; display: inline-block; border-radius: 6px; font-weight: 600; font-size: 14px; border: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Add to Cart</a>`;
+                                        }
+                                        
+                                        productsHTML += `</div></div>`;
+                                    });
+                                    
+                                    productsHTML += `</div>`;
+                                    $('#' + wooContainerId).html(productsHTML);
+                                    console.log('✅ Loaded', products.length, 'real products:', products.map(p => p.title).join(', '));
+                                } else {
+                                    // No products found
+                                    $('#' + wooContainerId).html(`<div style="padding: 40px; text-align: center; background: #fffbeb; border: 2px dashed #fbbf24; border-radius: 8px; color: #78350f;">
+                                        <i class="dashicons dashicons-cart" style="font-size: 48px; opacity: 0.3;"></i>
+                                        <p style="margin: 10px 0 0; font-weight: 600;">No products found</p>
+                                        <p style="margin: 5px 0 0; font-size: 13px;">Query: ${wooQueryType} | Add products to your WooCommerce store</p>
+                                    </div>`);
+                                    console.warn('No products returned from AJAX');
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('AJAX Error loading products:', status, error);
+                                $('#' + wooContainerId).html(`<div style="padding: 40px; text-align: center; background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; color: #991b1b;">
+                                    <i class="dashicons dashicons-warning" style="font-size: 48px;"></i>
+                                    <p style="margin: 10px 0 0; font-weight: 600;">Error loading products</p>
+                                    <p style="margin: 5px 0 0; font-size: 13px;">Check browser console for details</p>
+                                </div>`);
+                            }
+                        });
+                    }, 50);
+                    
+                    return wooHTML;
+                
+                case 'woo-categories':
+                    const catColumns = parseInt(settings.columns || 4);
+                    const catColumnGap = parseInt(settings.column_gap || 20);
+                    const catRowGap = parseInt(settings.row_gap || 20);
+                    const catBorderRadius = parseInt(settings.border_radius || 8);
+                    const catCardBg = settings.card_bg_color || '#ffffff';
+                    const catTitleColor = settings.title_color || '#344047';
+                    const catCountColor = settings.count_color || '#6b7280';
+                    const catImageHeight = parseInt(settings.image_height || 200);
+                    const catShowImage = settings.show_image !== 'no';
+                    const catShowCount = settings.show_count !== 'no';
+                    const catHideEmpty = settings.hide_empty !== 'no';
+                    
+                    // Create container that will be populated with real categories
+                    const catContainerId = 'woo-categories-' + element.id;
+                    let catHTML = `<div id="${catContainerId}" style="min-height: 100px;">
+                        <div style="text-align: center; padding: 30px; color: #92003b;">
+                            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f4f6; border-top-color: #92003b; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 10px; font-size: 13px; font-weight: 600;">Loading categories...</p>
+                        </div>
+                    </div>`;
+                    
+                    // Load real categories immediately
+                    setTimeout(() => {
+                        $.ajax({
+                            url: ProBuilderEditor.ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'probuilder_get_woo_categories',
+                                nonce: ProBuilderEditor.nonce,
+                                hide_empty: catHideEmpty
+                            },
+                            success: function(response) {
+                                if (response.success && response.data.categories && response.data.categories.length > 0) {
+                                    const categories = response.data.categories;
+                                    const colors = ['#92003b', '#667eea', '#4facfe', '#764ba2', '#f093fb', '#00f2fe', '#c44569', '#22c55e'];
+                                    
+                                    let categoriesHTML = `<div style="display: grid; grid-template-columns: repeat(${catColumns}, 1fr); gap: ${catRowGap}px ${catColumnGap}px;">`;
+                                    
+                                    categories.forEach((category, idx) => {
+                                        categoriesHTML += `<div class="category-item" style="text-align: center; padding: 20px; background: ${catCardBg}; border-radius: ${catBorderRadius}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;">`;
+                                        
+                                        if (catShowImage) {
+                                            categoriesHTML += `<a href="${category.link}" style="text-decoration: none;">`;
+                                            if (category.image) {
+                                                categoriesHTML += `<img src="${category.image}" alt="${category.name}" style="width: 100%; height: ${catImageHeight}px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; display: block;">`;
+                                            } else {
+                                                const initial = category.name.charAt(0).toUpperCase();
+                                                const color = colors[idx % colors.length];
+                                                categoriesHTML += `<div style="width: 100%; height: ${catImageHeight}px; background: ${color}; border-radius: 4px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 48px; font-weight: 700;">${initial}</div>`;
+                                            }
+                                            categoriesHTML += `</a>`;
+                                        }
+                                        
+                                        categoriesHTML += `<h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; line-height: 1.4;"><a href="${category.link}" style="color: ${catTitleColor}; text-decoration: none;">${category.name}</a></h3>`;
+                                        
+                                        if (catShowCount) {
+                                            categoriesHTML += `<p style="margin: 0; font-size: 14px; color: ${catCountColor};">${category.count} product${category.count !== 1 ? 's' : ''}</p>`;
+                                        }
+                                        
+                                        categoriesHTML += `</div>`;
+                                    });
+                                    
+                                    categoriesHTML += `</div>`;
+                                    $('#' + catContainerId).html(categoriesHTML);
+                                    console.log('✅ Loaded', categories.length, 'real categories:', categories.map(c => c.name).join(', '));
+                                } else {
+                                    $('#' + catContainerId).html(`<div style="padding: 40px; text-align: center; background: #fffbeb; border: 2px dashed #fbbf24; border-radius: 8px; color: #78350f;">
+                                        <i class="dashicons dashicons-category" style="font-size: 48px; opacity: 0.3;"></i>
+                                        <p style="margin: 10px 0 0; font-weight: 600;">No categories found</p>
+                                        <p style="margin: 5px 0 0; font-size: 13px;">Add product categories to your WooCommerce store</p>
+                                    </div>`);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('AJAX Error loading categories:', status, error);
+                                $('#' + catContainerId).html(`<div style="padding: 40px; text-align: center; background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; color: #991b1b;">
+                                    <i class="dashicons dashicons-warning" style="font-size: 48px;"></i>
+                                    <p style="margin: 10px 0 0; font-weight: 600;">Error loading categories</p>
+                                </div>`);
+                            }
+                        });
+                    }, 50);
+                    
+                    return catHTML;
+                
+                case 'blog-posts':
+                    const blogLayout = settings.post_layout || 'grid';
+                    const blogColumns = parseInt(settings.columns || 3);
+                    const blogCardBg = settings.card_bg_color || '#ffffff';
+                    const blogBorderRadius = parseInt(settings.card_border_radius || 8);
+                    const blogBoxShadow = settings.card_box_shadow !== 'no';
+                    const blogTitleColor = settings.title_color || '#1e293b';
+                    const blogExcerptColor = settings.excerpt_color || '#64748b';
+                    const blogMetaColor = settings.meta_color || '#94a3b8';
+                    const blogReadMoreBg = settings.read_more_bg_color || '#92003b';
+                    const blogReadMoreText = settings.read_more_text_color || '#ffffff';
+                    const blogShowImage = settings.show_image !== 'no';
+                    const blogShowTitle = settings.show_title !== 'no';
+                    const blogShowExcerpt = settings.show_excerpt !== 'no';
+                    const blogShowMeta = settings.show_meta !== 'no';
+                    const blogShowReadMore = settings.show_read_more !== 'no';
+                    const blogReadMoreLabel = settings.read_more_text || 'Read More';
+                    const blogPerPage = parseInt(settings.posts_per_page || 6);
+                    const blogCategory = settings.category_filter || 0;
+                    
+                    // Create container that will be populated with real posts
+                    const blogContainerId = 'blog-posts-' + element.id;
+                    let blogHTML = `<div id="${blogContainerId}" style="min-height: 100px;">
+                        <div style="text-align: center; padding: 30px; color: #92003b;">
+                            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f4f6; border-top-color: #92003b; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 10px; font-size: 13px; font-weight: 600;">Loading posts...</p>
+                        </div>
+                    </div>`;
+                    
+                    // Load real blog posts immediately
+                    setTimeout(() => {
+                        $.ajax({
+                            url: ProBuilderEditor.ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'probuilder_get_blog_posts',
+                                nonce: ProBuilderEditor.nonce,
+                                per_page: blogPerPage,
+                                category: blogCategory
+                            },
+                            success: function(response) {
+                                if (response.success && response.data.posts && response.data.posts.length > 0) {
+                                    const posts = response.data.posts;
+                                    const boxShadow = blogBoxShadow ? 'box-shadow: 0 4px 20px rgba(0,0,0,0.1);' : '';
+                                    
+                                    let postsHTML = `<div style="display: grid; grid-template-columns: repeat(${blogColumns}, 1fr); gap: 30px;">`;
+                                    
+                                    posts.forEach(post => {
+                                        postsHTML += `<article class="probuilder-blog-post" style="background-color: ${blogCardBg}; border-radius: ${blogBorderRadius}px; overflow: hidden; ${boxShadow}">`;
+                                        
+                                        if (blogShowImage && post.image) {
+                                            postsHTML += `<div style="position: relative; height: 200px; background-image: url(${post.image}); background-size: cover; background-position: center;">
+                                                <a href="${post.permalink}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;"></a>
+                                            </div>`;
+                                        }
+                                        
+                                        postsHTML += `<div style="padding: 25px;">`;
+                                        
+                                        if (blogShowMeta) {
+                                            postsHTML += `<div style="margin-bottom: 15px; font-size: 14px; color: ${blogMetaColor};">
+                                                <span>${post.date}</span> • <span>${post.author}</span>
+                                            </div>`;
+                                        }
+                                        
+                                        if (blogShowTitle) {
+                                            postsHTML += `<h3 style="margin: 0 0 15px 0; font-size: 20px; line-height: 1.4;">
+                                                <a href="${post.permalink}" style="color: ${blogTitleColor}; text-decoration: none;">${post.title}</a>
+                                            </h3>`;
+                                        }
+                                        
+                                        if (blogShowExcerpt) {
+                                            postsHTML += `<div style="color: ${blogExcerptColor}; line-height: 1.6; margin-bottom: 20px;">${post.excerpt}</div>`;
+                                        }
+                                        
+                                        if (blogShowReadMore) {
+                                            postsHTML += `<a href="${post.permalink}" style="display: inline-block; background-color: ${blogReadMoreBg}; color: ${blogReadMoreText}; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">${blogReadMoreLabel}</a>`;
+                                        }
+                                        
+                                        postsHTML += `</div></article>`;
+                                    });
+                                    
+                                    postsHTML += `</div>`;
+                                    $('#' + blogContainerId).html(postsHTML);
+                                    console.log('✅ Loaded', posts.length, 'real blog posts:', posts.map(p => p.title).join(', '));
+                                } else {
+                                    $('#' + blogContainerId).html(`<div style="padding: 40px; text-align: center; background: #fffbeb; border: 2px dashed #fbbf24; border-radius: 8px; color: #78350f;">
+                                        <i class="dashicons dashicons-admin-post" style="font-size: 48px; opacity: 0.3;"></i>
+                                        <p style="margin: 10px 0 0; font-weight: 600;">No blog posts found</p>
+                                        <p style="margin: 5px 0 0; font-size: 13px;">Create some blog posts in WordPress</p>
+                                    </div>`);
+                                }
+                            },
+                            error: function() {
+                                console.error('Error loading blog posts');
+                                $('#' + blogContainerId).html(`<div style="padding: 40px; text-align: center; background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; color: #991b1b;">
+                                    <i class="dashicons dashicons-warning" style="font-size: 48px;"></i>
+                                    <p style="margin: 10px 0 0; font-weight: 600;">Error loading posts</p>
+                                </div>`);
+                            }
+                        });
+                    }, 50);
+                    
+                    return blogHTML;
+                
                 default:
                     return `<div style="padding: 25px; background: #f8f9fa; text-align: center; border: 1px solid #e6e9ec; border-radius: 3px; color: #6d7882;"><i class="${widget.icon}" style="font-size: 32px; color: #93003c; margin-bottom: 10px;"></i><br><strong>${widget.title}</strong><br><small style="color: #a4afb7;">Click edit to customize</small></div>`;
             }
@@ -9785,6 +10596,49 @@
                 console.error('Error generating preview:', error);
                 return '<div style="padding: 20px; color: #f00; text-align: center;">Error generating preview: ' + error.message + '</div>';
             }
+        },
+        
+        /**
+         * Render WooCommerce products fallback (sample products)
+         */
+        renderWooProductsFallback: function(containerId, opts) {
+            const sampleProducts = [
+                {title: 'Sample Product 1', price: '$29.99', image: 'https://via.placeholder.com/300x300/92003b/ffffff?text=Product+1', sale: true, rating: 5},
+                {title: 'Sample Product 2', price: '$39.99', image: 'https://via.placeholder.com/300x300/667eea/ffffff?text=Product+2', sale: false, rating: 4},
+                {title: 'Sample Product 3', price: '$49.99', image: 'https://via.placeholder.com/300x300/4facfe/ffffff?text=Product+3', sale: false, rating: 5},
+                {title: 'Sample Product 4', price: '$19.99', image: 'https://via.placeholder.com/300x300/764ba2/ffffff?text=Product+4', sale: true, rating: 4},
+            ].slice(0, opts.wooPerPage);
+            
+            let html = `
+                <div style="background: #fffbeb; border: 2px dashed #fbbf24; border-radius: 8px; padding: 12px; margin-bottom: 15px; text-align: center;">
+                    <i class="dashicons dashicons-info" style="color: #f59e0b;"></i>
+                    <strong style="color: #92400e; font-size: 13px;">Preview Mode</strong>
+                    <p style="margin: 5px 0 0; font-size: 12px; color: #78350f;">Real products will show on frontend after save</p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(${opts.wooColumns}, 1fr); gap: ${opts.wooRowGap}px ${opts.wooGap}px;">
+            `;
+            
+            sampleProducts.forEach(p => {
+                html += `<div style="border-radius: ${opts.wooBorderRadius}px; overflow: hidden; background: ${opts.wooCardBg}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">`;
+                if (opts.wooShowImage) {
+                    html += `<div style="position: relative; background: #f8f9fa;"><img src="${p.image}" style="width: 100%; height: auto; display: block;">`;
+                    if (opts.wooShowBadge && p.sale) html += `<span style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Sale</span>`;
+                    html += `</div>`;
+                }
+                html += `<div style="padding: 20px;">`;
+                if (opts.wooShowTitle) html += `<h3 style="margin: 0 0 10px; font-size: 18px; color: ${opts.wooTitleColor};">${p.title}</h3>`;
+                if (opts.wooShowRating) {
+                    html += `<div style="margin-bottom: 10px; color: #fbbf24;">`;
+                    for (let i = 0; i < 5; i++) html += i < p.rating ? '★' : '☆';
+                    html += `</div>`;
+                }
+                if (opts.wooShowPrice) html += `<div style="margin-bottom: 15px; font-size: 20px; font-weight: 600; color: ${opts.wooPriceColor};">${p.price}</div>`;
+                if (opts.wooShowCart) html += `<a href="#" style="background: ${opts.wooBtnBg}; color: ${opts.wooBtnText}; padding: 10px 20px; text-decoration: none; display: inline-block; border-radius: 4px; font-weight: 600;">Add to Cart</a>`;
+                html += `</div></div>`;
+            });
+            
+            html += `</div>`;
+            $('#' + containerId).html(html);
         },
         
         /**
@@ -10054,63 +10908,55 @@
                     return;
                 }
 
-				// Compact Responsive Row: group Desktop / Tablet / Mobile in one row
+				// Compact Responsive Row: group Desktop / Tablet / Mobile in one row with toggle switches
 				if (activeTab === 'style' && !responsiveRowRendered && key === 'hide_desktop') {
 					const vDesktop = (element.settings['hide_desktop'] === 'yes');
 					const vTablet = (element.settings['hide_tablet'] === 'yes');
 					const vMobile = (element.settings['hide_mobile'] === 'yes');
 					
-					const stateDesktop = vDesktop ? 'Hide' : (element.settings['hide_desktop'] === 'no' ? 'Show' : 'Undefined');
-					const stateTablet = vTablet ? 'Hide' : (element.settings['hide_tablet'] === 'no' ? 'Show' : 'Undefined');
-					const stateMobile = vMobile ? 'Hide' : (element.settings['hide_mobile'] === 'no' ? 'Show' : 'Undefined');
-					const btnStyle = (state) => {
-						if (state === 'Hide') return 'background:#fee2e2;border:1px solid #ef4444;color:#991b1b;';
-						if (state === 'Show') return 'background:#dcfce7;border:1px solid #22c55e;color:#14532d;';
-						return 'background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;';
-					};
 					const rowHtml = `
 						<div class="probuilder-control">
 							<label>Responsive</label>
 							<div class="probuilder-responsive-row" style="display: flex; gap: 10px; align-items: center; flex-wrap: nowrap;">
-								<div class="probuilder-responsive-item" data-device="desktop" style="display:flex; align-items:center; gap:6px;">
+								<label class="probuilder-toggle-switch" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+									<input type="checkbox" class="probuilder-responsive-toggle" data-device="desktop" ${vDesktop ? 'checked' : ''} style="display:none;">
+									<span class="probuilder-switcher-track" style="position:relative; width:44px; height:24px; background:${vDesktop?'#92003b':'#cbd5e1'}; border-radius:12px; transition:background 0.3s; display:inline-block;">
+										<span class="probuilder-switcher-thumb" style="position:absolute; left:${vDesktop?'22px':'2px'}; top:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left 0.3s; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+									</span>
 									<i class="dashicons dashicons-desktop" style="opacity:.7"></i>
-									<button type="button" class="probuilder-toggle-btn" data-device="desktop" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateDesktop)}">${stateDesktop}</button>
-									<button type="button" class="probuilder-responsive-undef" data-device="desktop" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
-								</div>
-								<div class="probuilder-responsive-item" data-device="tablet" style="display:flex; align-items:center; gap:6px;">
+									<span style="font-size:12px; color:#374151;">Hide Desktop</span>
+								</label>
+								<label class="probuilder-toggle-switch" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+									<input type="checkbox" class="probuilder-responsive-toggle" data-device="tablet" ${vTablet ? 'checked' : ''} style="display:none;">
+									<span class="probuilder-switcher-track" style="position:relative; width:44px; height:24px; background:${vTablet?'#92003b':'#cbd5e1'}; border-radius:12px; transition:background 0.3s; display:inline-block;">
+										<span class="probuilder-switcher-thumb" style="position:absolute; left:${vTablet?'22px':'2px'}; top:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left 0.3s; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+									</span>
 									<i class="dashicons dashicons-tablet" style="opacity:.7"></i>
-									<button type="button" class="probuilder-toggle-btn" data-device="tablet" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateTablet)}">${stateTablet}</button>
-									<button type="button" class="probuilder-responsive-undef" data-device="tablet" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
-								</div>
-								<div class="probuilder-responsive-item" data-device="mobile" style="display:flex; align-items:center; gap:6px;">
+									<span style="font-size:12px; color:#374151;">Hide Tablet</span>
+								</label>
+								<label class="probuilder-toggle-switch" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+									<input type="checkbox" class="probuilder-responsive-toggle" data-device="mobile" ${vMobile ? 'checked' : ''} style="display:none;">
+									<span class="probuilder-switcher-track" style="position:relative; width:44px; height:24px; background:${vMobile?'#92003b':'#cbd5e1'}; border-radius:12px; transition:background 0.3s; display:inline-block;">
+										<span class="probuilder-switcher-thumb" style="position:absolute; left:${vMobile?'22px':'2px'}; top:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left 0.3s; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+									</span>
 									<i class="dashicons dashicons-smartphone" style="opacity:.7"></i>
-									<button type="button" class="probuilder-toggle-btn" data-device="mobile" style="padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(stateMobile)}">${stateMobile}</button>
-									<button type="button" class="probuilder-responsive-undef" data-device="mobile" title="Set undefined" style="padding:6px 8px; border-radius:6px; border:1px dashed #d1d5db; background:#fff; cursor:pointer; color:#6b7280;">Undefined</button>
-								</div>
+									<span style="font-size:12px; color:#374151;">Hide Mobile</span>
+								</label>
 							</div>
 						</div>`;
 					
 					const $row = $(rowHtml);
 					const keyMap = { desktop: 'hide_desktop', tablet: 'hide_tablet', mobile: 'hide_mobile' };
-					$row.find('.probuilder-toggle-btn').on('click', (e) => {
+					$row.find('.probuilder-responsive-toggle').on('change', function(e) {
 						const device = $(e.currentTarget).data('device');
 						const settingKey = keyMap[device];
-						const current = element.settings[settingKey];
-						const next = current === 'yes' ? 'no' : 'yes'; // toggle Hide <-> Show
-						element.settings[settingKey] = next;
-						const state = next === 'yes' ? 'Hide' : 'Show';
-						$(e.currentTarget).text(state).attr('style', `padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle(state)}`);
+						const checked = $(e.currentTarget).is(':checked');
+						element.settings[settingKey] = checked ? 'yes' : 'no';
+						const $track = $(e.currentTarget).siblings('.probuilder-switcher-track');
+						const $thumb = $track.find('.probuilder-switcher-thumb');
+						$track.css('background', checked ? '#92003b' : '#cbd5e1');
+						$thumb.css('left', checked ? '22px' : '2px');
 						console.log('✅ Responsive toggled:', settingKey, element.settings[settingKey]);
-						ProBuilder.applyResponsiveVisibility(element);
-					});
-					$row.find('.probuilder-responsive-undef').on('click', (e) => {
-						const device = $(e.currentTarget).data('device');
-						const settingKey = keyMap[device];
-						delete element.settings[settingKey];
-						// Update the main button text and style
-						const $btn = $row.find(`.probuilder-toggle-btn[data-device="${device}"]`);
-						$btn.text('Undefined').attr('style', `padding:6px 10px; border-radius:6px; cursor:pointer; ${btnStyle('Undefined')}`);
-						console.log('✅ Responsive set undefined:', settingKey);
 						ProBuilder.applyResponsiveVisibility(element);
 					});
 					
@@ -10182,9 +11028,9 @@
                         self.updateElementPreview(element);
                     });
                 } else if (control.type === 'slider') {
-                    // Slider control
+                    // Slider control - ensure opacity and all sliders update immediately
                     $control.find('.probuilder-slider').on('input change', function() {
-                        const newValue = $(this).val();
+                        const newValue = parseFloat($(this).val()) || 0;
                         element.settings[key] = newValue;
                         console.log('✅ Slider updated:', key, '=', newValue);
                         
@@ -10197,13 +11043,53 @@
                             self.applyMotionStyles(element);
                         }
                         
+                        // Force immediate preview update (critical for opacity)
                         self.updateElementPreview(element);
                     });
                 } else if (control.type === 'color') {
-                    // Color control
+                    // Color control - handle background_color and other colors
                     $control.find('input[type="color"]').on('input change', function() {
                         element.settings[key] = $(this).val();
-                        console.log('Color updated:', key, $(this).val());
+                        console.log('✅ Color updated:', key, $(this).val());
+                        // Force immediate preview update (critical for background_color)
+                        self.updateElementPreview(element);
+                    });
+                } else if (control.type === 'select') {
+                    // Select control - handle background_type changes
+                    $control.find('select').on('change', function() {
+                        const newValue = $(this).val();
+                        element.settings[key] = newValue;
+                        console.log('✅ Select updated:', key, '=', newValue);
+                        
+                        // If background_type changed, force preview update
+                        if (key === 'background_type') {
+                            self.updateElementPreview(element);
+                        } else {
+                            self.updateElementPreview(element);
+                        }
+                    });
+                    
+                    // Circular gradient angle slider handler
+                    $control.find('.probuilder-gradient-angle-slider').on('input change', function() {
+                        const newAngle = parseFloat($(this).val()) || 135;
+                        element.settings[key] = newAngle;
+                        console.log('✅ Gradient angle updated:', newAngle);
+                        
+                        // Update visual circle
+                        const $container = $(this).closest('.probuilder-gradient-angle-wrapper');
+                        const circleSize = 120;
+                        const center = circleSize / 2;
+                        const radius = 40;
+                        const angleRad = (newAngle - 90) * Math.PI / 180;
+                        const dotX = center + radius * Math.cos(angleRad);
+                        const dotY = center + radius * Math.sin(angleRad);
+                        
+                        const $svg = $container.find('svg');
+                        $svg.find('line').attr({ x2: dotX, y2: dotY });
+                        $svg.find('circle:last-child').attr({ cx: dotX, cy: dotY });
+                        $container.find('.probuilder-angle-value').text(Math.round(newAngle) + '°');
+                        
+                        // Force immediate preview update
                         self.updateElementPreview(element);
                     });
                 } else if (control.type === 'repeater') {
@@ -11179,11 +12065,45 @@
                     break;
                     
                 case 'select':
-                    html += `<select class="probuilder-select" data-setting="${key}">`;
-                    Object.keys(control.options).forEach(optKey => {
-                        html += `<option value="${optKey}" ${value === optKey ? 'selected' : ''}>${control.options[optKey]}</option>`;
-                    });
-                    html += `</select>`;
+                    // Special: Circular gradient angle control
+                    if (key === 'background_gradient_angle') {
+                        const angleValue = parseFloat(value) || 135;
+                        const circleSize = 120;
+                        const center = circleSize / 2;
+                        const radius = 40;
+                        const angleRad = (angleValue - 90) * Math.PI / 180;
+                        const dotX = center + radius * Math.cos(angleRad);
+                        const dotY = center + radius * Math.sin(angleRad);
+                        
+                        html += `
+                            <div class="probuilder-gradient-angle-wrapper" style="position: relative; width: ${circleSize}px; height: ${circleSize + 30}px; margin: 10px auto;">
+                                <svg width="${circleSize}" height="${circleSize}" style="position: absolute; top: 0; left: 0;">
+                                    <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="#d1d5db" stroke-width="2"/>
+                                    <line x1="${center}" y1="${center}" x2="${dotX}" y2="${dotY}" stroke="#92003b" stroke-width="2"/>
+                                    <circle cx="${dotX}" cy="${dotY}" r="8" fill="#92003b" cursor="move"/>
+                                </svg>
+                                <input type="range" class="probuilder-gradient-angle-slider" data-setting="${key}" min="0" max="360" step="1" value="${angleValue}" style="
+                                    position: absolute;
+                                    top: 0;
+                                    left: 0;
+                                    width: ${circleSize}px;
+                                    height: ${circleSize}px;
+                                    opacity: 0;
+                                    cursor: pointer;
+                                    z-index: 10;
+                                " title="Drag to rotate gradient angle">
+                                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 11px; color: #71717a; white-space: nowrap;">
+                                    <span class="probuilder-angle-value">${Math.round(angleValue)}°</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `<select class="probuilder-select" data-setting="${key}">`;
+                        Object.keys(control.options).forEach(optKey => {
+                            html += `<option value="${optKey}" ${value === optKey ? 'selected' : ''}>${control.options[optKey]}</option>`;
+                        });
+                        html += `</select>`;
+                    }
                     break;
                     
                 case 'grid_preset':
@@ -11281,11 +12201,11 @@
                     
                 case 'box-shadow':
                     const shadow = value || control.default || {x: 0, y: 4, blur: 10, color: 'rgba(0,0,0,0.1)'};
-                    html += `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="x" value="${shadow.x || 0}" placeholder="X Offset">
-                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="y" value="${shadow.y || 0}" placeholder="Y Offset">
-                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="blur" value="${shadow.blur || 10}" placeholder="Blur">
-                        <input type="color" class="probuilder-color" data-setting="${key}" data-shadow="color" value="${shadow.color || '#000000'}">
+                    html += `<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="x" value="${shadow.x || 0}" placeholder="X" style="width: 60px; padding: 6px 8px; font-size: 11px;">
+                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="y" value="${shadow.y || 0}" placeholder="Y" style="width: 60px; padding: 6px 8px; font-size: 11px;">
+                        <input type="number" class="probuilder-input" data-setting="${key}" data-shadow="blur" value="${shadow.blur || 10}" placeholder="Blur" style="width: 60px; padding: 6px 8px; font-size: 11px;">
+                        <input type="color" class="probuilder-color" data-setting="${key}" data-shadow="color" value="${shadow.color || '#000000'}" style="width: 40px; height: 32px; padding: 0; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;">
                     </div>`;
                     break;
                     
@@ -11494,7 +12414,8 @@
                                 `<img src="${attachment.url}" style="max-width: 100%; height: auto; margin-top: 10px; border-radius: 4px; border: 1px solid #e6e9ec;">`
                             );
                             
-                            // Update element preview
+                            // Force immediate element preview update (critical for background_image)
+                            console.log('✅ Media updated:', settingKey, attachment.url);
                             ProBuilder.updateElementPreview(element);
                         }
                     });
@@ -11508,6 +12429,7 @@
                         $btn.next('.probuilder-media-preview').html(
                             `<img src="${url}" style="max-width: 100%; height: auto; margin-top: 10px; border-radius: 4px; border: 1px solid #e6e9ec;">`
                         );
+                        console.log('✅ Media URL set:', settingKey, url);
                         ProBuilder.updateElementPreview(element);
                     }
                 }

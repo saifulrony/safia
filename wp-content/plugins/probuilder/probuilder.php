@@ -260,6 +260,16 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'widgets/parallax-image.php';
         require_once PROBUILDER_PATH . 'widgets/calendly.php';
         
+        // Chart Widgets
+        require_once PROBUILDER_PATH . 'widgets/pie-chart.php';
+        require_once PROBUILDER_PATH . 'widgets/donut-chart.php';
+        require_once PROBUILDER_PATH . 'widgets/line-chart.php';
+        require_once PROBUILDER_PATH . 'widgets/bar-chart.php';
+        require_once PROBUILDER_PATH . 'widgets/area-chart.php';
+        
+        // WordPress Widgets
+        require_once PROBUILDER_PATH . 'widgets/archives.php';
+        
         // WooCommerce Widgets
         if (class_exists('WooCommerce')) {
             require_once PROBUILDER_PATH . 'widgets/woo-products.php';
@@ -325,11 +335,12 @@ final class ProBuilder {
             return;
         }
         
-        // Create a new draft page
+        // Create a new draft page with unique title (to ensure unique slug)
+        $unique_id = substr(uniqid(), -6); // Last 6 chars of unique ID
         $post_id = wp_insert_post([
             'post_type'   => 'page',
             'post_status' => 'draft',
-            'post_title'  => __('(Draft) New Page', 'probuilder'),
+            'post_title'  => sprintf(__('New Page %s', 'probuilder'), $unique_id),
             'post_author' => get_current_user_id(),
         ]);
         

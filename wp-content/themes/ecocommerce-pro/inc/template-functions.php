@@ -105,6 +105,16 @@ function ecocommerce_pro_schema_markup() {
     if (is_singular('product') && class_exists('WooCommerce')) {
         global $product;
         
+        // Ensure $product is a valid WC_Product object
+        if (!is_a($product, 'WC_Product')) {
+            $product = wc_get_product(get_the_ID());
+        }
+        
+        // If still not valid, skip schema
+        if (!is_a($product, 'WC_Product')) {
+            return;
+        }
+        
         $schema = array(
             '@context' => 'https://schema.org',
             '@type' => 'Product',

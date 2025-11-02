@@ -115,16 +115,15 @@ abstract class ProBuilder_Base_Widget {
             'tab' => 'style'
         ]);
         
-        // Opacity
+        // Opacity (0-100%)
         $this->add_control('opacity', [
             'label' => __('Opacity', 'probuilder'),
             'type' => 'slider',
-            'default' => 1,
+            'default' => 100,
             'range' => [
-                'min' => 0,
-                'max' => 1,
-                'step' => 0.1
+                'px' => ['min' => 0, 'max' => 100, 'step' => 5]
             ],
+            'unit' => '%',
             'tab' => 'style',
         ]);
         
@@ -406,12 +405,11 @@ abstract class ProBuilder_Base_Widget {
         $this->add_control('scale', [
             'label' => __('Scale', 'probuilder'),
             'type' => 'slider',
-            'default' => 1,
+            'default' => 100,
             'range' => [
-                'min' => 0.1,
-                'max' => 3,
-                'step' => 0.1
+                'px' => ['min' => 10, 'max' => 200, 'step' => 5]
             ],
+            'unit' => '%',
             'tab' => 'style',
         ]);
         
@@ -691,9 +689,10 @@ abstract class ProBuilder_Base_Widget {
         if ($rotate != 0) {
             $transforms[] = 'rotate(' . floatval($rotate) . 'deg)';
         }
-        $scale = $this->get_settings('scale', 1);
-        if ($scale != 1) {
-            $transforms[] = 'scale(' . floatval($scale) . ')';
+        $scale = $this->get_settings('scale', 100);
+        if ($scale != 100) {
+            $scale_decimal = floatval($scale) / 100;
+            $transforms[] = 'scale(' . $scale_decimal . ')';
         }
         $skew_x = $this->get_settings('skew_x', 0);
         $skew_y = $this->get_settings('skew_y', 0);
@@ -704,10 +703,11 @@ abstract class ProBuilder_Base_Widget {
             $styles[] = 'transform: ' . implode(' ', $transforms);
         }
         
-        // Opacity
+        // Opacity (convert percentage 0-100 to decimal 0-1)
         $opacity = $this->get_settings('opacity');
-        if ($opacity !== null && $opacity !== '' && $opacity != 1) {
-            $styles[] = 'opacity: ' . floatval($opacity);
+        if ($opacity !== null && $opacity !== '' && $opacity != 100) {
+            $opacity_decimal = floatval($opacity) / 100;
+            $styles[] = 'opacity: ' . $opacity_decimal;
         }
         
         // Z-Index

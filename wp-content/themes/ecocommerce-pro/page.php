@@ -12,6 +12,21 @@
 
 get_header();
 
+// WooCommerce products should use WooCommerce template
+if (is_singular('product')) {
+    ?>
+    <main id="primary" class="site-main" style="padding: 40px 0;">
+        <div class="container">
+            <?php while (have_posts()) : the_post(); ?>
+                <?php woocommerce_content(); ?>
+            <?php endwhile; ?>
+        </div>
+    </main>
+    <?php
+    get_footer();
+    return;
+}
+
 // Check if using ProBuilder
 $is_probuilder = get_post_meta(get_the_ID(), '_probuilder_data', true);
 
