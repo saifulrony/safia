@@ -2032,6 +2032,12 @@
                 const rows = Math.ceil(containerElement.children.length / columns);
                 console.log(`This creates ${rows} row(s)`);
                 
+                // Force full canvas refresh for vertical containers to show all children
+                if (containerElement.settings && containerElement.settings.direction === 'vertical') {
+                    console.log('🔵 Forcing canvas refresh for VERTICAL container with', containerElement.children.length, 'children');
+                    this.renderCanvas();
+                }
+                
                 // Re-render the entire container
                 this.updateContainerWithChildren(containerElement);
                 
@@ -5226,472 +5232,47 @@
                     return `<div style="text-align: ${btnAlign === 'justify' ? 'center' : btnAlign};"><a href="#" class="probuilder-button" style="${btnStyle}">${btnContent}</a></div>`;
                     
                 case 'image':
-                    const imgUrl = settings.image?.url || 'https://via.placeholder.com/800x600/e6e9ec/93003c?text=Image';
-                    return `<div style="text-align: ${settings.align || 'center'}"><img src="${imgUrl}" style="max-width: ${settings.width || 100}%; height: auto; border-radius: 3px;"></div>`;
+                    // Use placeholder image like Elementor (gray background with image icon)
+                    const defaultPlaceholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"%3E%3Crect fill="%23d1d5db" width="800" height="600"/%3E%3Cg fill="white" opacity="0.5"%3E%3Crect x="250" y="180" width="300" height="240" rx="8" fill="none" stroke="white" stroke-width="3"/%3E%3Ccircle cx="320" cy="250" r="25"/%3E%3Cpath d="M250 380 L350 300 L450 350 L550 280 L550 420 L250 420 Z"/%3E%3C/g%3E%3C/svg%3E';
+                    const imgUrl = settings.image?.url || defaultPlaceholder;
+                    const imgAlign = settings.align || 'center';
+                    const imgWidth = settings.width || 100;
+                    const imgMaxWidth = settings.max_width || '';
+                    const imgHeight = settings.height || '';
+                    const imgObjectFit = settings.object_fit || 'cover';
+                    const imgBorderRadius = settings.border_radius || 0;
+                    const imgBorderWidth = settings.border_width || 0;
+                    const imgBorderColor = settings.border_color || '#000000';
+                    
+                    let imgStyle = `width: ${imgWidth}%; max-width: 100%;`;
+                    if (imgHeight) {
+                        imgStyle += ` height: ${imgHeight}px; object-fit: ${imgObjectFit};`;
+                    } else {
+                        imgStyle += ` height: auto;`;
+                    }
+                    if (imgMaxWidth) imgStyle += ` max-width: ${imgMaxWidth}px;`;
+                    if (imgBorderRadius > 0) imgStyle += ` border-radius: ${imgBorderRadius}px;`;
+                    if (imgBorderWidth > 0) imgStyle += ` border: ${imgBorderWidth}px solid ${imgBorderColor};`;
+                    imgStyle += ` display: inline-block; vertical-align: middle;`;
+                    
+                    return `<div style="text-align: ${imgAlign}; width: 100%; line-height: 0;"><img src="${imgUrl}" alt="" style="${imgStyle}"></div>`;
                     
                 case 'divider':
-                    return `<hr style="border: none; border-top: ${settings.height || 1}px ${settings.style || 'solid'} ${settings.color || '#ddd'}; width: ${settings.width || 100}%; margin: 15px auto;">`;
+                    const divHeight = settings.height || 1;
+                    const divStyle = settings.style || 'solid';
+                    const divColor = settings.color || '#ddd';
+                    const divWidth = settings.width || 100;
+                    const divAlign = settings.align || 'center';
+                    const divGap = settings.gap || 15;
+                    
+                    let divMargin = `${divGap}px auto`;
+                    if (divAlign === 'left') divMargin = `${divGap}px auto ${divGap}px 0`;
+                    if (divAlign === 'right') divMargin = `${divGap}px 0 ${divGap}px auto`;
+                    
+                    return `<div style="width: 100%; display: block; line-height: 0; margin: ${divMargin};"><hr style="border: none; border-top: ${divHeight}px ${divStyle} ${divColor}; width: ${divWidth}%; margin: 0; display: inline-block;"></div>`;
                     
                 case 'spacer':
-                    return `<div style="height: ${settings.height || 50}px;"></div>`;
-                    
-                case 'container':
-                    const columnsCount = parseInt(settings.columns_count || '2');
-                    
-                    // Auto-generate column widths if not set or count changed
-                    let columnWidths = settings.column_widths || '';
-                    const currentWidthsArray = columnWidths ? columnWidths.split(',') : [];
-                    
-                    console.log('📊 Container preview - checking widths:', {
-                        elementId: element.id,
-                        columnsCount,
-                        currentWidths: columnWidths,
-                        arrayLength: currentWidthsArray.length,
-                        settingsObject: settings
-                    });
-                    
-                    // Only reset if truly not set OR if count is different (but preserve existing widths when possible)
-                    if (!columnWidths) {
-                        const equalWidth = 100 / columnsCount;
-                        columnWidths = Array(columnsCount).fill(equalWidth).join(',');
-                        element.settings.column_widths = columnWidths;
-                        console.log('⚠️⚠️ Generated default widths (NO WIDTHS SET):', columnWidths);
-                    } else if (currentWidthsArray.length !== columnsCount) {
-                        console.log('⚠️⚠️ Width array length mismatch! Adjusting...');
-
-                        // Count changed - adjust array length but try to preserve proportions
-                        if (currentWidthsArray.length < columnsCount) {
-                            // Adding columns - distribute remaining space
-                            const currentTotal = currentWidthsArray.reduce((sum, w) => sum + parseFloat(w), 0);
-                            const remaining = 100 - currentTotal;
-                            const newColWidth = remaining / (columnsCount - currentWidthsArray.length);
-                            while (currentWidthsArray.length < columnsCount) {
-                                currentWidthsArray.push(newColWidth.toFixed(2));
-                            }
-                        } else {
-                            // Removing columns - keep first N columns
-                            currentWidthsArray.splice(columnsCount);
-                        }
-                        columnWidths = currentWidthsArray.join(',');
-                        element.settings.column_widths = columnWidths;
-                    }
-                    
-                    const columnsTablet = settings.columns_tablet || '2';
-                    const columnsMobile = settings.columns_mobile || '1';
-                    const columnGap = settings.column_gap || 20;
-                    const enableRows = settings.enable_rows || 'no';
-                    const rows = settings.rows || [];
-                    const containerId = 'container-preview-' + element.id;
-                    const bgType = settings.background_type || 'color';
-                    let background = '';
-                    
-                    // Parse column widths for grid
-                    const widths = columnWidths.split(',').map(w => parseFloat(w.trim()));
-                    const total = widths.reduce((sum, w) => sum + w, 0);
-                    const gridTemplate = widths.map(w => (w / total) + 'fr').join(' ');
-                    
-                    if (bgType === 'color') {
-                        background = `background-color: ${settings.background_color || '#f8f9fa'};`;
-                    } else if (bgType === 'gradient') {
-                        background = `background: ${settings.background_gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};`;
-                    } else if (bgType === 'image' && settings.background_image?.url) {
-                        background = `background-image: url(${settings.background_image.url}); background-size: cover; background-position: center;`;
-                    }
-                    
-                    const containerStyle = `
-                        ${background}
-                        min-height: ${settings.min_height || 100}px;
-                        padding: ${settings.padding?.top || 20}px ${settings.padding?.right || 20}px ${settings.padding?.bottom || 20}px ${settings.padding?.left || 20}px;
-                        border: ${settings.border?.width || 0}px ${settings.border?.style || 'solid'} ${settings.border?.color || '#000'};
-                        border-radius: ${settings.border_radius || 0}px;
-                    `;
-                    
-                    // Generate responsive CSS
-                    let responsiveCSS = `
-                        <style>
-                            #${containerId} .probuilder-container-row {
-                                display: block;
-                                width: 100%;
-                                margin-bottom: 20px;
-                            }
-                            #${containerId} .probuilder-container-row:last-child {
-                                margin-bottom: 0;
-                            }
-                            #${containerId} .probuilder-container-columns {
-                                display: grid;
-                                width: 100%;
-                                grid-template-columns: ${gridTemplate};
-                                grid-auto-rows: minmax(0, auto);
-                                gap: ${columnGap}px;
-                                position: relative;
-                                align-items: start;
-                            }
-                            
-                            #${containerId} .probuilder-column {
-                                position: relative;
-                                min-height: 80px;
-                                border: 1px dashed #ddd;
-                                padding: 15px;
-                                background: rgba(255,255,255,0.8);
-                                text-align: center;
-                                color: #999;
-                                font-size: 14px;
-                                overflow: visible;
-                                align-self: start;
-                            }
-                            
-                            #${containerId} .probuilder-column-content {
-                                position: relative;
-                                z-index: 1;
-                                pointer-events: none;
-                            }
-                            
-                            #${containerId} .probuilder-column-content > * {
-                                pointer-events: auto;
-                            }
-                            
-                            #${containerId} .probuilder-column:hover {
-                                border-color: #007cba;
-                                background: rgba(0,124,186,0.05);
-                            }
-                            
-                            #${containerId} .probuilder-resize-handle {
-                                position: absolute;
-                                top: 0;
-                                bottom: 0;
-                                right: -4px;
-                                width: 8px;
-                                background: linear-gradient(90deg, #007cba 0%, #0096dd 100%);
-                                cursor: ew-resize;
-                                opacity: 0;
-                                transition: opacity 0.3s, width 0.2s;
-                                z-index: 1000;
-                                border-radius: 2px;
-                            }
-                            
-                            #${containerId} .probuilder-resize-handle::before {
-                                content: '';
-                                position: absolute;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                width: 3px;
-                                height: 30px;
-                                background: rgba(255,255,255,0.8);
-                                border-radius: 10px;
-                            }
-                            
-                            #${containerId} .probuilder-resize-handle:hover {
-                                opacity: 1 !important;
-                                width: 12px;
-                                background: linear-gradient(90deg, #005a87 0%, #007cba 100%);
-                                box-shadow: 0 0 10px rgba(0,124,186,0.5);
-                            }
-                            
-                            #${containerId} .probuilder-container-columns:hover .probuilder-resize-handle {
-                                opacity: 0.6;
-                            }
-                            
-                            #${containerId} .probuilder-column-width-indicator {
-                                position: absolute;
-                                top: 5px;
-                                right: 5px;
-                                background: rgba(0,124,186,0.9);
-                                color: white;
-                                padding: 2px 8px;
-                                border-radius: 10px;
-                                font-size: 11px;
-                                font-weight: 600;
-                                opacity: 0;
-                                transition: opacity 0.2s;
-                                z-index: 100;
-                                pointer-events: none;
-                            }
-                            
-                            #${containerId} .probuilder-column:hover .probuilder-column-width-indicator {
-                                opacity: 1;
-                            }
-                            
-                            /* Column Resize Handles - Similar to Grid Layout Cells */
-                            #${containerId} .column-resize-handle {
-                                position: absolute;
-                                background: #007cba;
-                                opacity: 0;
-                                transition: opacity 0.2s, background 0.2s;
-                                z-index: 101;
-                                pointer-events: auto;
-                            }
-                            
-                            #${containerId} .probuilder-column:hover .column-resize-handle {
-                                opacity: 0.6;
-                            }
-                            
-                            #${containerId} .column-resize-handle:hover {
-                                opacity: 1 !important;
-                                background: #005a87;
-                            }
-                            
-                            #${containerId} .column-resize-handle-top {
-                                top: 0;
-                                left: 0;
-                                width: 100%;
-                                height: 8px;
-                                cursor: row-resize;
-                                z-index: 102;
-                            }
-                            
-                            #${containerId} .column-resize-handle-left {
-                                top: 0;
-                                left: 0;
-                                width: 8px;
-                                height: 100%;
-                                cursor: col-resize;
-                                z-index: 102;
-                            }
-                            
-                            #${containerId} .column-resize-handle-right {
-                                top: 0;
-                                right: 0;
-                                width: 8px;
-                                height: 100%;
-                                cursor: col-resize;
-                                z-index: 102;
-                            }
-                            
-                            #${containerId} .column-resize-handle-bottom {
-                                bottom: 0;
-                                left: 0;
-                                width: 100%;
-                                height: 8px;
-                                cursor: row-resize;
-                                z-index: 101;
-                            }
-                            
-                            #${containerId} .column-resize-handle-corner {
-                                bottom: 0;
-                                right: 0;
-                                width: 20px;
-                                height: 20px;
-                                cursor: nwse-resize;
-                                border-radius: 3px;
-                                background: #007cba;
-                                z-index: 103;
-                            }
-                            
-                            #${containerId} .column-resize-handle-corner::after {
-                                content: '';
-                                position: absolute;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                width: 8px;
-                                height: 8px;
-                                background: rgba(255, 255, 255, 0.9);
-                                border-radius: 2px;
-                            }
-                    `;
-                    
-                    if (enableRows === 'yes' && rows.length > 0) {
-                        // Multiple rows CSS
-                        rows.forEach((row, index) => {
-                            responsiveCSS += `
-                                #${containerId} .probuilder-row-${index} .probuilder-container-columns {
-                                    grid-template-columns: repeat(${row.row_columns || 2}, 1fr);
-                                    gap: ${row.row_gap || 20}px;
-                                }
-                                @media (max-width: 1024px) {
-                                    #${containerId} .probuilder-row-${index} .probuilder-container-columns {
-                                        grid-template-columns: repeat(${row.row_columns_tablet || 2}, 1fr);
-                                    }
-                                }
-                                @media (max-width: 767px) {
-                                    #${containerId} .probuilder-row-${index} .probuilder-container-columns {
-                                        grid-template-columns: repeat(${row.row_columns_mobile || 1}, 1fr);
-                                    }
-                                }
-                            `;
-                        });
-                    } else {
-                        // Single row CSS
-                        responsiveCSS += `
-                            #${containerId} .probuilder-container-columns {
-                                grid-template-columns: repeat(${columnsCount}, 1fr);
-                                gap: ${columnGap}px;
-                            }
-                            @media (max-width: 1024px) {
-                                #${containerId} .probuilder-container-columns {
-                                    grid-template-columns: repeat(${settings.columns_tablet || columnsCount}, 1fr);
-                                }
-                            }
-                            @media (max-width: 767px) {
-                                #${containerId} .probuilder-container-columns {
-                                    grid-template-columns: repeat(${settings.columns_mobile || 1}, 1fr);
-                                }
-                            }
-                        `;
-                    }
-                    
-                    responsiveCSS += `</style>`;
-                    
-                    // Check if container has children
-                    const hasChildren = element.children && element.children.length > 0;
-                    
-                    if (enableRows === 'yes' && rows.length > 0) {
-                        // Multiple rows layout
-                        let rowsHTML = '';
-                        let childIndex = 0;
-                        
-                        rows.forEach((row, rowIndex) => {
-                            rowsHTML += `<div class="probuilder-container-row probuilder-row-${rowIndex}">`;
-                            rowsHTML += '<div class="probuilder-container-columns">';
-                            
-                            const numColumns = parseInt(row.row_columns || 2);
-                            
-                            // Show columns for this row
-                            for (let colIndex = 0; colIndex < numColumns; colIndex++) {
-                                const child = element.children && element.children[childIndex];
-                                
-                                if (child) {
-                                    // Render child element
-                                    const childPreview = this.generatePreview(child, depth + 1);
-                                    rowsHTML += `
-                                        <div class="probuilder-column" style="min-height: 50px; padding: 5px; position: relative; z-index: 1;">
-                                            <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}" style="position: relative; z-index: 1;">
-                                                <div class="probuilder-nested-controls" style="
-                                                    position: absolute;
-                                                    top: 0;
-                                                    right: 0;
-                                                    display: none;
-                                                    gap: 4px;
-                                                    z-index: 100;
-                                                    background: rgba(255, 255, 255, 0.95);
-                                                    padding: 4px;
-                                                    border-radius: 3px;
-                                                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                                                ">
-                                                    <button class="probuilder-nested-drag" title="Move" style="
-                                                        background: #71717a;
-                                                        border: none;
-                                                        color: #ffffff;
-                                                        width: 24px;
-                                                        height: 24px;
-                                                        border-radius: 2px;
-                                                        cursor: move;
-                                                        display: flex;
-                                                        align-items: center;
-                                                        justify-content: center;
-                                                        font-size: 12px;
-                                                    ">
-                                                        <i class="dashicons dashicons-move" style="font-size: 12px;"></i>
-                                                    </button>
-                                                    <button class="probuilder-nested-edit" title="Edit" style="
-                                                        background: #92003b;
-                                                        border: none;
-                                                        color: #ffffff;
-                                                        width: 24px;
-                                                        height: 24px;
-                                                        border-radius: 2px;
-                                                        cursor: pointer;
-                                                        display: flex;
-                                                        align-items: center;
-                                                        justify-content: center;
-                                                        font-size: 12px;
-                                                    ">
-                                                        <i class="dashicons dashicons-edit" style="font-size: 12px;"></i>
-                                                    </button>
-                                                    <button class="probuilder-nested-delete" title="Delete" style="
-                                                        background: #dc2626;
-                                                        border: none;
-                                                        color: #ffffff;
-                                                        width: 24px;
-                                                        height: 24px;
-                                                        border-radius: 2px;
-                                                        cursor: pointer;
-                                                        display: flex;
-                                                        align-items: center;
-                                                        justify-content: center;
-                                                        font-size: 12px;
-                                                    ">
-                                                        <i class="dashicons dashicons-trash" style="font-size: 12px;"></i>
-                                                    </button>
-                                                </div>
-                                                <div class="probuilder-nested-preview">
-                                                    ${childPreview}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `;
-                                    childIndex++;
-                                } else {
-                                    // Show empty drop zone
-                                    rowsHTML += `<div class="probuilder-column probuilder-drop-zone" data-container-id="${element.id}" data-column-index="${childIndex}" style="min-height: 100px; border: 1px dashed #d5dadf; padding: 20px; text-align: center; color: #a4afb7; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                        <i class="dashicons dashicons-plus" style="font-size: 24px; opacity: 0.4; margin-bottom: 5px;"></i>
-                                        <span style="font-size: 13px; opacity: 0.7;">Row ${rowIndex + 1} - Col ${colIndex + 1}</span>
-                                    </div>`;
-                                    childIndex++;
-                                }
-                            }
-                            
-                            rowsHTML += '</div>';
-                            rowsHTML += '</div>';
-                        });
-                        
-                        return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${rowsHTML}</div>`;
-                    } else {
-                        // Single row layout (but grid can create multiple rows automatically)
-                        let columnsHTML = '<div class="probuilder-container-row probuilder-row-0"><div class="probuilder-container-columns">';
-                        
-                        // Show columns with drag handles
-                        const numColumns = parseInt(columnsCount);
-                        const columnHeights = settings.column_heights || [];
-                        const columnPaddings = settings.column_paddings || [];
-                        
-                        for (let i = 0; i < numColumns; i++) {
-                            const child = element.children && element.children[i];
-                            const columnWidth = widths[i] || (100 / numColumns);
-                            const widthPercent = Math.round(columnWidth);
-                            const columnHeight = columnHeights[i] || 'auto';
-                            const columnPadding = columnPaddings[i] || {};
-                            
-                            const heightStyle = columnHeight !== 'auto' ? `min-height: ${columnHeight}px; height: ${columnHeight}px;` : '';
-                            const paddingTopStyle = columnPadding.top ? `padding-top: ${columnPadding.top}px;` : '';
-                            const paddingLeftStyle = columnPadding.left ? `padding-left: ${columnPadding.left}px;` : '';
-                            const paddingRightStyle = columnPadding.right ? `padding-right: ${columnPadding.right}px;` : '';
-                            
-                            columnsHTML += `
-                                <div class="probuilder-column" data-column-index="${i}" style="position: relative; ${heightStyle} ${paddingTopStyle} ${paddingLeftStyle} ${paddingRightStyle}">
-                                    <!-- Resize handles at top level -->
-                                    <div class="column-resize-handle column-resize-handle-top" data-element-id="${element.id}" data-column-index="${i}" data-direction="top"></div>
-                                    <div class="column-resize-handle column-resize-handle-left" data-element-id="${element.id}" data-column-index="${i}" data-direction="left"></div>
-                                    <div class="column-resize-handle column-resize-handle-right" data-element-id="${element.id}" data-column-index="${i}" data-direction="right"></div>
-                                    <div class="column-resize-handle column-resize-handle-bottom" data-element-id="${element.id}" data-column-index="${i}" data-direction="bottom"></div>
-                                    <div class="column-resize-handle column-resize-handle-corner" data-element-id="${element.id}" data-column-index="${i}" data-direction="both"></div>
-                                    
-                                    <!-- Content wrapper to prevent blocking handles -->
-                                    <div class="probuilder-column-content">
-                                        ${child ? `
-                                            <div class="probuilder-nested-element" data-id="${child.id}" data-widget="${child.widgetType}">
-                                                ${this.generatePreview(child, depth + 1)}
-                                            </div>
-                                        ` : `
-                                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50px;">
-                                                <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i>
-                                                <div style="font-size: 13px; opacity: 0.7;">Drop Widget Here</div>
-                                            </div>
-                                        `}
-                                    </div>
-                                    
-                                    ${i < numColumns - 1 ? `
-                                        <div class="probuilder-resize-handle" data-column="${i}" data-element-id="${element.id}"></div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }
-                        
-                        columnsHTML += '</div></div>';
-                        
-                        return `${responsiveCSS}<div id="${containerId}" style="${containerStyle}">${columnsHTML}</div>`;
-                    }
+                    return `<div style="height: ${settings.height || 50}px; width: 100%;"></div>`;
                     
                 case 'grid-layout':
                     const gridPattern = settings.grid_pattern || 'pattern-1';
@@ -6179,8 +5760,8 @@
                     
                     return gridHTML;
                     
-                case 'container-2':
-                    // Container 2 - Simple row with adjustable columns
+                case 'container':
+                    // Container - Simple row with adjustable columns
                     const c2Columns = parseInt(settings.columns) || 2;
                     const c2Gap = settings.gap || 20;
                     const c2MinHeight = settings.min_height || 30;
@@ -6190,22 +5771,47 @@
                     const c2BorderRadius = settings.border_radius || 8;
                     const c2EnableResize = settings.enable_resize !== false;
                     
-                    // Generate dynamic template based on columns
-                    const c2TemplateData = {
-                        columns: `repeat(${c2Columns}, 1fr)`,
-                        rows: '1fr',
-                        areas: []
-                    };
-                    
-                    // Generate grid areas for single row
-                    for (let i = 1; i <= c2Columns; i++) {
-                        c2TemplateData.areas.push(`1 / ${i} / 2 / ${i + 1}`);
-                    }
-                    
                     // Initialize children array if not exists
                     if (!element.children) {
                         element.children = [];
                     }
+                    
+                    // Calculate how many cells we need
+                    const childrenCount = element.children.length;
+                    const minCells = Math.max(c2Columns, childrenCount || c2Columns);
+                    
+                    // Generate dynamic template based on columns and children
+                    const c2TemplateData = {
+                        columns: `repeat(${c2Columns}, 1fr)`,
+                        rows: 'auto',
+                        areas: []
+                    };
+                    
+                    // Generate grid areas - create enough for all children
+                    // If columns=1 and children=5, create 5 rows (vertical stack)
+                    // If columns=2 and children=5, create 3 rows (2+2+1)
+                    const numRows = Math.ceil(minCells / c2Columns);
+                    let cellIndex = 0;
+                    
+                    for (let row = 1; row <= numRows; row++) {
+                        for (let col = 1; col <= c2Columns && cellIndex < minCells; col++) {
+                            c2TemplateData.areas.push(`${row} / ${col} / ${row + 1} / ${col + 1}`);
+                            cellIndex++;
+                        }
+                    }
+                    
+                    // Update rows template to accommodate multiple rows
+                    if (numRows > 1) {
+                        c2TemplateData.rows = `repeat(${numRows}, auto)`;
+                    }
+                    
+                    console.log('Container layout:', {
+                        columns: c2Columns,
+                        children: childrenCount,
+                        minCells: minCells,
+                        rows: numRows,
+                        areasCreated: c2TemplateData.areas.length
+                    });
                     
                     // Use custom template if available (from resize operations)
                     let c2ColumnsTemplate = c2TemplateData.columns;
@@ -6214,7 +5820,7 @@
                     if (element.settings.custom_template) {
                         c2ColumnsTemplate = element.settings.custom_template.columns || c2ColumnsTemplate;
                         c2RowsTemplate = element.settings.custom_template.rows || c2RowsTemplate;
-                        console.log('Container 2 using custom template:', {columns: c2ColumnsTemplate, rows: c2RowsTemplate});
+                        console.log('Container using custom template:', {columns: c2ColumnsTemplate, rows: c2RowsTemplate});
                     }
                     
                     // Get margin and padding
@@ -6228,7 +5834,7 @@
                     `;
                     
                     // Generate grid HTML with actual cells
-                    const c2Id = 'container2-' + element.id;
+                    const c2Id = 'container-' + element.id;
                     let c2HTML = `
                         <style>
                             #${c2Id} {
@@ -6239,7 +5845,7 @@
                                 width: 100%;
                                 position: relative;
                             }
-                            #${c2Id} .grid-cell {
+                            #${c2Id} .container-cell {
                                 min-height: 0 !important;
                                 background: ${c2BgColor};
                                 border: ${c2BorderWidth}px solid ${c2BorderColor};
@@ -6248,66 +5854,66 @@
                                 position: relative;
                                 overflow: visible !important;
                             }
-                            #${c2Id} .grid-cell.has-content {
+                            #${c2Id} .container-cell.has-content {
                                 padding: 0;
                                 overflow: visible !important;
                             }
-                            #${c2Id} .grid-cell.empty-cell {
+                            #${c2Id} .container-cell.empty-cell {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
                                 transition: all 0.3s;
                             }
-                            #${c2Id} .grid-cell.empty-cell:hover {
+                            #${c2Id} .container-cell.empty-cell:hover {
                                 background: rgba(0,124,186,0.05);
                                 border-color: #007cba;
                                 transform: translateY(-2px);
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                             }
                             /* Resize handles */
-                            #${c2Id} .grid-resize-handle {
+                            #${c2Id} .container-resize-handle {
                                 position: absolute;
                                 background: #007cba;
                                 opacity: 0;
                                 transition: opacity 0.2s;
                                 z-index: 50;
                             }
-                            #${c2Id} .grid-cell:hover .grid-resize-handle {
+                            #${c2Id} .container-cell:hover .container-resize-handle {
                                 opacity: 0.6;
                             }
-                            #${c2Id} .grid-resize-handle:hover {
+                            #${c2Id} .container-resize-handle:hover {
                                 opacity: 1 !important;
                                 background: #005a87;
                             }
-                            #${c2Id} .grid-resize-handle-top {
+                            #${c2Id} .container-resize-handle-top {
                                 top: -${Math.floor(c2Gap / 2)}px;
                                 left: 0;
                                 width: 100%;
                                 height: 4px;
                                 cursor: row-resize;
                             }
-                            #${c2Id} .grid-resize-handle-left {
+                            #${c2Id} .container-resize-handle-left {
                                 top: 0;
                                 left: -${Math.floor(c2Gap / 2)}px;
                                 width: 4px;
                                 height: 100%;
                                 cursor: col-resize;
                             }
-                            #${c2Id} .grid-resize-handle-right {
+                            #${c2Id} .container-resize-handle-right {
                                 top: 0;
                                 right: -${Math.floor(c2Gap / 2)}px;
                                 width: 4px;
                                 height: 100%;
                                 cursor: col-resize;
                             }
-                            #${c2Id} .grid-resize-handle-bottom {
+                            #${c2Id} .container-resize-handle-bottom {
                                 bottom: -${Math.floor(c2Gap / 2)}px;
                                 left: 0;
                                 width: 100%;
                                 height: 4px;
                                 cursor: row-resize;
                             }
-                            #${c2Id} .grid-resize-handle-corner {
+                            #${c2Id} .container-resize-handle-corner {
                                 bottom: -${Math.floor(c2Gap / 2)}px;
                                 right: -${Math.floor(c2Gap / 2)}px;
                                 width: 12px;
@@ -6316,7 +5922,7 @@
                                 border-radius: 2px;
                             }
                         </style>
-                        <div id="${c2Id}" class="probuilder-grid-layout" data-element-id="${element.id}" style="${c2WrapperStyle}">
+                        <div id="${c2Id}" class="probuilder-container-widget" data-element-id="${element.id}" style="${c2WrapperStyle}">
                     `;
                     
                     // Generate cells based on pattern
@@ -6325,21 +5931,21 @@
                         const hasContent = !!child;
                         
                         c2HTML += `
-                            <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
+                            <div class="container-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
                                  style="grid-area: ${area};" 
                                  data-cell-index="${index}"
-                                 data-grid-id="${element.id}"
+                                 data-container-id="${element.id}"
                                  data-original-area="${area}">
                         `;
                         
                         // Add resize handles
                         if (c2EnableResize) {
                             c2HTML += `
-                                <div class="grid-resize-handle grid-resize-handle-top" data-cell-index="${index}" data-direction="top"></div>
-                                <div class="grid-resize-handle grid-resize-handle-left" data-cell-index="${index}" data-direction="left"></div>
-                                <div class="grid-resize-handle grid-resize-handle-right" data-cell-index="${index}" data-direction="right"></div>
-                                <div class="grid-resize-handle grid-resize-handle-bottom" data-cell-index="${index}" data-direction="bottom"></div>
-                                <div class="grid-resize-handle grid-resize-handle-corner" data-cell-index="${index}" data-direction="both"></div>
+                                <div class="container-resize-handle container-resize-handle-top" data-cell-index="${index}" data-direction="top"></div>
+                                <div class="container-resize-handle container-resize-handle-left" data-cell-index="${index}" data-direction="left"></div>
+                                <div class="container-resize-handle container-resize-handle-right" data-cell-index="${index}" data-direction="right"></div>
+                                <div class="container-resize-handle container-resize-handle-bottom" data-cell-index="${index}" data-direction="bottom"></div>
+                                <div class="container-resize-handle container-resize-handle-corner" data-cell-index="${index}" data-direction="both"></div>
                             `;
                         }
                         
@@ -6401,9 +6007,9 @@
                         } else {
                             // Empty cell with drop zone indicator
                             c2HTML += `
-                                <div class="grid-cell-empty-content" style="pointer-events: auto; padding: 30px;">
+                                <div class="container-cell-empty-content" style="pointer-events: auto; padding: 30px;">
                                     <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; color: #999;"></i>
-                                    <div style="font-size: 12px; margin-top: 8px; color: #999;">Section ${index + 1}</div>
+                                    <div style="font-size: 12px; margin-top: 8px; color: #999;">Column ${index + 1}</div>
                                     <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
                                 </div>
                             `;
@@ -10310,7 +9916,7 @@
                     
                     // Create container that will be populated with real products
                     const wooContainerId = 'woo-products-' + element.id;
-                    let wooHTML = `<div id="${wooContainerId}" style="min-height: 100px;">
+                    let wooHTML = `<div id="${wooContainerId}" style="box-sizing: border-box;">
                         <div style="text-align: center; padding: 30px; color: #92003b;">
                             <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f4f6; border-top-color: #92003b; border-radius: 50%; animation: spin 1s linear infinite;"></div>
                             <p style="margin-top: 10px; font-size: 13px; font-weight: 600;">Loading products...</p>
@@ -10334,7 +9940,8 @@
                             success: function(response) {
                                 if (response.success && response.data.products && response.data.products.length > 0) {
                                     const products = response.data.products;
-                                    let productsHTML = `<div style="display: grid; grid-template-columns: repeat(${wooColumns}, 1fr); gap: ${wooRowGap}px ${wooGap}px;">`;
+                                    // Grid container - NO padding here, only grid properties
+                                    let productsHTML = `<div style="display: grid; grid-template-columns: repeat(${wooColumns}, 1fr); gap: ${wooRowGap}px ${wooGap}px; width: 100%; box-sizing: border-box;">`;
                                     
                                     products.forEach(product => {
                                         productsHTML += `<div class="probuilder-product-card" style="border-radius: ${wooBorderRadius}px; overflow: hidden; background: ${wooCardBg}; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;">`;
@@ -11009,6 +10616,140 @@
                         console.log('Shadow updated:', key, shadowProp, $(this).val());
                         self.updateElementPreview(element);
                     });
+                } else if (control.type === 'angle') {
+                    // Circular angle picker control
+                    const $angleInput = $control.find('.probuilder-angle-input');
+                    const $angleHandle = $control.find('.angle-handle');
+                    const $angleArc = $control.find(`#${$angleInput.attr('id').replace('-input', '-arc')}`);
+                    const $angleLine = $control.find(`#${$angleInput.attr('id').replace('-input', '-line')}`);
+                    const $angleWrapper = $control.find('.angle-circle-wrapper');
+                    const $angleDisplay = $angleWrapper.find('div').last();
+                    
+                    // Function to update all angle UI elements
+                    function updateAngleUI(newAngle) {
+                        newAngle = Math.max(0, Math.min(360, parseInt(newAngle) || 0));
+                        
+                        // Update input
+                        $angleInput.val(newAngle);
+                        
+                        // Calculate handle position (SVG coordinates)
+                        const angleRad = (newAngle - 90) * Math.PI / 180;
+                        const handleX = 50 + 45 * Math.cos(angleRad);
+                        const handleY = 50 + 45 * Math.sin(angleRad);
+                        
+                        // Update handle position (absolute positioning)
+                        $angleHandle.css({
+                            'top': handleY + 'px',
+                            'left': handleX + 'px'
+                        });
+                        
+                        // Update line
+                        $angleLine.attr({
+                            'x2': handleX,
+                            'y2': handleY
+                        });
+                        
+                        // Update arc
+                        const arcLength = (newAngle / 360) * 283;
+                        $angleArc.attr('stroke-dasharray', `${arcLength} 283`);
+                        
+                        // Update center display
+                        $angleDisplay.text(Math.round(newAngle) + '°');
+                        
+                        // Update element setting
+                        element.settings[key] = newAngle;
+                        self.updateElementPreview(element);
+                    }
+                    
+                    // Handle manual input
+                    $angleInput.on('input change', function() {
+                        updateAngleUI($(this).val());
+                    });
+                    
+                    // Handle preset buttons
+                    $control.find('.angle-preset-btn').on('click', function(e) {
+                        e.preventDefault();
+                        const presetAngle = $(this).data('angle');
+                        updateAngleUI(presetAngle);
+                        
+                        // Visual feedback
+                        $(this).css({
+                            'background': '#92003b',
+                            'color': 'white',
+                            'border-color': '#92003b'
+                        });
+                        setTimeout(() => {
+                            $(this).css({
+                                'background': 'white',
+                                'color': 'inherit',
+                                'border-color': '#d1d5db'
+                            });
+                        }, 200);
+                    });
+                    
+                    // Handle circular drag - MAKE ENTIRE CIRCLE CLICKABLE
+                    let isDragging = false;
+                    
+                    // Click anywhere in circle to set angle
+                    $angleWrapper.on('mousedown', function(e) {
+                        e.preventDefault();
+                        isDragging = true;
+                        $angleHandle.css('cursor', 'grabbing');
+                        $angleWrapper.css('cursor', 'grabbing');
+                        
+                        // Immediately update angle on click
+                        const wrapperOffset = $angleWrapper.offset();
+                        const centerX = wrapperOffset.left + 50;
+                        const centerY = wrapperOffset.top + 50;
+                        const mouseX = e.pageX;
+                        const mouseY = e.pageY;
+                        
+                        // Calculate angle from center
+                        const deltaX = mouseX - centerX;
+                        const deltaY = mouseY - centerY;
+                        let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+                        angle = (angle + 90) % 360; // Normalize to 0-360, adjusted for -90 rotation
+                        if (angle < 0) angle += 360;
+                        
+                        updateAngleUI(Math.round(angle));
+                    });
+                    
+                    $(document).on('mousemove', function(e) {
+                        if (!isDragging) return;
+                        
+                        const wrapperOffset = $angleWrapper.offset();
+                        const centerX = wrapperOffset.left + 50;
+                        const centerY = wrapperOffset.top + 50;
+                        const mouseX = e.pageX;
+                        const mouseY = e.pageY;
+                        
+                        // Calculate angle from center
+                        const deltaX = mouseX - centerX;
+                        const deltaY = mouseY - centerY;
+                        let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+                        angle = (angle + 90) % 360; // Normalize to 0-360, adjusted for -90 rotation
+                        if (angle < 0) angle += 360;
+                        
+                        updateAngleUI(Math.round(angle));
+                    });
+                    
+                    $(document).on('mouseup', function() {
+                        if (isDragging) {
+                            isDragging = false;
+                            $angleHandle.css('cursor', 'grab');
+                            $angleWrapper.css('cursor', 'pointer');
+                        }
+                    });
+                    
+                    // Hover effect
+                    $angleWrapper.on('mouseenter', function() {
+                        $angleHandle.css('transform', 'translate(-50%, -50%) scale(1.2)');
+                    }).on('mouseleave', function() {
+                        if (!isDragging) {
+                            $angleHandle.css('transform', 'translate(-50%, -50%) scale(1)');
+                        }
+                    });
+                    
                 } else if (control.type === 'typography') {
                     // Typography control
                     $control.find('input, select').on('input change', function() {
@@ -12274,6 +12015,97 @@
                     html += `<input type="number" class="probuilder-input" data-setting="${key}" value="${value || ''}" placeholder="${control.placeholder || ''}">`;
                     break;
                     
+                case 'angle':
+                    const angleValue = value || control.default || 0;
+                    const angleId = 'angle-' + key + '-' + Date.now();
+                    
+                    // Calculate handle position ON THE BORDER (radius = 45px on 100px circle)
+                    const angleRad = (angleValue - 90) * Math.PI / 180;
+                    const handleX = 50 + 45 * Math.cos(angleRad);  // 50 = center, 45 = radius
+                    const handleY = 50 + 45 * Math.sin(angleRad);
+                    
+                    html += `
+                        <div class="probuilder-angle-picker" style="display: flex; align-items: center; gap: 15px;">
+                            <div class="angle-circle-wrapper" id="${angleId}-wrapper" 
+                                 style="position: relative; 
+                                        width: 100px; 
+                                        height: 100px; 
+                                        cursor: pointer;
+                                        user-select: none;">
+                                <svg width="100" height="100" viewBox="0 0 100 100" style="display: block;">
+                                    <!-- Background circle -->
+                                    <circle cx="50" cy="50" r="45" fill="white" stroke="#d1d5db" stroke-width="2"/>
+                                    
+                                    <!-- Angle indicator line (from center to edge) -->
+                                    <line x1="50" y1="50" x2="${handleX}" y2="${handleY}" 
+                                          stroke="#92003b" stroke-width="2" 
+                                          id="${angleId}-line"
+                                          style="transition: all 0.1s ease;"/>
+                                    
+                                    <!-- Gradient arc (shows angle) -->
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#92003b" stroke-width="4" 
+                                            stroke-dasharray="${(angleValue / 360) * 283} 283" 
+                                            transform="rotate(-90 50 50)"
+                                            id="${angleId}-arc"
+                                            style="transition: stroke-dasharray 0.2s ease; opacity: 0.3;"/>
+                                    
+                                    <!-- Center dot -->
+                                    <circle cx="50" cy="50" r="4" fill="#92003b"/>
+                                </svg>
+                                
+                                <!-- Draggable handle (BIGGER and more visible) -->
+                                <div class="angle-handle" id="${angleId}-handle" 
+                                     style="position: absolute; 
+                                            width: 24px; 
+                                            height: 24px; 
+                                            background: #92003b; 
+                                            border: 4px solid white; 
+                                            border-radius: 50%; 
+                                            cursor: grab;
+                                            box-shadow: 0 3px 12px rgba(146, 0, 59, 0.4);
+                                            top: ${handleY}px; 
+                                            left: ${handleX}px;
+                                            transform: translate(-50%, -50%);
+                                            transition: all 0.1s ease;
+                                            z-index: 10;">
+                                </div>
+                                
+                                <!-- Angle display in center -->
+                                <div style="position: absolute; 
+                                            top: 50%; 
+                                            left: 50%; 
+                                            transform: translate(-50%, -50%);
+                                            font-size: 14px;
+                                            font-weight: 700;
+                                            color: #92003b;
+                                            pointer-events: none;
+                                            text-shadow: 0 0 3px white, 0 0 5px white;">
+                                    ${Math.round(angleValue)}°
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="number" class="probuilder-input probuilder-angle-input" 
+                                       id="${angleId}-input"
+                                       data-setting="${key}" 
+                                       value="${angleValue}" 
+                                       min="0" 
+                                       max="360" 
+                                       style="width: 100%; text-align: center; font-weight: 600; font-size: 16px; padding: 8px;">
+                                <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                                    <button type="button" class="angle-preset-btn" data-angle="0" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">0°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="45" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">45°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="90" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">90°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="135" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">135°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="180" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">180°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="225" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">225°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="270" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">270°</button>
+                                    <button type="button" class="angle-preset-btn" data-angle="315" style="padding: 6px; font-size: 11px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">315°</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
                 case 'code':
                     html += `<textarea class="probuilder-textarea probuilder-code-editor" data-setting="${key}" rows="8" placeholder="${control.placeholder || ''}" style="font-family: 'Courier New', monospace; font-size: 12px; background: #f8f9fa; border: 1px solid #d1d5db; padding: 10px;">${value || ''}</textarea>`;
                     if (control.description) {
@@ -12596,7 +12428,7 @@
          * Update container with children (re-render with full interactivity)
          */
         updateContainerWithChildren: function(containerElement) {
-            console.log('Re-rendering container with children:', containerElement.id);
+            console.log('Re-rendering container with children:', containerElement.id, 'Children count:', containerElement.children ? containerElement.children.length : 0);
             
             // Find the container in DOM
             const $container = $(`.probuilder-element[data-id="${containerElement.id}"]`);
@@ -12605,11 +12437,17 @@
                 return;
             }
             
-            // Generate new preview with children
-            const preview = this.generatePreview(containerElement);
-            $container.find('.probuilder-element-preview').html(preview);
+            // FORCE full regeneration with depth 0 to ensure all children are rendered
+            const preview = this.generatePreview(containerElement, 0);
             
-            console.log('Container preview updated with', containerElement.children.length, 'children');
+            // Replace entire preview content
+            const $preview = $container.find('.probuilder-element-preview');
+            if ($preview.length > 0) {
+                $preview.html(preview);
+                console.log('✅ Container preview updated with', containerElement.children.length, 'children');
+            } else {
+                console.error('❌ Preview element not found for container');
+            }
             
             // Small delay to ensure DOM is fully updated
             const self = this;

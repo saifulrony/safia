@@ -271,24 +271,41 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
         $column_gap = intval($this->get_settings('column_gap', 20));
         $row_gap = intval($this->get_settings('row_gap', 30));
         
-        $products_style = 'display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . esc_attr($row_gap) . 'px ' . esc_attr($column_gap) . 'px;';
-        if ($inline_styles) $products_style .= ' ' . $inline_styles;
+        // Generate unique ID for this widget instance
+        $widget_id = 'pb-products-' . uniqid();
+        
+        // Wrapper style (applies padding, margin, background, border, etc.)
+        $wrapper_style = $inline_styles;
+        
+        // Grid style (ONLY grid-specific properties, NO padding/margin/background)
+        $grid_style = 'display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . esc_attr($row_gap) . 'px ' . esc_attr($column_gap) . 'px; width: 100%;';
         
         // Add inline CSS to ensure consistent styling
         echo '<style>
-            .probuilder-woo-products .probuilder-product-card * {
+            #' . $widget_id . ' {
                 box-sizing: border-box;
             }
-            .probuilder-woo-products .product-title a:hover {
+            #' . $widget_id . ' .probuilder-products-grid {
+                box-sizing: border-box;
+                width: 100%;
+            }
+            #' . $widget_id . ' .probuilder-product-card * {
+                box-sizing: border-box;
+            }
+            #' . $widget_id . ' .product-title a:hover {
                 opacity: 0.8;
             }
-            .probuilder-woo-products .button:hover {
+            #' . $widget_id . ' .button:hover {
                 opacity: 0.9;
                 transform: translateY(-2px);
             }
         </style>';
         
-        echo '<div class="' . esc_attr($wrapper_classes) . ' probuilder-woo-products" ' . $wrapper_attributes . ' style="' . esc_attr($products_style) . '">';
+        // Outer wrapper with padding/margin/etc from style tab
+        echo '<div id="' . esc_attr($widget_id) . '" class="' . esc_attr($wrapper_classes) . ' probuilder-woo-products-wrapper" ' . $wrapper_attributes . ' style="' . esc_attr($wrapper_style) . '">';
+        
+        // Inner grid container with ONLY grid properties
+        echo '<div class="probuilder-products-grid" style="' . esc_attr($grid_style) . '">';
         
         if ($products->have_posts()) {
             while ($products->have_posts()) {
@@ -309,7 +326,8 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
         
         wp_reset_postdata();
         
-        echo '</div>';
+        echo '</div>'; // .probuilder-products-grid
+        echo '</div>'; // .probuilder-woo-products-wrapper
     }
     
     private function render_product_card($product) {

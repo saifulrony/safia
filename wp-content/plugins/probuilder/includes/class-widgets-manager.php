@@ -30,7 +30,6 @@ class ProBuilder_Widgets_Manager {
         $widget_classes = [
             // Layout
             'ProBuilder_Widget_Container',
-            'ProBuilder_Widget_Container2',
             'ProBuilder_Widget_Flexbox',
             'ProBuilder_Widget_Grid_Layout',
             

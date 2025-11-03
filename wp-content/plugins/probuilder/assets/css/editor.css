@@ -1196,41 +1196,48 @@ body:not(.admin-bar) .probuilder-editor-main {
     opacity: 1;
 }
 
-/* Elementor-style handles - small blue circles */
+/* Elementor-style handles - BIGGER and more visible blue circles */
 .probuilder-widget-resize-handle {
     position: absolute !important;
-    width: 8px;
-    height: 8px;
-    background: #1292ee;
-    border: 2px solid #ffffff;
+    width: 12px;
+    height: 12px;
+    background: #92003b;
+    border: 3px solid #ffffff;
     border-radius: 50%;
     pointer-events: auto !important;
     z-index: 102;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(146, 0, 59, 0.4);
     opacity: 0;
     transition: all 0.2s;
 }
 
-.probuilder-element:hover .probuilder-widget-resize-handle {
+.probuilder-element:hover .probuilder-widget-resize-handle,
+.probuilder-element.selected .probuilder-widget-resize-handle {
     opacity: 1;
 }
 
 .probuilder-widget-resize-handle:hover {
     background: #ff0066;
-    transform: scale(1.5);
-    box-shadow: 0 3px 10px rgba(255, 0, 102, 0.5);
+    transform: scale(1.6);
+    box-shadow: 0 4px 15px rgba(255, 0, 102, 0.6);
+    cursor: pointer;
 }
 
-/* Edge handles - positioned to avoid conflicts */
+.probuilder-widget-resize-handle:active {
+    background: #cc0052;
+    transform: scale(1.8);
+}
+
+/* Edge handles - positioned to avoid conflicts (BIGGER offset for visibility) */
 .probuilder-resize-n {
-    top: -4px;
+    top: -6px;
     left: 50%;
     transform: translateX(-50%);
     cursor: ns-resize;
 }
 
 .probuilder-resize-s {
-    bottom: -4px;
+    bottom: -6px;
     right: 50px;
     cursor: ns-resize;
 }
@@ -1249,28 +1256,28 @@ body:not(.admin-bar) .probuilder-editor-main {
     cursor: ew-resize;
 }
 
-/* Corner handles */
+/* Corner handles (BIGGER offset for visibility) */
 .probuilder-resize-ne {
-    top: -4px;
-    right: -4px;
+    top: -6px;
+    right: -6px;
     cursor: nesw-resize;
 }
 
 .probuilder-resize-se {
-    bottom: -4px;
-    right: -4px;
+    bottom: -6px;
+    right: -6px;
     cursor: nwse-resize;
 }
 
 .probuilder-resize-sw {
-    bottom: -4px;
-    left: 50px;
+    bottom: -6px;
+    left: -6px;
     cursor: nesw-resize;
 }
 
 .probuilder-resize-nw {
-    top: -4px;
-    left: -4px;
+    top: -6px;
+    left: -6px;
     cursor: nwse-resize;
 }
 

@@ -237,13 +237,8 @@ abstract class ProBuilder_Base_Widget {
         
         $this->add_control('background_gradient_angle', [
             'label' => __('Gradient Angle', 'probuilder'),
-            'type' => 'slider',
+            'type' => 'angle',
             'default' => 135,
-            'range' => [
-                'min' => 0,
-                'max' => 360,
-                'step' => 1
-            ],
             'tab' => 'style',
         ]);
         

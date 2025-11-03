@@ -81,6 +81,11 @@ class ProBuilder_Editor {
             return false;
         }
         
+        // SECURITY: Check if user is logged in and has edit permissions
+        if (!is_user_logged_in()) {
+            return false;
+        }
+        
         // Get post ID from various sources
         $post_id = 0;
         
@@ -107,7 +112,16 @@ class ProBuilder_Editor {
             $post_id = intval($_GET['post']);
         }
         
-        return $post_id > 0;
+        if ($post_id <= 0) {
+            return false;
+        }
+        
+        // SECURITY: Check if user has permission to edit this specific post
+        if (!current_user_can('edit_post', $post_id)) {
+            return false;
+        }
+        
+        return true;
     }
     
     /**
