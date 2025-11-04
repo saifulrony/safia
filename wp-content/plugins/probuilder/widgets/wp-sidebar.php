@@ -103,6 +103,14 @@ class ProBuilder_Widget_WP_Sidebar extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $sidebar_id = $this->get_settings('sidebar_id', '');
         $bg_color = $this->get_settings('bg_color', '');
         $padding = $this->get_settings('padding', ['top' => 20, 'right' => 20, 'bottom' => 20, 'left' => 20]);

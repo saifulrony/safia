@@ -9283,6 +9283,34 @@
                     shareHTML += '</div>';
                     return shareHTML;
                 
+                case 'social-icons':
+                    const socialItems = settings.social_items || [
+                        {platform: 'facebook', url: '#', icon: 'fab fa-facebook-f', color: '#3b5998'},
+                        {platform: 'twitter', url: '#', icon: 'fab fa-twitter', color: '#1da1f2'},
+                        {platform: 'instagram', url: '#', icon: 'fab fa-instagram', color: '#E4405F'},
+                        {platform: 'linkedin', url: '#', icon: 'fab fa-linkedin-in', color: '#0077b5'}
+                    ];
+                    const socialAlign = settings.align || 'center';
+                    const socialIconSize = settings.icon_size || 20;
+                    const socialBoxSize = settings.icon_box_size || 45;
+                    const socialSpacing = settings.icon_spacing || 10;
+                    const socialBgColor = settings.icon_bg_color || '#333333';
+                    const socialIconColor = settings.icon_color || '#ffffff';
+                    
+                    let socialIconsHTML = '';
+                    socialItems.forEach(item => {
+                        socialIconsHTML += `<a href="${item.url || '#'}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; width: ${socialBoxSize}px; height: ${socialBoxSize}px; background: ${socialBgColor}; color: ${socialIconColor}; border-radius: 50%; margin: 0 ${socialSpacing/2}px; text-decoration: none; transition: all 0.3s; font-size: ${socialIconSize}px;">
+                            <i class="${item.icon}"></i>
+                        </a>`;
+                    });
+                    
+                    return `<div style="text-align: ${socialAlign}; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <div style="display: inline-block;">${socialIconsHTML}</div>
+                        <p style="margin-top: 15px; color: #666; font-size: 12px; text-align: center;">
+                            <i class="fa fa-share-nodes"></i> Social Media Links
+                        </p>
+                    </div>`;
+                
                 case 'price-list':
                     const priceItems = settings.items || [{title: 'Service 1', price: '$50', description: 'Description'}];
                     return priceItems.map(item => `
@@ -9863,6 +9891,183 @@
                                 <p style="margin:0;font-size:14px">Speed: ${parallaxSpeed}x · Height: ${parallaxHeight}px</p>
                             </div>
                         </div>
+                    </div>`;
+                
+                case 'anchor':
+                    const anchorId = settings.anchor_id || 'section-1';
+                    return `<div style="padding: 20px; background: #f0f8ff; border: 2px dashed #0073aa; border-radius: 8px; text-align: center;">
+                        <i class="fa fa-anchor" style="font-size: 32px; color: #0073aa; margin-bottom: 10px; display: block;"></i>
+                        <h4 style="margin: 0 0 5px; color: #0073aa;">Anchor Point</h4>
+                        <p style="margin: 0; color: #666; font-size: 13px;">ID: <strong>${anchorId}</strong></p>
+                        <p style="margin: 5px 0 0; color: #999; font-size: 11px;">Use this ID in links to scroll to this section</p>
+                    </div>`;
+                
+                case 'animated-headline':
+                    const ahTitle = settings.before_text || 'We Are';
+                    const ahWords = settings.animated_text || 'Creative\nAwesome\nProfessional';
+                    const ahStyle = settings.animation_type || 'typing';
+                    const firstWord = ahWords.split('\n')[0];
+                    return `<div style="padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; text-align: center;">
+                        <h2 style="margin: 0; color: #fff; font-size: 36px; font-weight: 700;">
+                            ${ahTitle} <span style="color: #ffd700;">${firstWord}</span>
+                        </h2>
+                        <p style="margin: 10px 0 0; color: rgba(255,255,255,0.8); font-size: 13px;">
+                            <i class="fa fa-magic"></i> Animation: ${ahStyle}
+                        </p>
+                    </div>`;
+                
+                case 'audio':
+                    const audioUrl = settings.audio_url || '';
+                    const audioTitle = settings.title || 'Audio Player';
+                    return `<div style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px; color: #333;">${audioTitle}</h4>
+                        <div style="background: #92003b; color: #fff; padding: 15px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
+                            <i class="fa fa-play-circle" style="font-size: 32px;"></i>
+                            <div style="flex: 1;">
+                                <div style="height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-bottom: 5px;">
+                                    <div style="height: 100%; width: 30%; background: #fff; border-radius: 2px;"></div>
+                                </div>
+                                <div style="font-size: 11px; opacity: 0.9;">0:45 / 3:24</div>
+                            </div>
+                            <i class="fa fa-volume-up" style="font-size: 20px;"></i>
+                        </div>
+                    </div>`;
+                
+                case 'google-maps':
+                    const gmAddress = settings.address || 'Times Square, New York, NY';
+                    const gmZoom = settings.zoom || 15;
+                    const gmHeight = settings.height || 400;
+                    return `<div style="position: relative; height: ${gmHeight}px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; overflow: hidden;">
+                        <div style="position: absolute; inset: 0; background: url('data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 800 600\\'%3E%3Crect fill=\\'%23e0e0e0\\' width=\\'800\\' height=\\'600\\'/%3E%3Cpath fill=\\'%23ccc\\' d=\\'M0 300 Q200 250 400 300 T800 300 V600 H0 Z\\'/%3E%3Cpath fill=\\'%23bbb\\' d=\\'M0 400 Q200 350 400 400 T800 400 V600 H0 Z\\'/%3E%3C/svg%3E') center/cover;"></div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1;">
+                            <div style="width: 40px; height: 60px; margin: 0 auto 15px; background: #92003b; clip-path: polygon(50% 100%, 0% 40%, 0% 0%, 100% 0%, 100% 40%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; padding-bottom: 15px;">
+                                <i class="fa fa-map-marker-alt"></i>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.95); padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 5px;">${gmAddress}</div>
+                                <div style="font-size: 11px; color: #666;">Zoom: ${gmZoom}x · Height: ${gmHeight}px</div>
+                            </div>
+                        </div>
+                    </div>`;
+                
+                case 'sidebar':
+                    const sidebarName = settings.sidebar || 'sidebar-1';
+                    return `<div style="padding: 20px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #fff; border-left: 4px solid #92003b;">
+                            <h4 style="margin: 0 0 5px; font-size: 16px;">Widget Area</h4>
+                            <p style="margin: 0; font-size: 12px; color: #666;">Search Widget</p>
+                        </div>
+                        <div style="margin-bottom: 20px; padding: 15px; background: #fff; border-left: 4px solid #0073aa;">
+                            <h4 style="margin: 0 0 5px; font-size: 16px;">Recent Posts</h4>
+                            <p style="margin: 0; font-size: 12px; color: #666;">Latest blog entries</p>
+                        </div>
+                        <div style="padding: 15px; background: #fff; border-left: 4px solid #46b450;">
+                            <h4 style="margin: 0 0 5px; font-size: 16px;">Categories</h4>
+                            <p style="margin: 0; font-size: 12px; color: #666;">Post categories</p>
+                        </div>
+                        <p style="margin-top: 15px; text-align: center; color: #666; font-size: 11px;">
+                            <i class="fa fa-columns"></i> WordPress Sidebar: ${sidebarName}
+                        </p>
+                    </div>`;
+                
+                case 'woo-add-to-cart':
+                    const wcBtnText = settings.button_text || 'Add to Cart';
+                    const wcBtnColor = settings.button_color || '#92003b';
+                    const wcShowQty = settings.show_quantity !== 'no';
+                    return `<div style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            ${wcShowQty ? '<input type="number" value="1" min="1" style="width: 60px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">' : ''}
+                            <button style="background: ${wcBtnColor}; color: #fff; border: none; padding: 12px 30px; border-radius: 4px; font-weight: 600; cursor: pointer; flex: 1; font-size: 15px;">
+                                <i class="fa fa-cart-plus"></i> ${wcBtnText}
+                            </button>
+                        </div>
+                        <p style="margin-top: 10px; color: #666; font-size: 12px; text-align: center;">
+                            <i class="fa fa-shopping-cart"></i> WooCommerce Add to Cart Button
+                        </p>
+                    </div>`;
+                
+                case 'woo-cart':
+                    const cartShowIcon = settings.show_icon !== 'no';
+                    const cartIcon = settings.icon || 'fa fa-shopping-cart';
+                    const cartCount = settings.show_count !== 'no';
+                    const cartAmount = settings.show_amount !== 'no';
+                    return `<div style="padding: 15px 25px; background: #92003b; color: #fff; border-radius: 4px; display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
+                        ${cartShowIcon ? `<i class="${cartIcon}" style="font-size: 20px;"></i>` : ''}
+                        <span style="font-weight: 600;">Cart</span>
+                        ${cartCount ? '<span style="background: #fff; color: #92003b; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">3</span>' : ''}
+                        ${cartAmount ? '<span style="margin-left: 5px; font-size: 14px;">$129.00</span>' : ''}
+                    </div>`;
+                
+                case 'woo-breadcrumbs':
+                    const bcSeparator = settings.separator || '/';
+                    return `<div style="padding: 15px 20px; background: #f5f5f5; border-radius: 4px;">
+                        <div style="font-size: 14px; color: #666;">
+                            <a href="#" style="color: #0073aa; text-decoration: none;">Home</a>
+                            <span style="margin: 0 8px; color: #999;">${bcSeparator}</span>
+                            <a href="#" style="color: #0073aa; text-decoration: none;">Shop</a>
+                            <span style="margin: 0 8px; color: #999;">${bcSeparator}</span>
+                            <span style="color: #333;">Product Name</span>
+                        </div>
+                        <p style="margin: 10px 0 0; color: #999; font-size: 11px; text-align: center;">
+                            <i class="fa fa-route"></i> WooCommerce Breadcrumbs
+                        </p>
+                    </div>`;
+                
+                case 'woo-meta':
+                    const metaShowSku = settings.show_sku !== 'no';
+                    const metaShowCategory = settings.show_category !== 'no';
+                    const metaShowTags = settings.show_tags !== 'no';
+                    return `<div style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        ${metaShowSku ? '<div style="margin-bottom: 10px; font-size: 14px;"><strong>SKU:</strong> <span style="color: #666;">WP-001</span></div>' : ''}
+                        ${metaShowCategory ? '<div style="margin-bottom: 10px; font-size: 14px;"><strong>Category:</strong> <a href="#" style="color: #0073aa;">Electronics</a></div>' : ''}
+                        ${metaShowTags ? '<div style="font-size: 14px;"><strong>Tags:</strong> <a href="#" style="color: #0073aa;">Featured</a>, <a href="#" style="color: #0073aa;">New</a></div>' : ''}
+                        <p style="margin-top: 15px; color: #999; font-size: 11px; text-align: center;">
+                            <i class="fa fa-info-circle"></i> Product Meta Information
+                        </p>
+                    </div>`;
+                
+                case 'woo-rating':
+                    const ratingValue = settings.rating || 4.5;
+                    const ratingCount = settings.show_count !== 'no';
+                    return `<div style="padding: 15px 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
+                        <div style="color: #f90; font-size: 20px; margin-bottom: 5px;">
+                            ${'★'.repeat(Math.floor(ratingValue))}${'☆'.repeat(5 - Math.floor(ratingValue))}
+                        </div>
+                        ${ratingCount ? '<div style="font-size: 13px; color: #666;">(24 customer reviews)</div>' : ''}
+                        <p style="margin-top: 10px; color: #999; font-size: 11px;">
+                            <i class="fa fa-star"></i> Product Rating Widget
+                        </p>
+                    </div>`;
+                
+                case 'woo-related':
+                    const relatedCount = settings.posts_per_page || 4;
+                    const relatedColumns = settings.columns || 4;
+                    return `<div style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h3 style="margin: 0 0 20px; font-size: 22px; color: #333;">Related Products</h3>
+                        <div style="display: grid; grid-template-columns: repeat(${Math.min(relatedColumns, 4)}, 1fr); gap: 15px;">
+                            ${Array(Math.min(relatedCount, 4)).fill('').map((_, i) => `
+                                <div style="background: #fff; padding: 15px; border-radius: 4px; text-align: center;">
+                                    <div style="width: 100%; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 4px; margin-bottom: 10px;"></div>
+                                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 5px;">Product ${i + 1}</div>
+                                    <div style="color: #92003b; font-weight: 600;">$${(i + 1) * 10}.00</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                
+                case 'woo-reviews':
+                    const reviewsCount = settings.reviews_count || 3;
+                    return `<div style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h3 style="margin: 0 0 20px; font-size: 22px; color: #333;">Customer Reviews</h3>
+                        ${Array(Math.min(reviewsCount, 3)).fill('').map((_, i) => `
+                            <div style="background: #fff; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <strong style="color: #333;">Customer ${i + 1}</strong>
+                                    <div style="color: #f90; font-size: 14px;">${'★'.repeat(5 - i)}${'☆'.repeat(i)}</div>
+                                </div>
+                                <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Great product! Highly recommended for anyone looking for quality.</p>
+                            </div>
+                        `).join('')}
                     </div>`;
                 
                 case 'calendly':

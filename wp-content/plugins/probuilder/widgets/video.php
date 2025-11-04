@@ -126,6 +126,14 @@ class ProBuilder_Widget_Video extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $video_type = $this->get_settings('video_type', 'youtube');
         $youtube_url = $this->get_settings('youtube_url', 'https://www.youtube.com/watch?v=ScMzIvxBSi4');
         $vimeo_url = $this->get_settings('vimeo_url', '');

@@ -91,6 +91,14 @@ class ProBuilder_Widget_Counter extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $starting = $this->get_settings('starting_number', 0);
         $ending = $this->get_settings('ending_number', 1000);
         $prefix = $this->get_settings('prefix', '');

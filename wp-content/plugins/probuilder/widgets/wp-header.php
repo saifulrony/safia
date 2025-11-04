@@ -120,6 +120,14 @@ class ProBuilder_Widget_WP_Header extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $menu_id = $this->get_settings('menu_id', '');
         $header_type = $this->get_settings('header_type', 'horizontal');
         $show_logo = $this->get_settings('show_logo', 'yes') === 'yes';

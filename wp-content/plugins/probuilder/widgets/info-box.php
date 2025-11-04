@@ -164,6 +164,14 @@ class ProBuilder_Widget_Info_Box extends ProBuilder_Base_Widget {
     }
     
     protected function render() {
+        // Render custom CSS if any
+        $this->render_custom_css();
+        
+        // Get wrapper classes and attributes from base class
+        $wrapper_classes = $this->get_wrapper_classes();
+        $wrapper_attributes = $this->get_wrapper_attributes();
+        $inline_styles = $this->get_inline_styles();
+        
         $icon_type = $this->get_settings('icon_type', 'number');
         $number = $this->get_settings('number', '01');
         $icon = $this->get_settings('icon', 'fa fa-check-circle');
