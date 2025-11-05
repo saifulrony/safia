@@ -82,6 +82,8 @@ final class ProBuilder {
         require_once PROBUILDER_PATH . 'includes/class-ajax.php';
         require_once PROBUILDER_PATH . 'includes/class-templates.php';
         require_once PROBUILDER_PATH . 'includes/class-templates-library.php';
+        require_once PROBUILDER_PATH . 'includes/class-template-parts.php';
+        require_once PROBUILDER_PATH . 'includes/class-custom-parts.php';
         require_once PROBUILDER_PATH . 'includes/class-theme-integration.php';
         require_once PROBUILDER_PATH . 'includes/class-uninstall-feedback.php';
         
@@ -302,10 +304,11 @@ final class ProBuilder {
         // Add edit with ProBuilder button
         add_filter('page_row_actions', [$this, 'add_edit_button'], 10, 2);
         add_filter('post_row_actions', [$this, 'add_edit_button'], 10, 2);
+        add_filter('post_row_actions', [$this, 'add_edit_button'], 10, 2); // For probuilder_part too
     }
 
     /**
-     * When adding a new Page in admin, create a draft and open ProBuilder by default
+     * When adding a new Page/Header/Footer/Slider in admin, create a draft and open ProBuilder by default
      */
     public function maybe_redirect_add_new_to_probuilder() {
         // Only run in admin screen load for creating new items
@@ -320,27 +323,43 @@ final class ProBuilder {
         
         // Determine target post type (default WP uses 'post')
         $post_type = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : 'post';
-        if ($post_type !== 'page') {
-            return; // Only auto-open ProBuilder for Pages by default
+        
+        // ProBuilder custom post types that should auto-open with ProBuilder
+        $probuilder_types = ['page', 'pb_header', 'pb_footer', 'pb_slider'];
+        
+        if (!in_array($post_type, $probuilder_types)) {
+            return; // Only auto-open ProBuilder for supported post types
         }
         
-        // Ensure user has permission to create pages
+        // Ensure user has permission to create this post type
         if (!current_user_can('edit_pages')) {
             return;
         }
         
-        // Ensure ProBuilder is enabled for this post type
-        $enabled_post_types = get_option('probuilder_post_types', ['page', 'post']);
-        if (!in_array('page', $enabled_post_types, true)) {
-            return;
+        // For page post type, check if ProBuilder is enabled
+        if ($post_type === 'page') {
+            $enabled_post_types = get_option('probuilder_post_types', ['page', 'post']);
+            if (!in_array('page', $enabled_post_types, true)) {
+                return;
+            }
         }
         
-        // Create a new draft page with unique title (to ensure unique slug)
+        // Create appropriate title based on post type
         $unique_id = substr(uniqid(), -6); // Last 6 chars of unique ID
+        $titles = [
+            'page' => sprintf(__('New Page %s', 'probuilder'), $unique_id),
+            'pb_header' => sprintf(__('New Header %s', 'probuilder'), $unique_id),
+            'pb_footer' => sprintf(__('New Footer %s', 'probuilder'), $unique_id),
+            'pb_slider' => sprintf(__('New Slider %s', 'probuilder'), $unique_id),
+        ];
+        
+        $post_title = isset($titles[$post_type]) ? $titles[$post_type] : sprintf(__('New %s %s', 'probuilder'), ucfirst($post_type), $unique_id);
+        
+        // Create a new draft
         $post_id = wp_insert_post([
-            'post_type'   => 'page',
+            'post_type'   => $post_type,
             'post_status' => 'draft',
-            'post_title'  => sprintf(__('New Page %s', 'probuilder'), $unique_id),
+            'post_title'  => $post_title,
             'post_author' => get_current_user_id(),
         ]);
         
@@ -348,10 +367,11 @@ final class ProBuilder {
             return; // Fallback to default editor if creation fails
         }
         
-        // Redirect to frontend ProBuilder editor for the new page
+        // Redirect to frontend ProBuilder editor
         $probuilder_url = add_query_arg([
             'p' => $post_id,
             'probuilder' => 'true',
+            'post_type' => $post_type,
         ], home_url('/'));
         
         wp_safe_redirect($probuilder_url);
@@ -649,6 +669,12 @@ final class ProBuilder {
      */
     public function add_edit_button($actions, $post) {
         $enabled_post_types = get_option('probuilder_post_types', ['page', 'post']);
+        
+        // Always enable for ProBuilder custom post types
+        $probuilder_types = ['probuilder_part', 'pb_header', 'pb_footer', 'pb_slider'];
+        if (in_array($post->post_type, $probuilder_types)) {
+            $enabled_post_types[] = $post->post_type;
+        }
         
         if (in_array($post->post_type, $enabled_post_types)) {
             // Use frontend URL with probuilder parameter (not admin)

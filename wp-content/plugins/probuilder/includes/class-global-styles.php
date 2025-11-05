@@ -31,6 +31,11 @@ class ProBuilder_Global_Styles {
      */
     public function get_default_styles() {
         return [
+            'layout' => [
+                'content_width' => 'boxed', // 'full' or 'boxed'
+                'boxed_width' => '1400px',
+                'boxed_padding' => '15px'
+            ],
             'colors' => [
                 'primary' => '#344047',
                 'secondary' => '#2c3e50',
@@ -135,9 +140,25 @@ class ProBuilder_Global_Styles {
     public function ajax_save_global_styles() {
         check_ajax_referer('probuilder-editor', 'nonce');
         
-        $styles = json_decode(stripslashes($_POST['styles']), true);
+        $new_styles = json_decode(stripslashes($_POST['styles']), true);
         
-        update_option('probuilder_global_styles', $styles);
+        // Get existing styles
+        $existing_styles = get_option('probuilder_global_styles', []);
+        
+        // Merge new styles with existing (preserving other sections)
+        $merged_styles = array_merge($existing_styles, $new_styles);
+        
+        // Deep merge for nested arrays (like layout section)
+        foreach ($new_styles as $section => $values) {
+            if (isset($existing_styles[$section]) && is_array($values)) {
+                $merged_styles[$section] = array_merge(
+                    (array) $existing_styles[$section],
+                    $values
+                );
+            }
+        }
+        
+        update_option('probuilder_global_styles', $merged_styles);
         
         wp_send_json_success(['message' => 'Global styles saved']);
     }
@@ -150,6 +171,13 @@ class ProBuilder_Global_Styles {
         
         echo '<style id="probuilder-global-styles">';
         echo ':root {';
+        
+        // Layout
+        if (isset($styles['layout'])) {
+            foreach ($styles['layout'] as $key => $value) {
+                echo '--pb-layout-' . $key . ': ' . esc_attr($value) . ';';
+            }
+        }
         
         // Colors
         if (isset($styles['colors'])) {
@@ -187,6 +215,16 @@ class ProBuilder_Global_Styles {
         }
         
         echo '}';
+        
+        // Apply layout width globally
+        if (isset($styles['layout']['content_width']) && $styles['layout']['content_width'] === 'boxed') {
+            $boxed_width = isset($styles['layout']['boxed_width']) ? $styles['layout']['boxed_width'] : '1400px';
+            $boxed_padding = isset($styles['layout']['boxed_padding']) ? $styles['layout']['boxed_padding'] : '15px';
+            echo '.probuilder-content { max-width: ' . esc_attr($boxed_width) . '; margin: 0 auto; padding: 0 ' . esc_attr($boxed_padding) . '; box-sizing: border-box; }';
+        } else {
+            echo '.probuilder-content { width: 100%; max-width: 100%; margin: 0; padding: 0; }';
+        }
+        
         echo '</style>';
     }
 }

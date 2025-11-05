@@ -323,13 +323,45 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                     </div>
                     
                     <div class="grid-cell-content">
-                        <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; color: #999;"></i>
-                        <div style="font-size: 12px; margin-top: 8px; color: #999;">Cell <?php echo $i + 1; ?></div>
-                        <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
+                        <?php 
+                        // Render child widget if exists
+                        $children = $this->get_settings('_children', []);
+                        if (!empty($children) && isset($children[$i])) {
+                            $child = $children[$i];
+                            // Render child widget
+                            $child_widget = ProBuilder_Widgets_Manager::instance()->get_widget($child['widgetType']);
+                            if ($child_widget) {
+                                // Pass nested children too
+                                $child_settings = $child['settings'] ?? [];
+                                $child_settings['_children'] = $child['children'] ?? [];
+                                $child_widget->render_widget($child_settings);
+                            }
+                        } else {
+                            // Show placeholder ONLY in ProBuilder editor, not on frontend
+                            if (isset($_GET['probuilder']) && $_GET['probuilder'] === 'true') {
+                                ?>
+                                <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; color: #999;"></i>
+                                <div style="font-size: 12px; margin-top: 8px; color: #999;">Cell <?php echo $i + 1; ?></div>
+                                <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
+                                <?php
+                            }
+                            // On frontend: show nothing (empty cell)
+                        }
+                        ?>
                     </div>
                 </div>
             <?php endfor; ?>
         </div>
+        
+        <?php if (!$is_editor): ?>
+        <style>
+            /* Hide only the toolbar/controls on frontend, not the cells */
+            #<?php echo $grid_id; ?> .grid-cell-toolbar,
+            #<?php echo $grid_id; ?> .resize-handle {
+                display: none !important;
+            }
+        </style>
+        <?php endif; ?>
         
         <?php if ($enable_resize): ?>
         <script>

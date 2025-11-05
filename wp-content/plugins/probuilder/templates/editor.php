@@ -129,7 +129,22 @@
                 <span>ProBuilder</span>
             </div>
             <div class="probuilder-page-title" title="Click to edit page title" style="cursor: pointer;" onclick="ProBuilder.showPageSettings();">
-                <?php echo esc_html(get_the_title() ? get_the_title() : 'Untitled Page'); ?>
+                <?php 
+                $post_type = get_post_type();
+                $type_labels = [
+                    'pb_header' => ['icon' => '📌', 'label' => 'Header', 'color' => '#667eea'],
+                    'pb_footer' => ['icon' => '📎', 'label' => 'Footer', 'color' => '#f5576c'],
+                    'pb_slider' => ['icon' => '🎬', 'label' => 'Slider', 'color' => '#4facfe'],
+                ];
+                
+                if (isset($type_labels[$post_type])):
+                    $type_info = $type_labels[$post_type];
+                ?>
+                    <span style="display: inline-block; padding: 4px 10px; background: <?php echo $type_info['color']; ?>; color: white; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 10px; vertical-align: middle;">
+                        <?php echo $type_info['icon']; ?> <?php echo $type_info['label']; ?>
+                    </span>
+                <?php endif; ?>
+                <?php echo esc_html(get_the_title() ? get_the_title() : 'Untitled'); ?>
             </div>
             <div class="probuilder-responsive-controls">
                 <button class="probuilder-device-btn active" data-device="desktop" title="Desktop View">
@@ -154,9 +169,17 @@
         </div>
         
         <div class="probuilder-header-right">
+            <button id="probuilder-new-page" class="probuilder-btn probuilder-btn-secondary" title="Create a new blank page">
+                <i class="dashicons dashicons-plus-alt"></i>
+                <?php esc_html_e('New Page', 'probuilder'); ?>
+            </button>
+            <button id="probuilder-clear-page" class="probuilder-btn probuilder-btn-secondary" title="Clear all content from current page">
+                <i class="dashicons dashicons-trash"></i>
+                <?php esc_html_e('Clear Page', 'probuilder'); ?>
+            </button>
             <button id="probuilder-page-settings" class="probuilder-btn probuilder-btn-secondary">
                 <i class="dashicons dashicons-admin-generic"></i>
-                <?php esc_html_e('Page Settings', 'probuilder'); ?>
+                <?php esc_html_e('Settings', 'probuilder'); ?>
             </button>
             <button id="probuilder-preview" class="probuilder-btn probuilder-btn-secondary">
                 <i class="dashicons dashicons-visibility"></i>
@@ -256,6 +279,37 @@
                 <div class="probuilder-tab-content" data-tab="globalstyles">
                     <div class="probuilder-global-styles-container">
                         
+                        <!-- Layout Section -->
+                        <div class="probuilder-global-section">
+                            <div class="probuilder-global-section-header">
+                                <i class="dashicons dashicons-layout"></i>
+                                <h3><?php esc_html_e('Layout', 'probuilder'); ?></h3>
+                            </div>
+                            <div class="probuilder-global-section-content">
+                                <div class="probuilder-control-group">
+                                    <label><?php esc_html_e('Page Width', 'probuilder'); ?></label>
+                                    <select id="probuilder-layout-width" class="probuilder-control-input">
+                                        <option value="boxed" selected><?php esc_html_e('Boxed (1400px)', 'probuilder'); ?></option>
+                                        <option value="full"><?php esc_html_e('Full Width', 'probuilder'); ?></option>
+                                    </select>
+                                </div>
+                                <div class="probuilder-control-group" id="probuilder-boxed-width-control">
+                                    <label><?php esc_html_e('Boxed Width', 'probuilder'); ?></label>
+                                    <input type="text" id="probuilder-boxed-width" class="probuilder-control-input" value="1400px" placeholder="1400px">
+                                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;"><?php esc_html_e('Use px, %, or vw (e.g., 1400px, 90%, 85vw)', 'probuilder'); ?></small>
+                                </div>
+                                <div class="probuilder-control-group">
+                                    <label><?php esc_html_e('Padding', 'probuilder'); ?></label>
+                                    <input type="text" id="probuilder-layout-padding" class="probuilder-control-input" value="15px" placeholder="15px">
+                                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;"><?php esc_html_e('Left & right padding (e.g., 15px, 20px)', 'probuilder'); ?></small>
+                                </div>
+                                <button class="probuilder-btn probuilder-btn-primary probuilder-btn-sm" id="apply-layout-settings">
+                                    <i class="dashicons dashicons-saved"></i>
+                                    <?php esc_html_e('Apply Layout', 'probuilder'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        
                         <!-- Color Palette Section -->
                         <div class="probuilder-global-section">
                             <div class="probuilder-global-section-header">
@@ -308,6 +362,56 @@
         <!-- Canvas - Preview Area -->
         <div class="probuilder-canvas" data-device="desktop">
             <div class="probuilder-canvas-inner">
+                <?php
+                // Add contextual banner for headers/footers/sliders
+                $post_type = get_post_type();
+                if (in_array($post_type, ['pb_header', 'pb_footer', 'pb_slider'])):
+                    $banner_info = [
+                        'pb_header' => [
+                            'icon' => '📌',
+                            'title' => 'Creating Header',
+                            'desc' => 'Add logo, navigation menu, search, cart, and other header elements below.',
+                            'bg' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            'tips' => ['Add Image widget for logo', 'Add Menu widget for navigation', 'Add Search & Cart widgets', 'Make it sticky for better UX']
+                        ],
+                        'pb_footer' => [
+                            'icon' => '📎',
+                            'title' => 'Creating Footer',
+                            'desc' => 'Build your footer with columns, social icons, newsletter forms, and links.',
+                            'bg' => 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            'tips' => ['Use Grid Layout for columns', 'Add Social Icons widget', 'Add Form for newsletter', 'Include copyright text']
+                        ],
+                        'pb_slider' => [
+                            'icon' => '🎬',
+                            'title' => 'Creating Slider',
+                            'desc' => 'Add Slider widget and create beautiful slides with images, text, and buttons.',
+                            'bg' => 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                            'tips' => ['Add Slider widget first', 'Configure multiple slides', 'Add images & content to each slide', 'Set autoplay & transition effects']
+                        ],
+                    ];
+                    
+                    if (isset($banner_info[$post_type])):
+                        $info = $banner_info[$post_type];
+                ?>
+                <div class="probuilder-context-banner" style="background: <?php echo $info['bg']; ?>; color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: flex-start; gap: 15px;">
+                        <div style="font-size: 48px; line-height: 1;"><?php echo $info['icon']; ?></div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: white;"><?php echo $info['title']; ?></h3>
+                            <p style="margin: 0 0 15px; opacity: 0.95; font-size: 14px; line-height: 1.5;"><?php echo $info['desc']; ?></p>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <?php foreach ($info['tips'] as $tip): ?>
+                                <span style="padding: 6px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 12px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">
+                                    💡 <?php echo $tip; ?>
+                                </span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.style.display='none'" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; backdrop-filter: blur(10px);" title="Hide this banner">×</button>
+                    </div>
+                </div>
+                <?php endif; endif; ?>
+                
                 <div id="probuilder-preview-area" class="probuilder-preview-area">
                     <!-- Elements will be added here -->
                 </div>

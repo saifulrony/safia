@@ -525,8 +525,166 @@ class ProBuilder_Widget_Slider extends ProBuilder_Base_Widget {
         ]);
         
         $this->end_controls_section();
+        
+        // Advanced Effects Section
+        $this->start_controls_section('section_advanced_effects', [
+            'label' => __('Advanced Effects', 'probuilder'),
+            'tab' => 'style',
+        ]);
+        
+        $this->add_control('ken_burns_zoom', [
+            'label' => __('Ken Burns Zoom Level', 'probuilder'),
+            'type' => 'slider',
+            'default' => 1.2,
+            'range' => [
+                'px' => ['min' => 1, 'max' => 1.5, 'step' => 0.05],
+            ],
+            'description' => __('Background image zoom effect for Ken Burns style', 'probuilder'),
+        ]);
+        
+        $this->add_control('parallax_speed', [
+            'label' => __('Parallax Speed', 'probuilder'),
+            'type' => 'slider',
+            'default' => 0.5,
+            'range' => [
+                'px' => ['min' => 0.1, 'max' => 1, 'step' => 0.1],
+            ],
+            'description' => __('Parallax scrolling speed multiplier', 'probuilder'),
+        ]);
+        
+        $this->add_control('image_blur', [
+            'label' => __('Background Blur', 'probuilder'),
+            'type' => 'slider',
+            'default' => 0,
+            'range' => [
+                'px' => ['min' => 0, 'max' => 20, 'step' => 1],
+            ],
+            'description' => __('Apply blur filter to background image (px)', 'probuilder'),
+        ]);
+        
+        $this->add_control('image_brightness', [
+            'label' => __('Background Brightness', 'probuilder'),
+            'type' => 'slider',
+            'default' => 100,
+            'range' => [
+                'px' => ['min' => 0, 'max' => 200, 'step' => 5],
+            ],
+            'description' => __('Adjust background brightness (%)', 'probuilder'),
+        ]);
+        
+        $this->add_control('image_contrast', [
+            'label' => __('Background Contrast', 'probuilder'),
+            'type' => 'slider',
+            'default' => 100,
+            'range' => [
+                'px' => ['min' => 0, 'max' => 200, 'step' => 5],
+            ],
+            'description' => __('Adjust background contrast (%)', 'probuilder'),
+        ]);
+        
+        $this->add_control('content_shadow', [
+            'label' => __('Content Text Shadow', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Add shadow to text for better readability', 'probuilder'),
+        ]);
+        
+        $this->add_control('content_backdrop', [
+            'label' => __('Content Backdrop Blur', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'no',
+            'description' => __('Add glassmorphism effect behind content', 'probuilder'),
+        ]);
+        
+        $this->end_controls_section();
+        
+        // Responsive Settings Section
+        $this->start_controls_section('section_responsive', [
+            'label' => __('Responsive Settings', 'probuilder'),
+            'tab' => 'style',
+        ]);
+        
+        $this->add_control('mobile_height', [
+            'label' => __('Mobile Height (px)', 'probuilder'),
+            'type' => 'number',
+            'default' => 400,
+            'description' => __('Slider height on mobile devices', 'probuilder'),
+        ]);
+        
+        $this->add_control('tablet_height', [
+            'label' => __('Tablet Height (px)', 'probuilder'),
+            'type' => 'number',
+            'default' => 500,
+            'description' => __('Slider height on tablet devices', 'probuilder'),
+        ]);
+        
+        $this->add_control('hide_content_mobile', [
+            'label' => __('Hide Content on Mobile', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'no',
+            'description' => __('Hide title/description on mobile for cleaner view', 'probuilder'),
+        ]);
+        
+        $this->add_control('hide_arrows_mobile', [
+            'label' => __('Hide Arrows on Mobile', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Hide navigation arrows on mobile devices', 'probuilder'),
+        ]);
+        
+        $this->add_control('swipe_enabled', [
+            'label' => __('Enable Touch Swipe', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Allow swiping on touch devices', 'probuilder'),
+        ]);
+        
+        $this->add_control('keyboard_nav', [
+            'label' => __('Keyboard Navigation', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Enable arrow keys for navigation', 'probuilder'),
+        ]);
+        
+        $this->end_controls_section();
+        
+        // Performance & Accessibility Section
+        $this->start_controls_section('section_performance', [
+            'label' => __('Performance & Accessibility', 'probuilder'),
+            'tab' => 'content',
+        ]);
+        
+        $this->add_control('lazy_load', [
+            'label' => __('Lazy Load Images', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Load images only when needed for better performance', 'probuilder'),
+        ]);
+        
+        $this->add_control('preload_images', [
+            'label' => __('Preload Next Slide', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Preload next slide image for smoother transitions', 'probuilder'),
+        ]);
+        
+        $this->add_control('accessibility_labels', [
+            'label' => __('Accessibility Labels', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Add ARIA labels for screen readers', 'probuilder'),
+        ]);
+        
+        $this->add_control('reduce_motion', [
+            'label' => __('Respect Reduced Motion', 'probuilder'),
+            'type' => 'switcher',
+            'default' => 'yes',
+            'description' => __('Respect user\'s reduced motion preferences', 'probuilder'),
+        ]);
+        
+        $this->end_controls_section();
     }
-    
+
     protected function render() {
         // Render custom CSS if any
         $this->render_custom_css();

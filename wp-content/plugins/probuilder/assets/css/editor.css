@@ -198,11 +198,6 @@ body.admin-bar .probuilder-editor-main {
     height: calc(100vh - 77px) !important;
 }
 
-/* If no admin bar */
-body:not(.admin-bar).probuilder-editor-body {
-    padding-top: 28px !important;
-}
-
 body:not(.admin-bar) .probuilder-editor-header {
     position: relative !important;
     top: 31px !important;

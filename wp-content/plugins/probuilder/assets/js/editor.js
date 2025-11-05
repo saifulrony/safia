@@ -214,6 +214,23 @@
                 self.addGlobalColor();
             });
             
+            // Layout settings
+            $('#probuilder-layout-width').on('change', function() {
+                const value = $(this).val();
+                if (value === 'boxed') {
+                    $('#probuilder-boxed-width-control').show();
+                } else {
+                    $('#probuilder-boxed-width-control').hide();
+                }
+            });
+            
+            $('#apply-layout-settings').on('click', function() {
+                self.applyLayoutSettings();
+            });
+            
+            // Load saved layout settings
+            self.loadLayoutSettings();
+            
             console.log('✅ Global styles initialized');
         },
         
@@ -479,6 +496,119 @@
         saveGlobalStyles: function() {
             localStorage.setItem('probuilder_global_styles', JSON.stringify(this.globalStyles));
             console.log('✅ Global styles saved');
+        },
+        
+        /**
+         * Load layout settings from server
+         */
+        loadLayoutSettings: function() {
+            const self = this;
+            $.ajax({
+                url: ProBuilderEditor.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_get_global_styles',
+                    nonce: ProBuilderEditor.nonce
+                },
+                success: function(response) {
+                    // Use defaults if no settings exist
+                    const layout = (response.success && response.data && response.data.layout) 
+                        ? response.data.layout 
+                        : {content_width: 'boxed', boxed_width: '1400px', boxed_padding: '15px'};
+                    
+                    const contentWidth = layout.content_width || 'boxed';
+                    const boxedWidth = layout.boxed_width || '1400px';
+                    const boxedPadding = layout.boxed_padding || '15px';
+                    
+                    $('#probuilder-layout-width').val(contentWidth);
+                    $('#probuilder-boxed-width').val(boxedWidth);
+                    $('#probuilder-layout-padding').val(boxedPadding);
+                    
+                    // Show/hide boxed width control
+                    if (contentWidth === 'full') {
+                        $('#probuilder-boxed-width-control').hide();
+                    } else {
+                        $('#probuilder-boxed-width-control').show();
+                    }
+                    
+                    // Apply to preview area immediately
+                    const $previewArea = $('#probuilder-preview-area');
+                    if (contentWidth === 'boxed') {
+                        $previewArea.css({
+                            'max-width': boxedWidth,
+                            'margin': '0 auto',
+                            'padding': '0 ' + boxedPadding,
+                            'box-sizing': 'border-box'
+                        });
+                    } else {
+                        $previewArea.css({
+                            'max-width': '100%',
+                            'margin': '0',
+                            'padding': '0'
+                        });
+                    }
+                    
+                    console.log('✅ Layout settings loaded and applied:', layout);
+                },
+                error: function() {
+                    console.error('Failed to load layout settings');
+                }
+            });
+        },
+        
+        /**
+         * Apply layout settings
+         */
+        applyLayoutSettings: function() {
+            const self = this;
+            const contentWidth = $('#probuilder-layout-width').val();
+            const boxedWidth = $('#probuilder-boxed-width').val();
+            const boxedPadding = $('#probuilder-layout-padding').val();
+            
+            // Save via AJAX
+            $.ajax({
+                url: ProBuilderEditor.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_save_global_styles',
+                    nonce: ProBuilderEditor.nonce,
+                    styles: JSON.stringify({
+                        layout: {
+                            content_width: contentWidth,
+                            boxed_width: boxedWidth,
+                            boxed_padding: boxedPadding
+                        }
+                    })
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Apply instantly to preview area
+                        const $previewArea = $('#probuilder-preview-area');
+                        if (contentWidth === 'boxed') {
+                            $previewArea.css({
+                                'max-width': boxedWidth,
+                                'margin': '0 auto',
+                                'padding': '0 ' + boxedPadding,
+                                'box-sizing': 'border-box'
+                            });
+                        } else {
+                            $previewArea.css({
+                                'max-width': '100%',
+                                'margin': '0',
+                                'padding': '0'
+                            });
+                        }
+                        
+                        self.showNotification('Layout settings applied!', 'success');
+                        console.log('✅ Layout settings saved and applied to preview');
+                    } else {
+                        self.showNotification('Failed to save layout settings', 'error');
+                    }
+                },
+                error: function() {
+                    self.showNotification('Failed to save layout settings', 'error');
+                }
+            });
         },
         
         /**
@@ -1000,19 +1130,34 @@
                         console.log('➕ Section template - adding to existing content');
                     }
                     
-                    // Import template data
+                    // Import template data WITH CHILDREN
                     if (Array.isArray(template.data)) {
-                        template.data.forEach(function(element) {
-                            console.log('Adding element:', element);
-                            if (element.widgetType) {
-                                self.addElement(element.widgetType, element.settings || {});
+                        template.data.forEach(function(elementData) {
+                            console.log('📦 Template element:', elementData.widgetType);
+                            console.log('   Children count:', elementData.children ? elementData.children.length : 0);
+                            if (elementData.children && elementData.children.length > 0) {
+                                console.log('   First child:', elementData.children[0]);
+                            }
+                            
+                            if (elementData.widgetType) {
+                                // Clone element data to preserve children
+                                const newElement = self.cloneElementData(elementData);
+                                console.log('✅ Cloned element:', newElement.widgetType, 'with', newElement.children.length, 'children');
+                                self.elements.push(newElement);
+                                self.renderElement(newElement);
                             }
                         });
                     } else {
                         if (template.data.widgetType) {
-                            self.addElement(template.data.widgetType, template.data.settings || {});
+                            const newElement = self.cloneElementData(template.data);
+                            self.elements.push(newElement);
+                            self.renderElement(newElement);
                         }
                     }
+                    
+                    // Update UI
+                    self.updateEmptyState();
+                    self.saveHistory();
                     
                     // Show success message
                     const action = template.type === 'page' ? 'inserted' : 'added';
@@ -1497,6 +1642,16 @@
                     self.showWidgetPicker(element);
                 }
                 return false;
+            });
+            
+            // New Page button
+            $('#probuilder-new-page').on('click', function() {
+                self.createNewPage();
+            });
+            
+            // Clear Page button
+            $('#probuilder-clear-page').on('click', function() {
+                self.clearPage();
             });
             
             // Save button
@@ -3832,7 +3987,9 @@
                     $element.css('width', element.settings._width);
                     $element.find('.probuilder-element-preview').css('width', element.settings._width);
                 }
-                if (element.settings._height && element.settings._height !== 'auto') {
+                // Only apply height for non-container widgets
+                if (element.settings._height && element.settings._height !== 'auto' && 
+                    element.widgetType !== 'container' && element.widgetType !== 'grid-layout') {
                     $element.css('height', element.settings._height);
                     $element.find('.probuilder-element-preview').css('height', element.settings._height);
                 }
@@ -5286,22 +5443,63 @@
                     const gridPadding = settings.padding || {top: 20, right: 20, bottom: 20, left: 20};
                     const gridMargin = settings.margin || {top: 0, right: 0, bottom: 0, left: 0};
                     
-                    const pattern = this.getGridPatterns().find(p => p.id === gridPattern) || this.getGridPatterns()[0];
-                    const gridTemplateData = this.getGridTemplateData(gridPattern);
-                    
                     // Initialize children array if not exists
                     if (!element.children) {
                         element.children = [];
                     }
                     
-                    // Use custom template if available (from resize operations)
-                    let columnsTemplate = gridTemplateData.columns;
-                    let rowsTemplate = gridTemplateData.rows;
+                    console.log('🔍 Grid-layout rendering:', {
+                        widgetType: element.widgetType,
+                        id: element.id,
+                        childrenCount: element.children.length,
+                        children: element.children,
+                        settings: settings
+                    });
                     
-                    if (element.settings.custom_template) {
-                        columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
-                        rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
-                        console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
+                    // Check if template uses simple columns setting (for templates)
+                    const columnsCount = parseInt(settings.columns) || null;
+                    let gridTemplateData;
+                    let columnsTemplate;
+                    let rowsTemplate;
+                    
+                    if (columnsCount && columnsCount > 0) {
+                        // Generate dynamic grid based on columns setting
+                        const childrenCount = element.children.length || columnsCount;
+                        // Ensure we have at least enough cells for all children
+                        const numRows = Math.ceil(Math.max(childrenCount, columnsCount) / columnsCount);
+                        columnsTemplate = `repeat(${columnsCount}, 1fr)`;
+                        rowsTemplate = `repeat(${numRows}, auto)`;
+                        
+                        // Generate grid areas dynamically - create cells for all children
+                        const areas = [];
+                        for (let row = 1; row <= numRows; row++) {
+                            for (let col = 1; col <= columnsCount; col++) {
+                                const cellIndex = (row - 1) * columnsCount + (col - 1);
+                                // Create cell for each child or fill empty cells
+                                areas.push(`${row} / ${col} / ${row + 1} / ${col + 1}`);
+                            }
+                        }
+                        
+                        gridTemplateData = {
+                            columns: columnsTemplate,
+                            rows: rowsTemplate,
+                            areas: areas
+                        };
+                        
+                        console.log('✅ Using dynamic grid template:', {columns: columnsCount, rows: numRows, areas: areas.length, children: childrenCount});
+                    } else {
+                        // Use pattern-based grid
+                        const pattern = this.getGridPatterns().find(p => p.id === gridPattern) || this.getGridPatterns()[0];
+                        gridTemplateData = this.getGridTemplateData(gridPattern);
+                        columnsTemplate = gridTemplateData.columns;
+                        rowsTemplate = gridTemplateData.rows;
+                        
+                        // Use custom template if available (from resize operations)
+                        if (element.settings.custom_template) {
+                            columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
+                            rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
+                            console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
+                        }
                     }
                     
                     // Generate grid HTML with actual cells
@@ -5639,6 +5837,8 @@
                         const child = element.children && element.children[index];
                         const hasContent = !!child;
                         
+                        console.log(`Grid cell ${index}:`, {hasContent, child: child ? child.widgetType : 'none'});
+                        
                         gridHTML += `
                             <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
                                  style="grid-area: ${area};" 
@@ -5775,6 +5975,14 @@
                     if (!element.children) {
                         element.children = [];
                     }
+                    
+                    console.log('🔍 Container rendering:', {
+                        widgetType: element.widgetType,
+                        id: element.id,
+                        childrenCount: element.children.length,
+                        children: element.children,
+                        columns: c2Columns
+                    });
                     
                     // Calculate how many cells we need
                     const childrenCount = element.children.length;
@@ -5929,6 +6137,8 @@
                     c2TemplateData.areas.forEach((area, index) => {
                         const child = element.children && element.children[index];
                         const hasContent = !!child;
+                        
+                        console.log(`Container cell ${index}:`, {hasContent, child: child ? child.widgetType : 'none'});
                         
                         c2HTML += `
                             <div class="container-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
@@ -8808,6 +9018,9 @@
                     const slShowDots = settings.show_dots !== 'no';
                     const slShowProgressBar = settings.show_progress_bar === 'yes';
                     const slShowFraction = settings.show_fraction === 'yes';
+                    const slAutoplay = settings.autoplay !== 'no';
+                    const slAutoplaySpeed = settings.autoplay_speed?.size || 5;
+                    const slTransitionSpeed = settings.transition_speed || 500;
                     
                     // Overlay settings
                     const slOverlayType = settings.overlay_type || 'color';
@@ -8841,34 +9054,13 @@
                     const slDotSize = settings.dot_size || 12;
                     const slDotColor = settings.dot_color || 'rgba(255,255,255,0.5)';
                     const slActiveDotColor = settings.active_dot_color || '#ffffff';
+                    const slDotPosition = settings.dot_position || 'bottom-center';
                     
-                    // Get first slide for preview
-                    const firstSlide = slSlides[0] || {};
-                    const slideImage = firstSlide.image?.url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200';
-                    const slideTitle = firstSlide.title || 'Slide Title';
-                    const slideDesc = firstSlide.description || 'Slide description goes here...';
-                    const slideButton = firstSlide.button_text || 'Learn More';
-                    const slidePosition = firstSlide.content_position || 'center';
+                    // Content animation
+                    const slContentAnimation = settings.content_animation || 'fade-up';
+                    const slAnimationDelay = settings.animation_delay || 200;
                     
                     const heightValue = slSliderHeight.size || 500;
-                    const contentAlign = slidePosition === 'left' ? 'flex-start' : (slidePosition === 'right' ? 'flex-end' : 'center');
-                    
-                    // Overlay style
-                    let overlayStyle = '';
-                    if (slOverlayType === 'gradient') {
-                        overlayStyle = `background: linear-gradient(135deg, ${slOverlayGradStart}, ${slOverlayGradEnd});`;
-                    } else if (slOverlayType === 'color') {
-                        overlayStyle = `background-color: ${slOverlayColor};`;
-                    }
-                    
-                    // Content container style
-                    let contentContainerStyle = `max-width: ${slContentMaxWidth}px; padding: 40px; text-align: ${slidePosition};`;
-                    if (slContentBgEnable) {
-                        contentContainerStyle += ` background-color: ${slContentBgColor}; border-radius: 12px;`;
-                        if (slContentBgBlur) {
-                            contentContainerStyle += ` backdrop-filter: blur(10px);`;
-                        }
-                    }
                     
                     // Button size
                     const buttonPadding = slButtonSize === 'small' ? '10px 20px' : (slButtonSize === 'large' ? '18px 40px' : '15px 30px');
@@ -8877,7 +9069,7 @@
                     // Arrow style
                     const arrowBorderRadius = slArrowStyle === 'circle' ? '50%' : (slArrowStyle === 'rounded' ? '8px' : (slArrowStyle === 'square' ? '0' : '50%'));
                     const arrowBackground = slArrowStyle === 'chevron' || slArrowStyle === 'minimal' ? 'transparent' : slArrowBgColor;
-                    const arrowPadding = (slArrowSize / 3) + 'px';
+                    const arrowButtonSize = slArrowSize + 'px';
                     const arrowFontSize = (slArrowSize / 2) + 'px';
                     
                     // Dot shape
@@ -8885,39 +9077,137 @@
                     const dotWidth = slDotStyle === 'line' ? (slDotSize * 3) + 'px' : (slDotStyle === 'dash' ? (slDotSize * 2) + 'px' : slDotSize + 'px');
                     const dotHeight = slDotStyle === 'line' ? (slDotSize / 2) + 'px' : (slDotStyle === 'dash' ? (slDotSize / 2) + 'px' : slDotSize + 'px');
                     
-                    let slSliderHTML = `<div style="position: relative; height: ${heightValue}px; background-image: url('${slideImage}'); background-size: cover; background-position: center; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: ${contentAlign};">`;
+                    // Generate unique ID for this slider instance
+                    const sliderId = 'pb-slider-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                     
-                    // Overlay
-                    if (slOverlayType !== 'none') {
-                        slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; ${overlayStyle}"></div>`;
-                    }
+                    // Build slider HTML with ALL slides
+                    let slSliderHTML = `
+                    <style>
+                        @keyframes pb-animate-fade-up {
+                            from { opacity: 0; transform: translateY(30px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        @keyframes pb-animate-fade-down {
+                            from { opacity: 0; transform: translateY(-30px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        @keyframes pb-animate-fade-left {
+                            from { opacity: 0; transform: translateX(-30px); }
+                            to { opacity: 1; transform: translateX(0); }
+                        }
+                        @keyframes pb-animate-fade-right {
+                            from { opacity: 0; transform: translateX(30px); }
+                            to { opacity: 1; transform: translateX(0); }
+                        }
+                        @keyframes pb-animate-zoom-in {
+                            from { opacity: 0; transform: scale(0.8); }
+                            to { opacity: 1; transform: scale(1); }
+                        }
+                        @keyframes pb-animate-zoom-out {
+                            from { opacity: 0; transform: scale(1.2); }
+                            to { opacity: 1; transform: scale(1); }
+                        }
+                        @keyframes pb-animate-flip-up {
+                            from { opacity: 0; transform: perspective(400px) rotateX(90deg); }
+                            to { opacity: 1; transform: perspective(400px) rotateX(0deg); }
+                        }
+                        @keyframes pb-animate-none {
+                            from { opacity: 1; }
+                            to { opacity: 1; }
+                        }
+                    </style>
+                    <div id="${sliderId}" class="pb-slider-preview" style="position: relative; height: ${heightValue}px; border-radius: 8px; overflow: hidden;">`;
                     
-                    // Content
-                    slSliderHTML += `<div style="position: relative; z-index: 2; ${contentContainerStyle}">`;
-                    if (slideTitle) {
-                        slSliderHTML += `<h2 style="color: ${slTitleColor}; font-size: ${slTitleSize}px; font-weight: ${slTitleWeight}; margin: 0 0 20px 0; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">${slideTitle}</h2>`;
-                    }
-                    if (slideDesc) {
-                        slSliderHTML += `<p style="color: ${slDescColor}; font-size: ${slDescSize}px; margin: 0 0 30px 0; line-height: 1.6;">${slideDesc}</p>`;
-                    }
-                    if (slideButton) {
-                        slSliderHTML += `<a href="#" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: ${buttonPadding}; text-decoration: none; border-radius: ${slButtonRadius}px; font-weight: 600; font-size: ${buttonFontSize}; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">${slideButton}</a>`;
-                    }
-                    slSliderHTML += `</div>`;
+                    // Create slides container
+                    slSliderHTML += `<div class="pb-slides" style="position: relative; width: 100%; height: 100%;">`;
+                    
+                    // Generate all slides
+                    slSlides.forEach((slide, index) => {
+                        const slideImage = slide.image?.url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200';
+                        const slideTitle = slide.title || 'Slide Title';
+                        const slideDesc = slide.description || 'Slide description goes here...';
+                        const slideButton = slide.button_text || 'Learn More';
+                        const slidePosition = slide.content_position || 'center';
+                        const contentAlign = slidePosition === 'left' ? 'flex-start' : (slidePosition === 'right' ? 'flex-end' : 'center');
+                        
+                        // Overlay style
+                        let overlayStyle = '';
+                        if (slOverlayType === 'gradient') {
+                            overlayStyle = `background: linear-gradient(135deg, ${slOverlayGradStart}, ${slOverlayGradEnd});`;
+                        } else if (slOverlayType === 'color') {
+                            overlayStyle = `background-color: ${slOverlayColor};`;
+                        }
+                        
+                        // Content container style
+                        let contentContainerStyle = `max-width: ${slContentMaxWidth}px; padding: 40px; text-align: ${slidePosition};`;
+                        if (slContentBgEnable) {
+                            contentContainerStyle += ` background-color: ${slContentBgColor}; border-radius: 12px;`;
+                            if (slContentBgBlur) {
+                                contentContainerStyle += ` backdrop-filter: blur(10px);`;
+                            }
+                        }
+                        
+                        const isActive = index === 0;
+                        const displayStyle = isActive ? 'flex' : 'none';
+                        
+                        slSliderHTML += `<div class="pb-slide" data-slide-index="${index}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('${slideImage}'); background-size: cover; background-position: center; display: ${displayStyle}; align-items: center; justify-content: ${contentAlign}; transition: opacity ${slTransitionSpeed}ms ease-in-out;">`;
+                        
+                        // Overlay
+                        if (slOverlayType !== 'none') {
+                            slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; ${overlayStyle}"></div>`;
+                        }
+                        
+                        // Content with animation
+                        const animationClass = `pb-animate-${slContentAnimation}`;
+                        const animationStyle = isActive ? `animation: ${animationClass} 0.8s ease-out ${slAnimationDelay}ms both;` : '';
+                        slSliderHTML += `<div class="pb-slide-content ${animationClass}" data-animation="${slContentAnimation}" style="position: relative; z-index: 2; ${contentContainerStyle} ${animationStyle}">`;
+                        if (slideTitle) {
+                            const titleAnimDelay = isActive ? slAnimationDelay + 100 : 0;
+                            slSliderHTML += `<h2 style="color: ${slTitleColor}; font-size: ${slTitleSize}px; font-weight: ${slTitleWeight}; margin: 0 0 20px 0; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); animation: ${animationClass} 0.8s ease-out ${titleAnimDelay}ms both;">${slideTitle}</h2>`;
+                        }
+                        if (slideDesc) {
+                            const descAnimDelay = isActive ? slAnimationDelay + 200 : 0;
+                            slSliderHTML += `<p style="color: ${slDescColor}; font-size: ${slDescSize}px; margin: 0 0 30px 0; line-height: 1.6; animation: ${animationClass} 0.8s ease-out ${descAnimDelay}ms both;">${slideDesc}</p>`;
+                        }
+                        if (slideButton) {
+                            const btnAnimDelay = isActive ? slAnimationDelay + 300 : 0;
+                            slSliderHTML += `<a href="#" onclick="return false;" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: ${buttonPadding}; text-decoration: none; border-radius: ${slButtonRadius}px; font-weight: 600; font-size: ${buttonFontSize}; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: ${animationClass} 0.8s ease-out ${btnAnimDelay}ms both;">${slideButton}</a>`;
+                        }
+                        slSliderHTML += `</div>`;
+                        slSliderHTML += `</div>`;
+                    });
+                    
+                    slSliderHTML += `</div>`; // Close slides container
                     
                     // Navigation Arrows
                     if (slShowArrows) {
-                        slSliderHTML += `<button style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; padding: ${arrowPadding}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3;">‹</button>`;
-                        slSliderHTML += `<button style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; padding: ${arrowPadding}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3;">›</button>`;
+                        slSliderHTML += `<button class="pb-slider-prev" onclick="pbSliderPrev('${sliderId}')" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; width: ${arrowButtonSize}; height: ${arrowButtonSize}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;">‹</button>`;
+                        slSliderHTML += `<button class="pb-slider-next" onclick="pbSliderNext('${sliderId}')" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: ${arrowBackground}; border: none; color: ${slArrowColor}; font-size: ${arrowFontSize}; width: ${arrowButtonSize}; height: ${arrowButtonSize}; border-radius: ${arrowBorderRadius}; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;">›</button>`;
                     }
                     
                     // Dots Navigation
                     if (slShowDots) {
-                        slSliderHTML += `<div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3;">`;
+                        // Calculate dot position
+                        const dotBottom = slDotPosition.includes('bottom') ? '20px' : 'auto';
+                        const dotTop = slDotPosition.includes('top') ? '20px' : 'auto';
+                        let dotLeft = '50%';
+                        let dotTransform = 'translateX(-50%)';
+                        let dotRight = 'auto';
+                        
+                        if (slDotPosition === 'bottom-left' || slDotPosition === 'top-left') {
+                            dotLeft = '20px';
+                            dotTransform = 'none';
+                        } else if (slDotPosition === 'bottom-right' || slDotPosition === 'top-right') {
+                            dotLeft = 'auto';
+                            dotRight = '20px';
+                            dotTransform = 'none';
+                        }
+                        
+                        slSliderHTML += `<div class="pb-slider-dots" style="position: absolute; bottom: ${dotBottom}; top: ${dotTop}; left: ${dotLeft}; right: ${dotRight}; transform: ${dotTransform}; display: flex; gap: 10px; z-index: 3;">`;
                         slSlides.forEach((slide, index) => {
                             const isActive = index === 0;
                             const dotColor = isActive ? slActiveDotColor : slDotColor;
-                            slSliderHTML += `<div style="width: ${dotWidth}; height: ${dotHeight}; border-radius: ${dotBorderRadius}; background-color: ${dotColor}; cursor: pointer;"></div>`;
+                            slSliderHTML += `<div class="pb-slider-dot" data-slide="${index}" onclick="pbSliderGoTo('${sliderId}', ${index})" style="width: ${dotWidth}; height: ${dotHeight}; border-radius: ${dotBorderRadius}; background-color: ${dotColor}; cursor: pointer; transition: all 0.3s;"></div>`;
                         });
                         slSliderHTML += `</div>`;
                     }
@@ -8925,13 +9215,13 @@
                     // Progress Bar
                     if (slShowProgressBar) {
                         const progressBarColor = settings.progress_bar_color || '#92003b';
-                        slSliderHTML += `<div style="position: absolute; bottom: 0; left: 0; width: 30%; height: 4px; background-color: ${progressBarColor}; z-index: 4;"></div>`;
+                        slSliderHTML += `<div class="pb-slider-progress" style="position: absolute; bottom: 0; left: 0; width: 0%; height: 4px; background-color: ${progressBarColor}; z-index: 4; transition: width linear ${slAutoplaySpeed * 1000}ms;"></div>`;
                     }
                     
                     // Fraction Counter
                     if (slShowFraction) {
                         const fractionColor = settings.fraction_color || '#ffffff';
-                        slSliderHTML += `<div style="position: absolute; top: 20px; right: 20px; color: ${fractionColor}; font-size: 14px; font-weight: 600; z-index: 3; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 20px;">1 / ${slSlides.length}</div>`;
+                        slSliderHTML += `<div class="pb-slider-fraction" style="position: absolute; top: 20px; right: 20px; color: ${fractionColor}; font-size: 14px; font-weight: 600; z-index: 3; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 20px;">1 / ${slSlides.length}</div>`;
                     }
                     
                     // Slide indicator (total slides)
@@ -8939,7 +9229,135 @@
                         slSliderHTML += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; z-index: 3;">${slSlides.length} Slides</div>`;
                     }
                     
-                    slSliderHTML += `</div>`;
+                    slSliderHTML += `</div>`; // Close main slider container
+                    
+                    // Add initialization script
+                    slSliderHTML += `<script>
+                        (function() {
+                            const sliderId = '${sliderId}';
+                            const autoplay = ${slAutoplay};
+                            const autoplaySpeed = ${slAutoplaySpeed * 1000};
+                            const transitionSpeed = ${slTransitionSpeed};
+                            const totalSlides = ${slSlides.length};
+                            
+                            // Store slider state
+                            window.pbSliders = window.pbSliders || {};
+                            window.pbSliders[sliderId] = {
+                                currentSlide: 0,
+                                totalSlides: totalSlides,
+                                autoplayInterval: null,
+                                transitionSpeed: transitionSpeed
+                            };
+                            
+                            const slider = window.pbSliders[sliderId];
+                            
+                            // Function to show slide
+                            function showSlide(index) {
+                                const sliderEl = document.getElementById(sliderId);
+                                if (!sliderEl) return;
+                                
+                                const slides = sliderEl.querySelectorAll('.pb-slide');
+                                const dots = sliderEl.querySelectorAll('.pb-slider-dot');
+                                const fraction = sliderEl.querySelector('.pb-slider-fraction');
+                                const progress = sliderEl.querySelector('.pb-slider-progress');
+                                
+                                // Hide all slides
+                                slides.forEach(s => s.style.display = 'none');
+                                
+                                // Show current slide
+                                if (slides[index]) {
+                                    slides[index].style.display = 'flex';
+                                    
+                                    // Trigger content animations
+                                    const content = slides[index].querySelector('.pb-slide-content');
+                                    if (content) {
+                                        const animation = content.getAttribute('data-animation');
+                                        const animClass = 'pb-animate-' + animation;
+                                        
+                                        // Remove and re-add animation to trigger it
+                                        content.style.animation = 'none';
+                                        content.querySelectorAll('h2, p, a').forEach(el => {
+                                            el.style.animation = 'none';
+                                        });
+                                        
+                                        setTimeout(() => {
+                                            content.style.animation = animClass + ' 0.8s ease-out ${slAnimationDelay}ms both';
+                                            const elements = content.querySelectorAll('h2, p, a');
+                                            elements.forEach((el, i) => {
+                                                const delay = ${slAnimationDelay} + ((i + 1) * 100);
+                                                el.style.animation = animClass + ' 0.8s ease-out ' + delay + 'ms both';
+                                            });
+                                        }, 10);
+                                    }
+                                }
+                                
+                                // Update dots
+                                dots.forEach((dot, i) => {
+                                    dot.style.backgroundColor = i === index ? '${slActiveDotColor}' : '${slDotColor}';
+                                });
+                                
+                                // Update fraction
+                                if (fraction) {
+                                    fraction.textContent = (index + 1) + ' / ' + totalSlides;
+                                }
+                                
+                                // Reset and restart progress bar
+                                if (progress) {
+                                    progress.style.transition = 'none';
+                                    progress.style.width = '0%';
+                                    setTimeout(() => {
+                                        progress.style.transition = 'width linear ' + autoplaySpeed + 'ms';
+                                        progress.style.width = '100%';
+                                    }, 50);
+                                }
+                                
+                                slider.currentSlide = index;
+                            }
+                            
+                            // Navigation functions
+                            window.pbSliderNext = function(id) {
+                                if (id !== sliderId) return;
+                                const nextSlide = (slider.currentSlide + 1) % totalSlides;
+                                showSlide(nextSlide);
+                                if (slider.autoplayInterval) {
+                                    clearInterval(slider.autoplayInterval);
+                                    startAutoplay();
+                                }
+                            };
+                            
+                            window.pbSliderPrev = function(id) {
+                                if (id !== sliderId) return;
+                                const prevSlide = (slider.currentSlide - 1 + totalSlides) % totalSlides;
+                                showSlide(prevSlide);
+                                if (slider.autoplayInterval) {
+                                    clearInterval(slider.autoplayInterval);
+                                    startAutoplay();
+                                }
+                            };
+                            
+                            window.pbSliderGoTo = function(id, index) {
+                                if (id !== sliderId) return;
+                                showSlide(index);
+                                if (slider.autoplayInterval) {
+                                    clearInterval(slider.autoplayInterval);
+                                    startAutoplay();
+                                }
+                            };
+                            
+                            // Autoplay
+                            function startAutoplay() {
+                                if (!autoplay || totalSlides <= 1) return;
+                                slider.autoplayInterval = setInterval(() => {
+                                    window.pbSliderNext(sliderId);
+                                }, autoplaySpeed);
+                            }
+                            
+                            // Initialize
+                            showSlide(0);
+                            startAutoplay();
+                        })();
+                    </script>`;
+                    
                     return slSliderHTML;
                     
                 // Note: blog-posts preview is handled later in this switch with AJAX loading
@@ -10156,6 +10574,21 @@
                     const wooOrderBy = settings.orderby || 'date';
                     const wooOrder = settings.order || 'DESC';
                     
+                    // Image settings
+                    const wooImageRatio = settings.image_ratio || '1:1';
+                    const wooImageHeight = settings.image_height || 300;
+                    const wooImageFit = settings.image_fit || 'cover';
+                    
+                    // Calculate padding-top based on aspect ratio
+                    const ratioMap = {
+                        '1:1': '100%',
+                        '4:3': '75%',
+                        '3:4': '133.33%',
+                        '16:9': '56.25%',
+                        'custom': wooImageHeight + 'px'
+                    };
+                    const wooPaddingTop = ratioMap[wooImageRatio] || '100%';
+                    
                     // Create container that will be populated with real products
                     const wooContainerId = 'woo-products-' + element.id;
                     let wooHTML = `<div id="${wooContainerId}" style="box-sizing: border-box;">
@@ -10189,10 +10622,19 @@
                                         productsHTML += `<div class="probuilder-product-card" style="border-radius: ${wooBorderRadius}px; overflow: hidden; background: ${wooCardBg}; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;">`;
                                         
                                         if (wooShowImage) {
-                                            productsHTML += `<div class="product-image" style="position: relative; background: #f8f9fa;">`;
-                                            productsHTML += `<img src="${product.image}" style="width: 100%; height: auto; display: block;" alt="${product.title}">`;
+                                            // Use aspect ratio technique for consistent heights
+                                            const imageContainerStyle = wooImageRatio !== 'custom' 
+                                                ? `position: relative; background: #f8f9fa; overflow: hidden; padding-top: ${wooPaddingTop};`
+                                                : `position: relative; background: #f8f9fa; overflow: hidden; height: ${wooImageHeight}px;`;
+                                            
+                                            const imageStyle = wooImageRatio !== 'custom'
+                                                ? `position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: ${wooImageFit}; display: block;`
+                                                : `width: 100%; height: 100%; object-fit: ${wooImageFit}; display: block;`;
+                                            
+                                            productsHTML += `<div class="product-image" style="${imageContainerStyle}">`;
+                                            productsHTML += `<img src="${product.image}" style="${imageStyle}" alt="${product.title}">`;
                                             if (wooShowBadge && product.sale) {
-                                                productsHTML += `<span class="sale-badge" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Sale</span>`;
+                                                productsHTML += `<span class="sale-badge" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; z-index: 10;">Sale</span>`;
                                             }
                                             productsHTML += `</div>`;
                                         }
@@ -16974,6 +17416,73 @@
             console.log('Element inserted at index:', index, widgetName);
             
             return element;
+        },
+        
+        /**
+         * Create New Page
+         */
+        createNewPage: function() {
+            const self = this;
+            
+            if (!confirm('Create a new blank page? Current unsaved changes will be lost.')) {
+                return;
+            }
+            
+            $('#probuilder-loading').show();
+            
+            // Get current post type
+            const urlParams = new URLSearchParams(window.location.search);
+            const postType = urlParams.get('post_type') || 'page';
+            
+            // Create new page via AJAX
+            $.ajax({
+                url: ProBuilderEditor.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'probuilder_create_new_page',
+                    nonce: ProBuilderEditor.nonce,
+                    post_type: postType
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Redirect to new page editor
+                        const newUrl = response.data.editor_url;
+                        window.location.href = newUrl;
+                    } else {
+                        alert('Failed to create new page: ' + (response.data.message || 'Unknown error'));
+                        $('#probuilder-loading').hide();
+                    }
+                },
+                error: function() {
+                    alert('Failed to create new page. Please try again.');
+                    $('#probuilder-loading').hide();
+                }
+            });
+        },
+        
+        /**
+         * Clear Page
+         */
+        clearPage: function() {
+            const self = this;
+            
+            if (!confirm('Clear all content from this page? This action cannot be undone!')) {
+                return;
+            }
+            
+            // Clear all elements
+            self.elements = [];
+            
+            // Clear the canvas
+            $('#probuilder-preview-area').empty();
+            
+            // Save history
+            self.saveHistory();
+            
+            // Show success message
+            self.showNotification('Page cleared! Add widgets to start building.', 'success');
+            
+            console.log('✅ Page cleared');
         },
         
         /**

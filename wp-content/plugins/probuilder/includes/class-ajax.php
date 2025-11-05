@@ -29,6 +29,13 @@ class ProBuilder_Ajax {
         // Get element preview
         add_action('wp_ajax_probuilder_get_element_preview', [$this, 'get_element_preview']);
         
+        // Quick View (no login required for public access)
+        add_action('wp_ajax_pb_quick_view', [$this, 'quick_view']);
+        add_action('wp_ajax_nopriv_pb_quick_view', [$this, 'quick_view']);
+        
+        // Create new page
+        add_action('wp_ajax_probuilder_create_new_page', [$this, 'create_new_page']);
+        
         // Upload image
         add_action('wp_ajax_probuilder_upload_image', [$this, 'upload_image']);
         
@@ -585,6 +592,202 @@ class ProBuilder_Ajax {
         set_transient($cache_key, $result, 300);
         
         wp_send_json_success($result);
+    }
+    
+    /**
+     * Quick View AJAX Handler
+     */
+    public function quick_view() {
+        $product_id = isset($_GET['product_id']) ? intval($_GET['product_id']) : 0;
+        
+        if (!$product_id || !class_exists('WooCommerce')) {
+            echo '<div style="padding: 40px; text-align: center;"><p style="color: #ef4444;">Invalid product or WooCommerce not active.</p></div>';
+            wp_die();
+        }
+        
+        $product = wc_get_product($product_id);
+        
+        if (!$product) {
+            echo '<div style="padding: 40px; text-align: center;"><p style="color: #ef4444;">Product not found.</p></div>';
+            wp_die();
+        }
+        
+        // Render product in modal
+        ?>
+        <div class="pb-quick-view-product" style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 20px;">
+            
+            <!-- Product Image -->
+            <div class="pb-qv-image" style="position: relative;">
+                <?php echo $product->get_image('large', ['style' => 'width: 100%; height: auto; border-radius: 8px;']); ?>
+                
+                <?php if ($product->is_on_sale()): ?>
+                    <span style="position: absolute; top: 15px; left: 15px; background: #e74c3c; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                        Sale!
+                    </span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Product Details -->
+            <div class="pb-qv-details">
+                <h2 style="margin: 0 0 15px; font-size: 28px; font-weight: 700; line-height: 1.3; color: #1f2937;">
+                    <?php echo esc_html($product->get_name()); ?>
+                </h2>
+                
+                <!-- Rating -->
+                <?php if ($product->get_average_rating() > 0): ?>
+                <div style="margin-bottom: 15px; color: #fbbf24; font-size: 16px;">
+                    <?php
+                    $rating = round($product->get_average_rating());
+                    for ($i = 0; $i < 5; $i++) {
+                        echo $i < $rating ? '★' : '☆';
+                    }
+                    ?>
+                    <span style="color: #6b7280; font-size: 14px; margin-left: 8px;">
+                        (<?php echo $product->get_review_count(); ?> reviews)
+                    </span>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Price -->
+                <div style="margin-bottom: 25px; font-size: 32px; font-weight: 700; color: #92003b;">
+                    <?php echo $product->get_price_html(); ?>
+                </div>
+                
+                <!-- Short Description -->
+                <div style="margin-bottom: 25px; color: #6b7280; line-height: 1.8; font-size: 15px;">
+                    <?php echo wpautop($product->get_short_description()); ?>
+                </div>
+                
+                <!-- Stock Status -->
+                <div style="margin-bottom: 20px;">
+                    <?php if ($product->is_in_stock()): ?>
+                        <span style="color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                            In Stock
+                        </span>
+                    <?php else: ?>
+                        <span style="color: #ef4444; font-weight: 600;">Out of Stock</span>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Add to Cart / Select Options -->
+                <div style="margin-bottom: 20px;">
+                    <?php if ($product->is_type('variable')): ?>
+                        <a href="<?php echo esc_url($product->get_permalink()); ?>" class="button" style="display: inline-block; background: #92003b; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: all 0.3s;">
+                            Select Options
+                        </a>
+                    <?php else: ?>
+                        <form class="cart" method="post" enctype="multipart/form-data">
+                            <button type="submit" name="add-to-cart" value="<?php echo esc_attr($product->get_id()); ?>" class="single_add_to_cart_button button alt" style="background: #92003b; color: white; padding: 16px 32px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; transition: all 0.3s;">
+                                Add to Cart
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- View Full Details Link -->
+                <a href="<?php echo esc_url($product->get_permalink()); ?>" style="color: #92003b; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 14px;">
+                    View Full Details
+                    <span class="dashicons dashicons-arrow-right-alt" style="font-size: 18px;"></span>
+                </a>
+                
+                <!-- Product Meta -->
+                <?php if ($product->get_sku()): ?>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+                    <strong>SKU:</strong> <?php echo esc_html($product->get_sku()); ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php
+                $categories = get_the_terms($product_id, 'product_cat');
+                if ($categories && !is_wp_error($categories)):
+                ?>
+                <div style="margin-top: 10px; font-size: 13px; color: #6b7280;">
+                    <strong>Category:</strong> 
+                    <?php
+                    $cat_names = array_map(function($cat) {
+                        return $cat->name;
+                    }, $categories);
+                    echo implode(', ', $cat_names);
+                    ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <style>
+            .pb-quick-view-product .button:hover {
+                background: #7a0031;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(146,0,59,0.3);
+            }
+            @media (max-width: 768px) {
+                .pb-quick-view-product {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+        </style>
+        <?php
+        
+        wp_die();
+    }
+    
+    /**
+     * Create New Page
+     */
+    public function create_new_page() {
+        check_ajax_referer('probuilder-editor', 'nonce');
+        
+        if (!current_user_can('edit_pages')) {
+            wp_send_json_error(['message' => __('Permission denied', 'probuilder')]);
+        }
+        
+        $post_type = isset($_POST['post_type']) ? sanitize_text_field($_POST['post_type']) : 'page';
+        
+        // Validate post type
+        $allowed_types = ['page', 'post', 'pb_header', 'pb_footer', 'pb_slider', 'probuilder_part'];
+        if (!in_array($post_type, $allowed_types)) {
+            $post_type = 'page';
+        }
+        
+        // Create appropriate title based on post type
+        $unique_id = substr(uniqid(), -6);
+        $titles = [
+            'page' => sprintf(__('New Page %s', 'probuilder'), $unique_id),
+            'post' => sprintf(__('New Post %s', 'probuilder'), $unique_id),
+            'pb_header' => sprintf(__('New Header %s', 'probuilder'), $unique_id),
+            'pb_footer' => sprintf(__('New Footer %s', 'probuilder'), $unique_id),
+            'pb_slider' => sprintf(__('New Slider %s', 'probuilder'), $unique_id),
+            'probuilder_part' => sprintf(__('New Part %s', 'probuilder'), $unique_id),
+        ];
+        
+        $post_title = isset($titles[$post_type]) ? $titles[$post_type] : sprintf(__('New %s %s', 'probuilder'), ucfirst($post_type), $unique_id);
+        
+        // Create new post
+        $post_id = wp_insert_post([
+            'post_type'   => $post_type,
+            'post_status' => 'draft',
+            'post_title'  => $post_title,
+            'post_author' => get_current_user_id(),
+        ]);
+        
+        if (is_wp_error($post_id) || !$post_id) {
+            wp_send_json_error(['message' => __('Failed to create new page', 'probuilder')]);
+        }
+        
+        // Build editor URL
+        $editor_url = add_query_arg([
+            'p' => $post_id,
+            'probuilder' => 'true',
+            'post_type' => $post_type,
+        ], home_url('/'));
+        
+        wp_send_json_success([
+            'message' => __('New page created successfully!', 'probuilder'),
+            'post_id' => $post_id,
+            'editor_url' => $editor_url,
+            'post_type' => $post_type,
+        ]);
     }
 }
 
