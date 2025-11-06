@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Check Handles in DOM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 40px;
+            background: #1f2937;
+            color: white;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 { color: #10b981; }
+        .step { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+        code { background: rgba(0,0,0,0.5); color: #10b981; padding: 6px 12px; border-radius: 4px; font-size: 14px; display: block; margin: 10px 0; white-space: pre-wrap; }
+        .warning { background: rgba(245, 158, 11, 0.2); padding: 15px; border-left: 4px solid #f59e0b; border-radius: 6px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Check if Handles are in ProBuilder DOM</h1>
+        
+        <div class="warning">
+            <strong>⚠️ INSTRUCTIONS:</strong><br>
+            Do these steps IN ORDER:
+        </div>
+        
+        <div class="step">
+            <h3>1. Open ProBuilder Editor in Another Tab</h3>
+            <a href="http://192.168.10.203:7000/?p=803&probuilder=true&post_type=pb_header" 
+               style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;"
+               target="_blank">
+                Open ProBuilder Editor
+            </a>
+        </div>
+        
+        <div class="step">
+            <h3>2. Add Grid Layout Widget</h3>
+            <p>In ProBuilder editor:</p>
+            <ul>
+                <li>Left panel → Search "Grid Layout"</li>
+                <li>Drag to canvas</li>
+                <li>Select "2 Columns" pattern</li>
+                <li>WAIT for it to render</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>3. Open Browser Console (F12)</h3>
+            <p>In the ProBuilder tab, press <code>F12</code></p>
+            <p>Click on <strong>Console</strong> tab at the top</p>
+        </div>
+        
+        <div class="step">
+            <h3>4. Paste This Script in Console</h3>
+            <p>Copy this ENTIRE script and paste in console, then press Enter:</p>
+            
+            <code>console.clear();
+console.log('═══════════════════════════════════════');
+console.log('🔍 PROBUILDER RESIZE HANDLES DIAGNOSTIC');
+console.log('═══════════════════════════════════════\n');
+
+// Check 1: Do handles exist in DOM?
+const handles = {
+    right: document.querySelectorAll('.resize-handle-right'),
+    bottom: document.querySelectorAll('.resize-handle-bottom'),
+    corner: document.querySelectorAll('.resize-handle-corner')
+};
+
+console.log('📊 HANDLE COUNT:');
+console.log('  Right handles:', handles.right.length);
+console.log('  Bottom handles:', handles.bottom.length);
+console.log('  Corner handles:', handles.corner.length);
+console.log('');
+
+if (handles.right.length === 0) {
+    console.log('❌ NO HANDLES IN DOM!');
+    console.log('Possible causes:');
+    console.log('  1. Grid Layout widget not added');
+    console.log('  2. "Enable Resize" is OFF in widget settings');
+    console.log('  3. HTML not rendering properly');
+    console.log('');
+    
+    // Check if grid cells exist
+    const cells = document.querySelectorAll('.grid-cell, .container-cell');
+    console.log('Grid/Container cells found:', cells.length);
+    
+    if (cells.length > 0) {
+        console.log('✅ Cells exist! Check cell HTML:');
+        console.log(cells[0].innerHTML.substring(0, 300));
+    }
+} else {
+    console.log('✅ HANDLES EXIST IN DOM!\n');
+    
+    // Check first handle CSS
+    const handle = handles.right[0];
+    const computed = window.getComputedStyle(handle);
+    
+    console.log('📐 HANDLE CSS VALUES:');
+    console.log('  Width:', computed.width, computed.width === '10px' ? '✅' : '❌ Should be 10px');
+    console.log('  Height:', computed.height, computed.height === '80px' ? '✅' : '❌ Should be 80px');
+    console.log('  Opacity:', computed.opacity, computed.opacity === '0.8' ? '✅' : '❌ Should be 0.8');
+    console.log('  Background:', computed.backgroundColor);
+    console.log('  Z-index:', computed.zIndex, parseInt(computed.zIndex) >= 99999 ? '✅' : '❌ Should be 99999');
+    console.log('  Position:', computed.position);
+    console.log('  Display:', computed.display);
+    console.log('  Visibility:', computed.visibility);
+    console.log('  Pointer Events:', computed.pointerEvents);
+    console.log('');
+    
+    // Check if visible on screen
+    const rect = handle.getBoundingClientRect();
+    console.log('📍 HANDLE POSITION ON SCREEN:');
+    console.log('  Top:', rect.top, 'px');
+    console.log('  Left:', rect.left, 'px');
+    console.log('  Width:', rect.width, 'px');
+    console.log('  Height:', rect.height, 'px');
+    console.log('  In viewport:', rect.width > 0 && rect.height > 0 ? '✅' : '❌');
+    console.log('');
+    
+    // Check parent overflow chain
+    console.log('🔗 CHECKING PARENT OVERFLOW CHAIN:');
+    let parent = handle.parentElement;
+    let level = 0;
+    let clipFound = false;
+    
+    while (parent && level < 10) {
+        const pStyles = window.getComputedStyle(parent);
+        const className = parent.className || 'no-class';
+        
+        if (pStyles.overflow === 'hidden' || pStyles.overflow === 'scroll' || pStyles.overflow === 'auto') {
+            console.log('  ⚠️ Level', level, '-', className.substring(0, 40), '→ overflow:', pStyles.overflow);
+            clipFound = true;
+        }
+        
+        parent = parent.parentElement;
+        level++;
+    }
+    
+    if (!clipFound) {
+        console.log('  ✅ No overflow:hidden found in parent chain!');
+    }
+    console.log('');
+    
+    // Final verdict
+    if (rect.width > 0 && rect.height > 0 && parseFloat(computed.opacity) > 0) {
+        console.log('✅✅✅ HANDLES SHOULD BE VISIBLE! ✅✅✅');
+        console.log('If you can\'t see them, check:');
+        console.log('  - Are they behind other elements?');
+        console.log('  - Is the grid cell in view?');
+        console.log('  - Scroll to the grid widget');
+    } else {
+        console.log('❌ HANDLES ARE NOT VISIBLE!');
+        console.log('Reason:');
+        if (rect.width === 0 || rect.height === 0) {
+            console.log('  → Zero size (CSS not applied)');
+        }
+        if (parseFloat(computed.opacity) === 0) {
+            console.log('  → Opacity is 0 (hidden)');
+        }
+    }
+}
+
+console.log('\n═══════════════════════════════════════');
+console.log('END OF DIAGNOSTIC');
+console.log('═══════════════════════════════════════');</code>
+        </div>
+        
+        <div class="step">
+            <h3>5. Take a Screenshot</h3>
+            <p>Take a screenshot of the console output and send it to me, or copy-paste the results!</p>
+        </div>
+    </div>
+    
+    <div class="info">
+        <h2>🎯 Expected Output if Working:</h2>
+        <code style="background: #065f46; color: #d1fae5;">
+🔍 PROBUILDER RESIZE HANDLES DIAGNOSTIC
+═══════════════════════════════════════
+
+📊 HANDLE COUNT:
+  Right handles: 2
+  Bottom handles: 2
+  Corner handles: 2
+
+✅ HANDLES EXIST IN DOM!
+
+📐 HANDLE CSS VALUES:
+  Width: 10px ✅
+  Height: 80px ✅
+  Opacity: 0.8 ✅
+  Z-index: 99999 ✅
+
+📍 HANDLE POSITION ON SCREEN:
+  Top: 234 px
+  Left: 456 px
+  Width: 10 px
+  Height: 80 px
+  In viewport: ✅
+
+🔗 CHECKING PARENT OVERFLOW CHAIN:
+  ✅ No overflow:hidden found in parent chain!
+
+✅✅✅ HANDLES SHOULD BE VISIBLE! ✅✅✅
+        </code>
+    </div>
+</body>
+</html>
+

@@ -66,13 +66,12 @@ class ProBuilder_Frontend {
         if ($post) {
             $probuilder_data = get_post_meta($post->ID, '_probuilder_data', true);
             if (!empty($probuilder_data)) {
-                // Add inline CSS to ensure content displays
+                // Add inline CSS to ensure content displays (no width to allow global styles)
                 wp_add_inline_style('probuilder-frontend', '
                     .probuilder-content {
                         display: block !important;
                         visibility: visible !important;
                         opacity: 1 !important;
-                        width: 100% !important;
                         clear: both !important;
                     }
                     .probuilder-element {
@@ -180,7 +179,8 @@ class ProBuilder_Frontend {
         
         ob_start();
         
-        echo '<div class="probuilder-content" style="width: 100%; display: block; visibility: visible; opacity: 1;">';
+        // Don't add inline width to .probuilder-content - let global styles handle it
+        echo '<div class="probuilder-content">';
         
         foreach ($elements as $index => $element) {
             $this->render_element($element);
@@ -188,7 +188,10 @@ class ProBuilder_Frontend {
         
         echo '</div>';
         
-        if (current_user_can('edit_posts')) {
+        // Only show edit button if:
+        // 1. User can edit posts
+        // 2. NOT in ProBuilder editor mode (probuilder=true parameter)
+        if (current_user_can('edit_posts') && !isset($_GET['probuilder'])) {
             // Add simple floating edit button
             global $post;
             echo '<a href="' . add_query_arg(['p' => $post->ID, 'probuilder' => 'true'], home_url('/')) . '" style="
@@ -243,7 +246,7 @@ class ProBuilder_Frontend {
         
         $element_id = isset($element['id']) ? $element['id'] : uniqid('pb-');
         
-        echo '<div id="' . esc_attr($element_id) . '" class="probuilder-element probuilder-widget-' . esc_attr($widget_name) . '" style="display: block; visibility: visible;">';
+        echo '<div id="' . esc_attr($element_id) . '" class="probuilder-element probuilder-widget-' . esc_attr($widget_name) . '" data-id="' . esc_attr($element_id) . '" style="display: block; visibility: visible;">';
         
         // Pass children to widget for container-type widgets
         $settings['_children'] = $children;

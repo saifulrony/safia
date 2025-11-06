@@ -171,13 +171,18 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 background: <?php echo esc_attr($bg_color); ?>;
                 border: <?php echo esc_attr($border_width); ?>px solid <?php echo esc_attr($border_color); ?>;
                 border-radius: <?php echo esc_attr($border_radius); ?>px;
-                padding: 20px;
+                padding: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s;
                 position: relative;
                 overflow: hidden;
+            }
+            
+            /* Add padding only for empty cells (editor placeholders) */
+            #<?php echo $grid_id; ?> .container-cell:not(:has(.probuilder-widget)) {
+                padding: 20px;
             }
             
             #<?php echo $grid_id; ?> .container-cell:hover {
@@ -276,14 +281,21 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         </style>
         
         <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-container-layout" <?php echo $wrapper_attributes; ?> data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>" style="<?php echo esc_attr($wrapper_style . ($inline_styles ? ' ' . $inline_styles : '')); ?>">
-            <?php for ($i = 0; $i < count($grid_template['areas']); $i++): ?>
+            <?php 
+            // Always render in editor context (AJAX calls don't have $_GET)
+            // We'll hide handles with CSS on frontend instead
+            $is_editor = !is_admin() || (isset($_GET['probuilder']) && $_GET['probuilder'] === 'true') || (defined('DOING_AJAX') && DOING_AJAX);
+            for ($i = 0; $i < count($grid_template['areas']); $i++): 
+            ?>
                 <div class="container-cell container-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>">
                     <?php if ($enable_resize): ?>
-                    <div class="resize-handle resize-handle-right"></div>
-                    <div class="resize-handle resize-handle-bottom"></div>
-                    <div class="resize-handle resize-handle-corner"></div>
+                    <!-- Resize handles - always render, hide with CSS on frontend -->
+                    <div class="resize-handle resize-handle-right" data-editor-only="true"></div>
+                    <div class="resize-handle resize-handle-bottom" data-editor-only="true"></div>
+                    <div class="resize-handle resize-handle-corner" data-editor-only="true"></div>
                     <?php endif; ?>
                     
+                    <?php if ($is_editor): ?>
                     <div class="container-cell-toolbar">
                         <button class="add-content-btn" title="Add Content">
                             <i class="dashicons dashicons-plus" style="font-size: 12px; width: 12px; height: 12px;"></i>
@@ -292,6 +304,7 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                             <i class="dashicons dashicons-admin-generic" style="font-size: 12px; width: 12px; height: 12px;"></i>
                         </button>
                     </div>
+                    <?php endif; ?>
                     
                     <div class="container-cell-content">
                         <?php 
@@ -321,13 +334,15 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
             <?php endfor; ?>
         </div>
         
-        <?php if (!isset($_GET['probuilder']) || $_GET['probuilder'] !== 'true'): ?>
+        <?php if (!$is_editor): ?>
         <style>
-            /* Hide only the controls on frontend, not the cells */
-            #<?php echo $container_id; ?> .container-cell-controls,
-            #<?php echo $container_id; ?> .container-resize-handle,
-            #<?php echo $container_id; ?> .container-cell-toolbar {
+            /* Hide editor-only elements on frontend */
+            #<?php echo $grid_id; ?> .resize-handle,
+            #<?php echo $grid_id; ?> .container-cell-toolbar,
+            #<?php echo $grid_id; ?> [data-editor-only="true"] {
                 display: none !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
             }
         </style>
         <?php endif; ?>
@@ -335,13 +350,20 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
         <?php if ($enable_resize): ?>
         <script>
         (function() {
-            const gridId = '<?php echo $grid_id; ?>';
-            const grid = document.getElementById(gridId);
-            
-            if (!grid) return;
-            
-            // Initialize resize functionality
-            function initializeResize() {
+            // Wait for DOM to be fully ready
+            function initContainerResize() {
+                const gridId = '<?php echo $grid_id; ?>';
+                const grid = document.getElementById(gridId);
+                
+                if (!grid) {
+                    console.warn('Container not found:', gridId);
+                    return;
+                }
+                
+                console.log('✅ Initializing resize for container:', gridId);
+                
+                // Initialize resize functionality
+                function initializeResize() {
                 const cells = grid.querySelectorAll('.container-cell');
                 
                 cells.forEach((cell, index) => {
@@ -432,30 +454,26 @@ class ProBuilder_Widget_Container extends ProBuilder_Base_Widget {
                 document.addEventListener('mouseup', onMouseUp);
             }
             
-            // Initialize on load
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeResize);
-            } else {
-                initializeResize();
-            }
+            // Close the initContainerResize function and call initialize
+            initializeResize();
             
-            // Make cells droppable for widgets
+            // Setup cell interactions
             const cells = grid.querySelectorAll('.container-cell');
             cells.forEach(cell => {
-                cell.addEventListener('click', function(e) {
-                    if (e.target.closest('.add-content-btn')) {
-                        e.preventDefault();
-                        // Trigger widget panel
-                        if (typeof ProBuilder !== 'undefined' && ProBuilder.openWidgetPanel) {
-                            ProBuilder.openWidgetPanel(cell);
+                    cell.addEventListener('click', function(e) {
+                        if (e.target.closest('.add-content-btn')) {
+                            e.preventDefault();
+                            // Trigger widget panel
+                            if (typeof ProBuilder !== 'undefined' && ProBuilder.openWidgetPanel) {
+                                ProBuilder.openWidgetPanel(cell);
+                            }
+                        } else if (e.target.closest('.settings-btn')) {
+                            e.preventDefault();
+                            // Show cell settings
+                            console.log('Section settings for section', cell.dataset.cellIndex);
                         }
-                    } else if (e.target.closest('.settings-btn')) {
-                        e.preventDefault();
-                        // Show cell settings
-                        console.log('Section settings for section', cell.dataset.cellIndex);
-                    }
+                    });
                 });
-            });
         })();
         </script>
         <?php endif; ?>

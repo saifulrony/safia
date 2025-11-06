@@ -198,7 +198,8 @@ class ProBuilder_Editor {
         
         // Localize script with all data INCLUDING saved elements
         wp_localize_script('probuilder-editor-js', 'ProBuilderEditor', [
-            'ajaxurl' => admin_url('admin-ajax.php'),
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'ajaxurl' => admin_url('admin-ajax.php'), // Backward compatibility
             'nonce' => wp_create_nonce('probuilder-editor'),
             'post_id' => $post_id,
             'home_url' => home_url(),

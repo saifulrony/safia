@@ -37,36 +37,10 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 'pattern-8' => __('Split Screen', 'probuilder'),
                 'pattern-9' => __('Blog Magazine', 'probuilder'),
                 'pattern-10' => __('Creative Complex', 'probuilder'),
-                'custom' => __('Custom Grid', 'probuilder'),
             ],
             'description' => __('Select from 10+ professional grid layouts', 'probuilder'),
         ]);
         
-        $this->add_control('columns', [
-            'label' => __('Columns', 'probuilder'),
-            'type' => 'slider',
-            'default' => 4,
-            'range' => [
-                'min' => 1,
-                'max' => 12,
-            ],
-            'condition' => [
-                'grid_pattern' => 'custom',
-            ],
-        ]);
-        
-        $this->add_control('rows', [
-            'label' => __('Rows', 'probuilder'),
-            'type' => 'slider',
-            'default' => 3,
-            'range' => [
-                'min' => 1,
-                'max' => 10,
-            ],
-            'condition' => [
-                'grid_pattern' => 'custom',
-            ],
-        ]);
         
         $this->add_control('gap', [
             'label' => __('Gap', 'probuilder'),
@@ -200,13 +174,18 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 background: <?php echo esc_attr($bg_color); ?>;
                 border: <?php echo esc_attr($border_width); ?>px solid <?php echo esc_attr($border_color); ?>;
                 border-radius: <?php echo esc_attr($border_radius); ?>px;
-                padding: 20px;
+                padding: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s;
                 position: relative;
                 overflow: hidden;
+            }
+            
+            /* Add padding only for empty cells (editor placeholders) */
+            #<?php echo $grid_id; ?> .grid-cell:not(:has(.probuilder-widget)) {
+                padding: 20px;
             }
             
             #<?php echo $grid_id; ?> .grid-cell:hover {
@@ -217,45 +196,67 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             }
             
             <?php if ($enable_resize): ?>
-            #<?php echo $grid_id; ?> .grid-cell .resize-handle {
+            /* Grid cell resize handles - Show on hover only */
+            #<?php echo $grid_id; ?> .grid-resize-handle {
                 position: absolute;
                 background: #007cba;
                 opacity: 0;
-                transition: opacity 0.2s;
-                z-index: 10;
+                transition: all 0.2s;
+                z-index: 999;
+                pointer-events: auto;
             }
             
-            #<?php echo $grid_id; ?> .grid-cell:hover .resize-handle {
-                opacity: 0.6;
+            #<?php echo $grid_id; ?> .grid-cell:hover .grid-resize-handle {
+                opacity: 0.7;
             }
             
-            #<?php echo $grid_id; ?> .grid-cell .resize-handle:hover {
+            #<?php echo $grid_id; ?> .grid-resize-handle:hover {
                 opacity: 1 !important;
+                background: #005a87;
+                transform: scale(1.2);
             }
             
-            #<?php echo $grid_id; ?> .grid-cell .resize-handle-right {
+            #<?php echo $grid_id; ?> .grid-resize-handle-top {
+                top: -<?php echo floor($gap / 2); ?>px;
+                left: 0;
+                width: 100%;
+                height: 6px;
+                cursor: row-resize;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-resize-handle-left {
                 top: 0;
-                right: 0;
-                width: 4px;
+                left: -<?php echo floor($gap / 2); ?>px;
+                width: 6px;
                 height: 100%;
                 cursor: col-resize;
             }
             
-            #<?php echo $grid_id; ?> .grid-cell .resize-handle-bottom {
-                bottom: 0;
+            #<?php echo $grid_id; ?> .grid-resize-handle-right {
+                top: 0;
+                right: -<?php echo floor($gap / 2); ?>px;
+                width: 6px;
+                height: 100%;
+                cursor: col-resize;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-resize-handle-bottom {
+                bottom: -<?php echo floor($gap / 2); ?>px;
                 left: 0;
                 width: 100%;
-                height: 4px;
+                height: 6px;
                 cursor: row-resize;
             }
             
-            #<?php echo $grid_id; ?> .grid-cell .resize-handle-corner {
-                bottom: 0;
-                right: 0;
-                width: 12px;
-                height: 12px;
+            #<?php echo $grid_id; ?> .grid-resize-handle-corner {
+                bottom: -<?php echo floor($gap / 2); ?>px;
+                right: -<?php echo floor($gap / 2); ?>px;
+                width: 16px;
+                height: 16px;
                 cursor: nwse-resize;
-                border-radius: 0 0 <?php echo esc_attr($border_radius); ?>px 0;
+                border-radius: 3px;
+                background: #ffffff !important;
+                border: 2px solid #007cba;
             }
             <?php endif; ?>
             
@@ -305,14 +306,23 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         </style>
         
         <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo esc_attr($inline_styles); ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>">
-            <?php for ($i = 0; $i < count($grid_template['areas']); $i++): ?>
-                <div class="grid-cell grid-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>">
+            <?php 
+            // Always render in editor context (AJAX calls don't have $_GET)
+            // We'll hide handles with CSS on frontend instead
+            $is_editor = !is_admin() || (isset($_GET['probuilder']) && $_GET['probuilder'] === 'true') || (defined('DOING_AJAX') && DOING_AJAX);
+            for ($i = 0; $i < count($grid_template['areas']); $i++): 
+            ?>
+                <div class="grid-cell grid-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>" data-original-area="<?php echo esc_attr($grid_template['areas'][$i]); ?>">
                     <?php if ($enable_resize): ?>
-                    <div class="resize-handle resize-handle-right"></div>
-                    <div class="resize-handle resize-handle-bottom"></div>
-                    <div class="resize-handle resize-handle-corner"></div>
+                    <!-- Resize handles - always render, hide with CSS on frontend -->
+                    <div class="grid-resize-handle grid-resize-handle-top" data-cell-index="<?php echo $i; ?>" data-direction="top" data-editor-only="true"></div>
+                    <div class="grid-resize-handle grid-resize-handle-left" data-cell-index="<?php echo $i; ?>" data-direction="left" data-editor-only="true"></div>
+                    <div class="grid-resize-handle grid-resize-handle-right" data-cell-index="<?php echo $i; ?>" data-direction="right" data-editor-only="true"></div>
+                    <div class="grid-resize-handle grid-resize-handle-bottom" data-cell-index="<?php echo $i; ?>" data-direction="bottom" data-editor-only="true"></div>
+                    <div class="grid-resize-handle grid-resize-handle-corner" data-cell-index="<?php echo $i; ?>" data-direction="both" data-editor-only="true"></div>
                     <?php endif; ?>
                     
+                    <?php if ($is_editor): ?>
                     <div class="grid-cell-toolbar">
                         <button class="add-content-btn" title="Add Content">
                             <i class="dashicons dashicons-plus" style="font-size: 12px; width: 12px; height: 12px;"></i>
@@ -321,6 +331,7 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                             <i class="dashicons dashicons-admin-generic" style="font-size: 12px; width: 12px; height: 12px;"></i>
                         </button>
                     </div>
+                    <?php endif; ?>
                     
                     <div class="grid-cell-content">
                         <?php 
@@ -355,141 +366,21 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         
         <?php if (!$is_editor): ?>
         <style>
-            /* Hide only the toolbar/controls on frontend, not the cells */
+            /* Hide editor-only elements on frontend */
             #<?php echo $grid_id; ?> .grid-cell-toolbar,
-            #<?php echo $grid_id; ?> .resize-handle {
+            #<?php echo $grid_id; ?> .resize-handle,
+            #<?php echo $grid_id; ?> [data-editor-only="true"] {
                 display: none !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
             }
         </style>
         <?php endif; ?>
         
-        <?php if ($enable_resize): ?>
-        <script>
-        (function() {
-            const gridId = '<?php echo $grid_id; ?>';
-            const grid = document.getElementById(gridId);
-            
-            if (!grid) return;
-            
-            // Initialize resize functionality
-            function initializeResize() {
-                const cells = grid.querySelectorAll('.grid-cell');
-                
-                cells.forEach((cell, index) => {
-                    const rightHandle = cell.querySelector('.resize-handle-right');
-                    const bottomHandle = cell.querySelector('.resize-handle-bottom');
-                    const cornerHandle = cell.querySelector('.resize-handle-corner');
-                    
-                    if (rightHandle) {
-                        rightHandle.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startResize(cell, 'width', e);
-                        });
-                    }
-                    
-                    if (bottomHandle) {
-                        bottomHandle.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startResize(cell, 'height', e);
-                        });
-                    }
-                    
-                    if (cornerHandle) {
-                        cornerHandle.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startResize(cell, 'both', e);
-                        });
-                    }
-                });
-            }
-            
-            function startResize(cell, direction, e) {
-                const startX = e.clientX;
-                const startY = e.clientY;
-                const startWidth = cell.offsetWidth;
-                const startHeight = cell.offsetHeight;
-                const gridArea = window.getComputedStyle(cell).gridArea;
-                
-                // Parse grid-area (row-start / col-start / row-end / col-end)
-                const parts = gridArea.split('/').map(p => parseInt(p.trim()));
-                let [rowStart, colStart, rowEnd, colEnd] = parts;
-                
-                function onMouseMove(e) {
-                    const deltaX = e.clientX - startX;
-                    const deltaY = e.clientY - startY;
-                    
-                    if (direction === 'width' || direction === 'both') {
-                        // Calculate new column span
-                        const newColEnd = Math.max(colStart + 1, Math.round(colStart + (startWidth + deltaX) / (startWidth / (colEnd - colStart))));
-                        colEnd = newColEnd;
-                    }
-                    
-                    if (direction === 'height' || direction === 'both') {
-                        // Calculate new row span
-                        const newRowEnd = Math.max(rowStart + 1, Math.round(rowStart + (startHeight + deltaY) / (startHeight / (rowEnd - rowStart))));
-                        rowEnd = newRowEnd;
-                    }
-                    
-                    // Apply new grid-area
-                    cell.style.gridArea = `${rowStart} / ${colStart} / ${rowEnd} / ${colEnd}`;
-                    
-                    // Visual feedback
-                    cell.style.boxShadow = '0 0 20px rgba(0,124,186,0.3)';
-                    cell.style.borderColor = '#007cba';
-                }
-                
-                function onMouseUp() {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    
-                    // Remove visual feedback
-                    cell.style.boxShadow = '';
-                    cell.style.borderColor = '';
-                    
-                    // Dispatch custom event for saving
-                    const event = new CustomEvent('gridCellResized', {
-                        detail: {
-                            cellIndex: cell.dataset.cellIndex,
-                            gridArea: cell.style.gridArea
-                        }
-                    });
-                    grid.dispatchEvent(event);
-                }
-                
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            }
-            
-            // Initialize on load
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeResize);
-            } else {
-                initializeResize();
-            }
-            
-            // Make cells droppable for widgets
-            const cells = grid.querySelectorAll('.grid-cell');
-            cells.forEach(cell => {
-                cell.addEventListener('click', function(e) {
-                    if (e.target.closest('.add-content-btn')) {
-                        e.preventDefault();
-                        // Trigger widget panel
-                        if (typeof ProBuilder !== 'undefined' && ProBuilder.openWidgetPanel) {
-                            ProBuilder.openWidgetPanel(cell);
-                        }
-                    } else if (e.target.closest('.settings-btn')) {
-                        e.preventDefault();
-                        // Show cell settings
-                        console.log('Cell settings for cell', cell.dataset.cellIndex);
-                    }
-                });
-            });
-        })();
-        </script>
-        <?php endif; ?>
+        <?php 
+        // Resize functionality is handled by editor.js - no inline JS needed
+        // The handles are already rendered and will be automatically initialized
+        ?>
         <?php
     }
     

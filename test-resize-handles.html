@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Resize Handles</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 40px;
+            background: #f9fafb;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1f2937; }
+        .success { padding: 15px; background: #d1fae5; border-left: 4px solid #10b981; color: #065f46; border-radius: 6px; margin: 20px 0; }
+        .info { padding: 15px; background: #dbeafe; border-left: 4px solid #3b82f6; color: #1e40af; border-radius: 6px; margin: 20px 0; }
+        .warning { padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; color: #92400e; border-radius: 6px; margin: 20px 0; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin: 10px 10px 0 0; font-weight: 600; }
+        code { background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+        .step { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .test-cell {
+            position: relative;
+            background: #f3f4f6;
+            border: 2px dashed #e5e7eb;
+            padding: 40px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+        .test-cell:hover {
+            background: #e0e7ff;
+            border-color: #667eea;
+        }
+        /* Resize handles demo */
+        .resize-handle {
+            position: absolute;
+            background: #667eea;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            pointer-events: auto;
+        }
+        .test-cell:hover .resize-handle {
+            opacity: 0.7;
+        }
+        .resize-handle:hover {
+            opacity: 1 !important;
+            background: #5568d3;
+        }
+        .resize-handle-right {
+            right: -3px;
+            top: 0;
+            width: 6px;
+            height: 100%;
+            cursor: ew-resize;
+        }
+        .resize-handle-bottom {
+            bottom: -3px;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            cursor: ns-resize;
+        }
+        .resize-handle-corner {
+            right: -3px;
+            bottom: -3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: nwse-resize;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Resize Handles</h1>
+        <p>Testing if resize handles CSS is working properly</p>
+        
+        <div class="success">
+            <strong>✅ Files Fixed:</strong><br>
+            1. CSS added to editor.css<br>
+            2. JavaScript fixed in grid-layout.php<br>
+            3. JavaScript fixed in container.php
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ IMPORTANT: Clear Your Browser Cache!</strong><br>
+            Press <code>Ctrl + Shift + R</code> in ProBuilder editor to load new CSS/JS
+        </div>
+        
+        <h2>📍 Testing Steps:</h2>
+        
+        <div class="step">
+            <h3>Step 1: Clear Browser Cache</h3>
+            <p>In the ProBuilder editor, press:</p>
+            <code>Ctrl + Shift + R</code> (Windows/Linux)<br>
+            <code>Cmd + Shift + R</code> (Mac)
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Open ProBuilder Editor</h3>
+            <p>Go to:</p>
+            <a href="http://192.168.10.203:7000/?p=803&probuilder=true&post_type=pb_header" class="button" target="_blank">
+                Open Header 803 in Editor
+            </a>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Add Grid Layout Widget</h3>
+            <p>1. Find "Grid Layout" widget in left panel<br>
+            2. Drag it to canvas<br>
+            3. Choose "2 Columns" pattern</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Hover Over Cells</h3>
+            <p>Move your mouse over the grid cells. You should see <strong>purple handles</strong> appear!</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 5: Drag to Resize</h3>
+            <p>1. Click and hold a purple handle<br>
+            2. Drag to resize<br>
+            3. Release mouse<br>
+            4. Cell resizes!</p>
+        </div>
+        
+        <h2 style="margin-top: 40px;">🎨 Visual Test (Hover Below):</h2>
+        <p>These cells demonstrate how resize handles should look:</p>
+        
+        <div class="test-grid">
+            <div class="test-cell">
+                <div class="resize-handle resize-handle-right"></div>
+                <div class="resize-handle resize-handle-bottom"></div>
+                <div class="resize-handle resize-handle-corner"></div>
+                <strong>Hover over me!</strong><br>
+                <small>See purple handles?</small>
+            </div>
+            <div class="test-cell">
+                <div class="resize-handle resize-handle-right"></div>
+                <div class="resize-handle resize-handle-bottom"></div>
+                <div class="resize-handle-corner"></div>
+                <strong>Hover over me too!</strong><br>
+                <small>Handles should appear</small>
+            </div>
+        </div>
+        
+        <div class="info">
+            <strong>🎯 What You Should See:</strong><br>
+            When you hover over the cells above, you should see:<br>
+            • Purple vertical bar on right edge (6px wide)<br>
+            • Purple horizontal bar on bottom edge (6px tall)<br>
+            • Purple circle at bottom-right corner (12px)<br>
+            • Cursor changes when hovering handles
+        </div>
+        
+        <h2>🔍 Debugging:</h2>
+        
+        <div class="info">
+            <strong>Open Browser Console (F12) and check:</strong><br><br>
+            
+            <strong>1. Check for initialization messages:</strong><br>
+            <code>✅ Initializing resize for grid: grid-xxxxx</code><br><br>
+            
+            <strong>2. Count handles:</strong><br>
+            <code>document.querySelectorAll('.resize-handle-right').length</code><br>
+            Should return number > 0<br><br>
+            
+            <strong>3. Check CSS:</strong><br>
+            <code>getComputedStyle(document.querySelector('.resize-handle-right')).width</code><br>
+            Should return "6px"
+        </div>
+        
+        <div class="warning">
+            <h3 style="margin-top: 0;">⚠️ Still Not Working?</h3>
+            <p><strong>Most Common Issue: Browser Cache Not Cleared</strong></p>
+            <ol>
+                <li>Close all tabs with ProBuilder</li>
+                <li>Clear browser cache completely (Settings → Privacy → Clear cache)</li>
+                <li>Reopen ProBuilder editor</li>
+                <li>Wait 1-2 seconds after page loads</li>
+                <li>Hover over cells</li>
+            </ol>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="http://192.168.10.203:7000/?p=803&probuilder=true&post_type=pb_header" class="button" style="font-size: 16px; padding: 15px 40px;">
+                Test in ProBuilder Editor
+            </a>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #f3f4f6; border-radius: 8px;">
+            <h3 style="color: #667eea; margin-top: 0;">💡 How Resize Handles Work:</h3>
+            <ul style="line-height: 1.8;">
+                <li><strong>Visibility:</strong> Hidden by default (opacity: 0)</li>
+                <li><strong>On hover:</strong> Appear semi-transparent (opacity: 0.7)</li>
+                <li><strong>On handle hover:</strong> Fully visible (opacity: 1)</li>
+                <li><strong>Colors:</strong> Purple #667eea (normal), Dark purple #5568d3 (hover)</li>
+                <li><strong>Cursors:</strong> Change to indicate resize direction</li>
+                <li><strong>Interaction:</strong> Click and drag to resize</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

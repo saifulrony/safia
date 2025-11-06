@@ -930,7 +930,8 @@ body:not(.admin-bar) .probuilder-editor-main {
     flex: 1;
     padding: 20px;
     background: #f0f0f0;
-    overflow-y: auto;
+    overflow-x: visible; /* Allow resize handles to show outside horizontally */
+    overflow-y: auto; /* Enable vertical scrolling */
     position: relative;
     /* This takes all remaining space between sidebars */
 }
@@ -958,6 +959,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     transition: max-width 0.3s ease, margin 0.3s ease;
     background: #ffffff;
     min-height: 100%;
+    overflow: visible; /* Allow resize handles to show */
 }
 
 /* Responsive Canvas Widths */
@@ -982,6 +984,7 @@ body:not(.admin-bar) .probuilder-editor-main {
     box-shadow: 0 0 35px rgba(0, 0, 0, 0.1);
     padding: 0;
     border: 1px solid #e6e9ec;
+    overflow: visible !important; /* Allow resize handles to show */
 }
 
 /* Device Modes */
@@ -1164,14 +1167,70 @@ body:not(.admin-bar) .probuilder-editor-main {
     z-index: 10;
 }
 
+/* Grid layout selected state - don't let it block resize handles */
+.probuilder-element[data-widget="grid-layout"].selected {
+    z-index: 10;
+    /* Ensure resize handles can still be clicked */
+}
+
+/* Hide the widget resize handles (blue dots) for grid layout - we use cell handles instead */
+.probuilder-element[data-widget="grid-layout"] .probuilder-element-resize-handles {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.probuilder-element[data-widget="grid-layout"] .probuilder-widget-resize-handle {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 /* Ensure block content doesn't interfere with block operations */
 .probuilder-element-preview {
     pointer-events: auto;
     position: relative;
     z-index: 1;
-    overflow: hidden;
+    overflow: visible; /* CHANGED: Allow resize handles to show outside bounds */
     width: 100%;
     height: 100%;
+}
+
+/* Grid Layout - Allow resize handles to be clickable */
+.probuilder-element[data-widget="grid-layout"] .probuilder-element-preview {
+    pointer-events: none !important; /* Disable pointer events on preview wrapper */
+}
+
+.probuilder-element[data-widget="grid-layout"] .probuilder-element-preview * {
+    pointer-events: auto !important; /* Re-enable for all child elements */
+}
+
+/* When grid layout is selected, ensure nothing blocks the handles */
+.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-preview,
+.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-controls,
+.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-add-below {
+    pointer-events: none !important; /* Make everything transparent to clicks */
+}
+
+.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-controls *,
+.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-preview * {
+    pointer-events: auto !important; /* Re-enable for child elements */
+}
+
+/* Ensure grid resize handles are always clickable - even when selected */
+.probuilder-element[data-widget="grid-layout"] .grid-resize-handle {
+    pointer-events: auto !important;
+    z-index: 99999 !important; /* Super high to be above everything */
+    position: absolute !important;
+}
+
+/* Grid cells should allow clicks through to handles */
+.probuilder-element[data-widget="grid-layout"] .grid-cell {
+    pointer-events: auto !important;
+}
+
+/* Grid cell content can block handles, so reduce its priority */
+.probuilder-element[data-widget="grid-layout"] .grid-cell-empty-content {
+    pointer-events: auto !important;
+    z-index: 1;
 }
 
 /* Widget Resize Handles - Elementor Style (Blue Dots) */
@@ -1385,6 +1444,112 @@ body:not(.admin-bar) .probuilder-editor-main {
     min-width: 0;
     min-height: 0;
     box-sizing: border-box;
+    overflow: visible !important; /* CRITICAL: Allow handles to show outside cell */
+}
+
+.container-cell {
+    position: relative;
+    overflow: visible !important; /* CRITICAL: Allow handles to show outside cell */
+}
+
+/* Grid cell and container resize handles - ALWAYS VISIBLE edge handles */
+.resize-handle {
+    position: absolute;
+    background: #667eea;
+    opacity: 0.8;  /* ALWAYS visible! */
+    transition: all 0.2s ease;
+    z-index: 99999 !important; /* VERY HIGH - above everything */
+    pointer-events: auto !important;
+    user-select: none !important;
+}
+
+/* Make handles fully opaque on cell hover */
+.grid-cell:hover .resize-handle,
+.container-cell:hover .resize-handle {
+    opacity: 1 !important;
+}
+
+/* Make handle more prominent when hovering directly on it */
+.resize-handle:hover {
+    background: #5568d3 !important;
+    transform: scale(1.2) !important;
+}
+
+/* Right handle - resize width (THICK vertical bar on edge) */
+.resize-handle-right {
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 80px;
+    cursor: ew-resize;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.5);
+    border: 2px solid #ffffff;
+}
+
+.resize-handle-right:hover {
+    width: 14px;
+    height: 100px;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.7);
+    border-width: 3px;
+}
+
+/* Bottom handle - resize height (THICK horizontal bar on edge) */
+.resize-handle-bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 10px;
+    cursor: ns-resize;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.5);
+    border: 2px solid #ffffff;
+}
+
+.resize-handle-bottom:hover {
+    width: 100px;
+    height: 14px;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.7);
+    border-width: 3px;
+}
+
+/* Corner handle - resize both (BIG circle at corner) */
+.resize-handle-corner {
+    right: -8px;
+    bottom: -8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    background: #667eea;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.5);
+    border: 3px solid #ffffff;
+}
+
+.resize-handle-corner:hover {
+    width: 26px;
+    height: 26px;
+    right: -11px;
+    bottom: -11px;
+    background: #5568d3 !important;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.7);
+    border-width: 4px;
+}
+
+/* Add visible border to cells to show they're resizable */
+.grid-cell,
+.container-cell {
+    outline: 1px solid rgba(102, 126, 234, 0.15);
+    outline-offset: -1px;
+}
+
+.grid-cell:hover,
+.container-cell:hover {
+    outline: 2px dashed #667eea;
+    outline-offset: -2px;
+    background: rgba(102, 126, 234, 0.05);
 }
 
 /* Grid cell drag handle */

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas Handles Diagnostic</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .info {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1f2937; margin-top: 0; }
+        .step { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+        code { background: #1f2937; color: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 13px; display: inline-block; }
+        .warning { background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; color: #92400e; border-radius: 6px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 10px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🔍 ProBuilder Canvas Handles Diagnostic</h1>
+        <p><strong>You confirmed handles work on test page, but not in ProBuilder canvas.</strong></p>
+        <p>This means there's CSS in the canvas that's hiding them. Let's find it!</p>
+    </div>
+    
+    <div class="info">
+        <h2>📋 Follow These Steps EXACTLY:</h2>
+        
+        <div class="step">
+            <h3>Step 1: Open ProBuilder Editor</h3>
+            <a href="http://192.168.10.203:7000/?p=803&probuilder=true&post_type=pb_header" class="button" target="_blank">
+                Open Editor
+            </a>
+            <p>Keep this diagnostic page open in another tab!</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Add Grid Layout Widget</h3>
+            <p>1. In ProBuilder, find "Grid Layout" widget<br>
+            2. Drag it to canvas<br>
+            3. Select "2 Columns" pattern<br>
+            4. Wait for it to render</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Open Browser Console</h3>
+            <p>Press <code>F12</code> to open DevTools</p>
+            <p>Go to <strong>Console</strong> tab</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Run Diagnostic Script</h3>
+            <p>Copy and paste this ENTIRE script into console:</p>
+            <code style="display: block; padding: 15px; white-space: pre; overflow-x: auto; background: #1f2937; max-width: 100%;">
+// Find resize handles in ProBuilder canvas
+const handles = document.querySelectorAll('.resize-handle-right');
+console.log('🔍 Found', handles.length, 'resize handles');
+
+if (handles.length > 0) {
+    const handle = handles[0];
+    const styles = window.getComputedStyle(handle);
+    
+    console.log('✅ Handle found! Checking CSS:');
+    console.log('Width:', styles.width);
+    console.log('Height:', styles.height);
+    console.log('Opacity:', styles.opacity);
+    console.log('Background:', styles.backgroundColor);
+    console.log('Z-index:', styles.zIndex);
+    console.log('Position:', styles.position);
+    console.log('Display:', styles.display);
+    console.log('Visibility:', styles.visibility);
+    console.log('Pointer Events:', styles.pointerEvents);
+    
+    // Check parent overflow
+    let parent = handle.parentElement;
+    let level = 0;
+    console.log('🔍 Checking parent overflow:');
+    while (parent && level < 5) {
+        const pStyles = window.getComputedStyle(parent);
+        if (pStyles.overflow !== 'visible') {
+            console.log('⚠️ Parent', level, parent.className, 'overflow:', pStyles.overflow);
+        }
+        parent = parent.parentElement;
+        level++;
+    }
+    
+    // Check bounding rect
+    const rect = handle.getBoundingClientRect();
+    console.log('📐 Handle position:', {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+    });
+    
+    if (rect.width === 0 || rect.height === 0) {
+        console.log('❌ Handle has ZERO size! Check CSS!');
+    } else if (styles.opacity === '0' || styles.opacity === 0) {
+        console.log('❌ Handle is INVISIBLE (opacity 0)!');
+    } else {
+        console.log('✅ Handle should be VISIBLE!');
+    }
+} else {
+    console.log('❌ NO handles found in DOM!');
+    console.log('Check if Grid Layout widget is added to canvas');
+}
+            </code>
+        </div>
+        
+        <div class="step">
+            <h3>Step 5: Read the Results</h3>
+            <p>The console will show you EXACTLY what's wrong:</p>
+            <ul>
+                <li><strong>Opacity: 0</strong> = Something is hiding them</li>
+                <li><strong>Width/Height: 0</strong> = CSS not loaded</li>
+                <li><strong>Parent overflow: hidden</strong> = Parent is clipping</li>
+                <li><strong>No handles found</strong> = HTML not rendering</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Step 6: Report Back</h3>
+            <p>Copy the console output and let me know what you see!</p>
+        </div>
+    </div>
+    
+    <div class="info">
+        <h2>🎯 What We're Looking For:</h2>
+        
+        <h3 style="color: #10b981;">✅ Good Result (Should Work):</h3>
+        <code style="display: block; padding: 15px; white-space: pre; background: #d1fae5; color: #065f46;">
+Width: 10px ✅
+Height: 80px ✅
+Opacity: 0.8 ✅
+Z-index: 99999 ✅
+No parent overflow: hidden ✅
+Handle should be VISIBLE ✅
+        </code>
+        
+        <h3 style="color: #ef4444; margin-top: 30px;">❌ Bad Result (Problem Found):</h3>
+        <code style="display: block; padding: 15px; white-space: pre; background: #fee2e2; color: #991b1b;">
+Width: 0px ❌ (CSS not loaded)
+Opacity: 0 ❌ (Being hidden)
+Parent overflow: hidden ❌ (Being clipped)
+        </code>
+    </div>
+    
+    <div class="warning" style="margin: 30px auto; max-width: 900px;">
+        <h3 style="margin-top: 0;">⚠️ IMPORTANT:</h3>
+        <p><strong>Before running the diagnostic:</strong></p>
+        <ol>
+            <li>Clear browser cache: <code>Ctrl + Shift + R</code></li>
+            <li>Wait for ProBuilder to fully load</li>
+            <li>Add Grid Layout widget to canvas</li>
+            <li>Then run the diagnostic script in console</li>
+        </ol>
+    </div>
+    
+    <div class="info">
+        <h2>🔧 Quick Fixes Based on Results:</h2>
+        
+        <h3>If "Opacity: 0":</h3>
+        <p>Something is overriding the opacity. Check for conflicting CSS.</p>
+        
+        <h3>If "Parent overflow: hidden":</h3>
+        <p>A parent container has overflow: hidden. I'll need to add more overflow: visible rules.</p>
+        
+        <h3>If "Width: 0" or old values (6px instead of 10px):</h3>
+        <p>Browser cache! Clear it completely and retry.</p>
+        
+        <h3>If "No handles found":</h3>
+        <p>HTML isn't rendering. Check if "Enable Resize" is ON in grid widget settings.</p>
+    </div>
+    
+    <div style="text-align: center; margin: 40px auto; max-width: 900px;">
+        <a href="http://192.168.10.203:7000/?p=803&probuilder=true&post_type=pb_header" class="button" style="font-size: 16px; padding: 15px 40px;">
+            Open ProBuilder Editor & Run Test
+        </a>
+    </div>
+</body>
+</html>
+

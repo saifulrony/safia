@@ -56,6 +56,7 @@ class ProBuilder_Templates_Library {
         $placeholder = $this->create_svg_placeholder('ProBuilder', '#92003b');
         
         return [
+            ['id' => 'clothing-store-home', 'name' => '👔 Clothing Store - Full Homepage', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
             ['id' => 'woodmart-home', 'name' => '🌳 WoodMart Home - Full Featured', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
             ['id' => 'porto-shop', 'name' => '🛒 Porto Shop - Real Visual Content', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
             ['id' => 'fashion-store', 'name' => '👗 Fashion Store - Complete', 'category' => 'pages', 'type' => 'page', 'thumbnail' => $placeholder],
@@ -78,6 +79,7 @@ class ProBuilder_Templates_Library {
     
     public function get_prebuilt_templates() {
         return [
+            ['id' => 'clothing-store-home', 'name' => 'Clothing Store Home', 'category' => 'pages', 'data' => $this->template_clothing_store_home()],
             ['id' => 'woodmart-home', 'name' => 'WoodMart Home', 'category' => 'pages', 'data' => $this->template_woodmart_home()],
             ['id' => 'porto-shop', 'name' => 'Porto Shop', 'category' => 'pages', 'data' => $this->template_porto_visual()],
             ['id' => 'fashion-store', 'name' => 'Fashion Store', 'category' => 'pages', 'data' => $this->template_fashion_visual()],
@@ -93,6 +95,630 @@ class ProBuilder_Templates_Library {
     
     private function generate_id() {
         return 'el_' . uniqid();
+    }
+    
+    /**
+     * CLOTHING STORE HOME - FULL PAGE MODERN DESIGN
+     * Complete homepage for clothing/fashion stores
+     */
+    private function template_clothing_store_home() {
+        return [
+            // === HERO SLIDER - FULL WIDTH ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'slider',
+                'settings' => [
+                    '_width' => '100%',
+                    '_padding' => '0',
+                    '_margin' => '0',
+                    'slides' => [
+                        [
+                            'background_image' => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&h=800&fit=crop',
+                            'background_overlay' => 'rgba(0,0,0,0.2)',
+                            'title' => 'New Season Collection',
+                            'title_size' => '64px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Discover the latest trends in fashion',
+                            'description_size' => '24px',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Shop Now',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#1f2937',
+                            'button_text_color' => '#ffffff',
+                            'content_position' => 'center center',
+                            'alignment' => 'center',
+                        ],
+                        [
+                            'background_image' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&h=800&fit=crop',
+                            'background_overlay' => 'rgba(0,0,0,0.3)',
+                            'title' => 'Women\'s Fashion',
+                            'title_size' => '64px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Elegant styles for every occasion',
+                            'description_size' => '24px',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Explore Collection',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#db2777',
+                            'button_text_color' => '#ffffff',
+                            'content_position' => 'center center',
+                            'alignment' => 'center',
+                        ],
+                        [
+                            'background_image' => 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=1920&h=800&fit=crop',
+                            'background_overlay' => 'rgba(0,0,0,0.25)',
+                            'title' => 'Men\'s Collection',
+                            'title_size' => '64px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Style meets comfort',
+                            'description_size' => '24px',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Shop Men',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#2563eb',
+                            'button_text_color' => '#ffffff',
+                            'content_position' => 'center center',
+                            'alignment' => 'center',
+                        ],
+                    ],
+                    '_height' => '700px',
+                    'autoplay' => 'yes',
+                    'autoplay_speed' => '5000',
+                    'show_arrows' => 'yes',
+                    'show_dots' => 'yes',
+                    'animation' => 'fade',
+                ],
+                'children' => []
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === CATEGORY BANNERS - 3 COLUMNS ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'container',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    'columns' => '3',
+                    'gap' => '30',
+                ],
+                'children' => [
+                    // Women's Collection
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'call-to-action',
+                        'settings' => [
+                            '_background_type' => 'image',
+                            '_background_image' => 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=700&fit=crop',
+                            '_background_overlay' => 'rgba(0,0,0,0.3)',
+                            'title' => 'Women\'s Wear',
+                            'title_size' => '32px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Dresses, Tops & More',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Shop Women',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#ffffff',
+                            'button_text_color' => '#1f2937',
+                            'alignment' => 'center',
+                            '_min_height' => '500px',
+                            '_padding' => '40px',
+                        ],
+                        'children' => []
+                    ],
+                    // Men's Collection
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'call-to-action',
+                        'settings' => [
+                            '_background_type' => 'image',
+                            '_background_image' => 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=500&h=700&fit=crop',
+                            '_background_overlay' => 'rgba(0,0,0,0.3)',
+                            'title' => 'Men\'s Wear',
+                            'title_size' => '32px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Shirts, Pants & Accessories',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Shop Men',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#ffffff',
+                            'button_text_color' => '#1f2937',
+                            'alignment' => 'center',
+                            '_min_height' => '500px',
+                            '_padding' => '40px',
+                        ],
+                        'children' => []
+                    ],
+                    // Kids Collection
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'call-to-action',
+                        'settings' => [
+                            '_background_type' => 'image',
+                            '_background_image' => 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&h=700&fit=crop',
+                            '_background_overlay' => 'rgba(0,0,0,0.3)',
+                            'title' => 'Kids Collection',
+                            'title_size' => '32px',
+                            'title_color' => '#ffffff',
+                            'title_weight' => '700',
+                            'description' => 'Fun & Comfortable',
+                            'description_color' => '#ffffff',
+                            'button_text' => 'Shop Kids',
+                            'button_link' => '/shop',
+                            'button_bg_color' => '#ffffff',
+                            'button_text_color' => '#1f2937',
+                            'alignment' => 'center',
+                            '_min_height' => '500px',
+                            '_padding' => '40px',
+                        ],
+                        'children' => []
+                    ],
+                ],
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === SECTION HEADING ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'text' => 'Featured Products',
+                    'tag' => 'h2',
+                    'size' => '48px',
+                    'color' => '#1f2937',
+                    'alignment' => 'center',
+                    'weight' => '700',
+                    '_padding' => '0 20px',
+                ],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '20px'],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'text',
+                'settings' => [
+                    'text' => 'Shop our handpicked collection of trending styles',
+                    'size' => '18px',
+                    'color' => '#6b7280',
+                    'alignment' => 'center',
+                    '_padding' => '0 20px',
+                ],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '50px'],
+                'children' => []
+            ],
+            
+            // === FEATURED PRODUCTS ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'woo-products',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    'query_type' => 'featured',
+                    'products_per_page' => '8',
+                    'columns' => '4',
+                    'show_image' => 'yes',
+                    'show_title' => 'yes',
+                    'show_price' => 'yes',
+                    'show_cart_button' => 'yes',
+                    'show_rating' => 'yes',
+                    'show_badge' => 'yes',
+                    'show_quick_view' => 'yes',
+                    'show_wishlist' => 'yes',
+                    'quick_actions_style' => 'on-hover',
+                    'actions_position' => 'top-right',
+                    'column_gap' => '30',
+                    'row_gap' => '40',
+                    'image_ratio' => '3:4',
+                    'hover_effect' => 'zoom-in',
+                ],
+                'children' => []
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === PROMOTIONAL BANNER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'call-to-action',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    '_background_type' => 'gradient',
+                    '_background_gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'title' => 'Limited Time Offer',
+                    'title_size' => '52px',
+                    'title_color' => '#ffffff',
+                    'title_weight' => '700',
+                    'description' => 'Get 30% off on all items. Use code: FASHION30',
+                    'description_size' => '20px',
+                    'description_color' => '#ffffff',
+                    'button_text' => 'Shop Sale',
+                    'button_link' => '/shop',
+                    'button_bg_color' => '#ffffff',
+                    'button_text_color' => '#667eea',
+                    'alignment' => 'center',
+                    '_min_height' => '350px',
+                    '_border_radius' => '20px',
+                ],
+                'children' => []
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === NEW ARRIVALS SECTION ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'text' => 'New Arrivals',
+                    'tag' => 'h2',
+                    'size' => '48px',
+                    'color' => '#1f2937',
+                    'alignment' => 'center',
+                    'weight' => '700',
+                    '_padding' => '0 20px',
+                ],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '50px'],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'woo-products',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    'query_type' => 'recent',
+                    'products_per_page' => '8',
+                    'columns' => '4',
+                    'show_image' => 'yes',
+                    'show_title' => 'yes',
+                    'show_price' => 'yes',
+                    'show_cart_button' => 'yes',
+                    'show_rating' => 'yes',
+                    'show_badge' => 'yes',
+                    'show_quick_view' => 'yes',
+                    'show_wishlist' => 'yes',
+                    'quick_actions_style' => 'on-hover',
+                    'actions_position' => 'top-right',
+                    'column_gap' => '30',
+                    'row_gap' => '40',
+                    'image_ratio' => '3:4',
+                    'hover_effect' => 'zoom-in',
+                ],
+                'children' => []
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === SHOP BY CATEGORY ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'text' => 'Shop by Category',
+                    'tag' => 'h2',
+                    'size' => '48px',
+                    'color' => '#1f2937',
+                    'alignment' => 'center',
+                    'weight' => '700',
+                    '_padding' => '0 20px',
+                ],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '50px'],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'woo-categories',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    'columns' => '4',
+                    'number' => '8',
+                    'show_image' => 'yes',
+                    'show_count' => 'yes',
+                    'show_description' => 'yes',
+                    'image_height' => '300px',
+                    'column_gap' => '30',
+                    'row_gap' => '30',
+                    'hover_effect' => 'zoom',
+                ],
+                'children' => []
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === FEATURES SECTION ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'container',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '60px 20px',
+                    '_background_color' => '#f9fafb',
+                    'columns' => '4',
+                    'gap' => '30',
+                ],
+                'children' => [
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fas fa-shipping-fast',
+                            'icon_size' => '48px',
+                            'icon_color' => '#667eea',
+                            'title' => 'Free Shipping',
+                            'title_size' => '20px',
+                            'title_color' => '#1f2937',
+                            'description' => 'On orders over $50',
+                            'description_color' => '#6b7280',
+                            'alignment' => 'center',
+                        ],
+                        'children' => []
+                    ],
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fas fa-sync-alt',
+                            'icon_size' => '48px',
+                            'icon_color' => '#667eea',
+                            'title' => 'Easy Returns',
+                            'title_size' => '20px',
+                            'title_color' => '#1f2937',
+                            'description' => '30-day return policy',
+                            'description_color' => '#6b7280',
+                            'alignment' => 'center',
+                        ],
+                        'children' => []
+                    ],
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fas fa-lock',
+                            'icon_size' => '48px',
+                            'icon_color' => '#667eea',
+                            'title' => 'Secure Payment',
+                            'title_size' => '20px',
+                            'title_color' => '#1f2937',
+                            'description' => '100% secure checkout',
+                            'description_color' => '#6b7280',
+                            'alignment' => 'center',
+                        ],
+                        'children' => []
+                    ],
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'icon-box',
+                        'settings' => [
+                            'icon' => 'fas fa-headset',
+                            'icon_size' => '48px',
+                            'icon_color' => '#667eea',
+                            'title' => '24/7 Support',
+                            'title_size' => '20px',
+                            'title_color' => '#1f2937',
+                            'description' => 'Dedicated customer service',
+                            'description_color' => '#6b7280',
+                            'alignment' => 'center',
+                        ],
+                        'children' => []
+                    ],
+                ],
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === TESTIMONIALS SECTION ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'heading',
+                'settings' => [
+                    'text' => 'What Our Customers Say',
+                    'tag' => 'h2',
+                    'size' => '48px',
+                    'color' => '#1f2937',
+                    'alignment' => 'center',
+                    'weight' => '700',
+                    '_padding' => '0 20px',
+                ],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '50px'],
+                'children' => []
+            ],
+            
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'container',
+                'settings' => [
+                    '_width' => '100%',
+                    '_max_width' => '1400px',
+                    '_padding' => '0 20px',
+                    'columns' => '3',
+                    'gap' => '30',
+                ],
+                'children' => [
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'testimonial',
+                        'settings' => [
+                            '_background_color' => '#ffffff',
+                            '_border_width' => '1px',
+                            '_border_color' => '#e5e7eb',
+                            '_border_radius' => '10px',
+                            '_padding' => '30px',
+                            'content' => 'Amazing quality and fast shipping! The clothes fit perfectly and the fabric is top-notch.',
+                            'name' => 'Sarah Johnson',
+                            'title' => 'Verified Customer',
+                            'rating' => '5',
+                            'show_rating' => 'yes',
+                        ],
+                        'children' => []
+                    ],
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'testimonial',
+                        'settings' => [
+                            '_background_color' => '#ffffff',
+                            '_border_width' => '1px',
+                            '_border_color' => '#e5e7eb',
+                            '_border_radius' => '10px',
+                            '_padding' => '30px',
+                            'content' => 'Love the variety and styles! Found exactly what I was looking for. Will definitely shop again.',
+                            'name' => 'Michael Chen',
+                            'title' => 'Verified Customer',
+                            'rating' => '5',
+                            'show_rating' => 'yes',
+                        ],
+                        'children' => []
+                    ],
+                    [
+                        'id' => $this->generate_id(),
+                        'widgetType' => 'testimonial',
+                        'settings' => [
+                            '_background_color' => '#ffffff',
+                            '_border_width' => '1px',
+                            '_border_color' => '#e5e7eb',
+                            '_border_radius' => '10px',
+                            '_padding' => '30px',
+                            'content' => 'Excellent customer service and the return process was so easy. Highly recommend!',
+                            'name' => 'Emma Davis',
+                            'title' => 'Verified Customer',
+                            'rating' => '5',
+                            'show_rating' => 'yes',
+                        ],
+                        'children' => []
+                    ],
+                ],
+            ],
+            
+            // === SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '80px'],
+                'children' => []
+            ],
+            
+            // === NEWSLETTER SECTION ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'call-to-action',
+                'settings' => [
+                    '_width' => '100%',
+                    '_background_color' => '#1f2937',
+                    '_padding' => '80px 20px',
+                    'title' => 'Join Our Newsletter',
+                    'title_size' => '42px',
+                    'title_color' => '#ffffff',
+                    'title_weight' => '700',
+                    'description' => 'Subscribe to get special offers, free giveaways, and exclusive deals.',
+                    'description_size' => '18px',
+                    'description_color' => '#d1d5db',
+                    'button_text' => 'Subscribe Now',
+                    'button_link' => '#',
+                    'button_bg_color' => '#667eea',
+                    'button_text_color' => '#ffffff',
+                    'alignment' => 'center',
+                ],
+                'children' => []
+            ],
+            
+            // === FINAL SPACER ===
+            [
+                'id' => $this->generate_id(),
+                'widgetType' => 'spacer',
+                'settings' => ['_height' => '60px'],
+                'children' => []
+            ],
+        ];
     }
     
     /**

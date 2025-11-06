@@ -138,29 +138,88 @@ class ProBuilder_Global_Styles {
      * AJAX: Save global styles
      */
     public function ajax_save_global_styles() {
-        check_ajax_referer('probuilder-editor', 'nonce');
+        // Ensure we send JSON response
+        header('Content-Type: application/json');
         
-        $new_styles = json_decode(stripslashes($_POST['styles']), true);
-        
-        // Get existing styles
-        $existing_styles = get_option('probuilder_global_styles', []);
-        
-        // Merge new styles with existing (preserving other sections)
-        $merged_styles = array_merge($existing_styles, $new_styles);
-        
-        // Deep merge for nested arrays (like layout section)
-        foreach ($new_styles as $section => $values) {
-            if (isset($existing_styles[$section]) && is_array($values)) {
-                $merged_styles[$section] = array_merge(
-                    (array) $existing_styles[$section],
-                    $values
-                );
+        try {
+            // Check permissions first (before nonce)
+            if (!current_user_can('edit_posts')) {
+                wp_send_json_error(['message' => 'Permission denied']);
+                exit;
             }
+            
+            // Verify nonce - don't die on failure, return error instead
+            $nonce_check = check_ajax_referer('probuilder-editor', 'nonce', false);
+            if (!$nonce_check) {
+                // Log nonce failure details
+                error_log('ProBuilder: Nonce check failed');
+                error_log('Nonce sent: ' . ($_POST['nonce'] ?? 'NOT SET'));
+                error_log('Action: ' . ($_POST['action'] ?? 'NOT SET'));
+                
+                wp_send_json_error(['message' => 'Security check failed - please refresh the page']);
+                exit;
+            }
+            
+            // Validate data
+            if (!isset($_POST['styles'])) {
+                wp_send_json_error(['message' => 'No styles data provided']);
+                exit;
+            }
+            
+            $new_styles = json_decode(stripslashes($_POST['styles']), true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_send_json_error(['message' => 'Invalid JSON data: ' . json_last_error_msg()]);
+                exit;
+            }
+            
+            if (!is_array($new_styles)) {
+                wp_send_json_error(['message' => 'Invalid styles format']);
+                exit;
+            }
+            
+            // Get existing styles
+            $existing_styles = get_option('probuilder_global_styles', []);
+            if (!is_array($existing_styles)) {
+                $existing_styles = [];
+            }
+            
+            // Merge new styles with existing (preserving other sections)
+            $merged_styles = array_merge($existing_styles, $new_styles);
+            
+            // Deep merge for nested arrays (like layout section)
+            foreach ($new_styles as $section => $values) {
+                if (isset($existing_styles[$section]) && is_array($values)) {
+                    $merged_styles[$section] = array_merge(
+                        (array) $existing_styles[$section],
+                        $values
+                    );
+                }
+            }
+            
+            // Save to database
+            $result = update_option('probuilder_global_styles', $merged_styles, true); // true = autoload
+            
+            // Clear cache
+            wp_cache_delete('probuilder_global_styles', 'options');
+            
+            // Log for debugging
+            error_log('ProBuilder: Global styles saved - ' . ($result ? 'SUCCESS' : 'UNCHANGED'));
+            error_log('ProBuilder: Saved data: ' . json_encode($merged_styles['layout'] ?? []));
+            
+            wp_send_json_success([
+                'message' => 'Global styles saved successfully',
+                'styles' => $merged_styles,
+                'saved' => true
+            ]);
+            
+        } catch (Exception $e) {
+            error_log('ProBuilder Global Styles Error: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            wp_send_json_error(['message' => 'Server error: ' . $e->getMessage()]);
         }
         
-        update_option('probuilder_global_styles', $merged_styles);
-        
-        wp_send_json_success(['message' => 'Global styles saved']);
+        exit; // Ensure clean JSON response
     }
     
     /**
@@ -220,8 +279,42 @@ class ProBuilder_Global_Styles {
         if (isset($styles['layout']['content_width']) && $styles['layout']['content_width'] === 'boxed') {
             $boxed_width = isset($styles['layout']['boxed_width']) ? $styles['layout']['boxed_width'] : '1400px';
             $boxed_padding = isset($styles['layout']['boxed_padding']) ? $styles['layout']['boxed_padding'] : '15px';
+            
+            // Base boxed layout
             echo '.probuilder-content { max-width: ' . esc_attr($boxed_width) . '; margin: 0 auto; padding: 0 ' . esc_attr($boxed_padding) . '; box-sizing: border-box; }';
+            
+            // Remove padding from container/grid widgets to prevent double padding
+            echo '
+            .probuilder-content > .probuilder-element > .probuilder-container-layout,
+            .probuilder-content > .probuilder-element > .probuilder-grid-layout {
+                margin-left: -' . esc_attr($boxed_padding) . ';
+                margin-right: -' . esc_attr($boxed_padding) . ';
+                width: calc(100% + 2 * ' . esc_attr($boxed_padding) . ');
+            }
+            
+            /* Cells with background images should fill edge-to-edge */
+            .probuilder-container-layout .container-cell,
+            .probuilder-grid-layout .grid-cell {
+                padding: 0 !important;
+            }
+            
+            /* But keep padding for the content inside cells */
+            .probuilder-container-layout .container-cell-content,
+            .probuilder-grid-layout .grid-cell-content {
+                width: 100%;
+                height: 100%;
+                padding: 0;
+            }
+            
+            /* Widgets inside cells can have their own padding */
+            .container-cell-content > .probuilder-widget,
+            .grid-cell-content > .probuilder-widget {
+                width: 100%;
+                height: 100%;
+            }
+            ';
         } else {
+            // Full width layout - no constraints
             echo '.probuilder-content { width: 100%; max-width: 100%; margin: 0; padding: 0; }';
         }
         

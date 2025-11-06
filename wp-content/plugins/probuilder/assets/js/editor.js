@@ -581,6 +581,7 @@
                     })
                 },
                 success: function(response) {
+                    console.log('Layout save response:', response);
                     if (response.success) {
                         // Apply instantly to preview area
                         const $previewArea = $('#probuilder-preview-area');
@@ -602,11 +603,15 @@
                         self.showNotification('Layout settings applied!', 'success');
                         console.log('✅ Layout settings saved and applied to preview');
                     } else {
-                        self.showNotification('Failed to save layout settings', 'error');
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'Unknown error';
+                        console.error('❌ Layout save failed:', errorMsg, response);
+                        self.showNotification('Failed to save: ' + errorMsg, 'error');
                     }
                 },
-                error: function() {
-                    self.showNotification('Failed to save layout settings', 'error');
+                error: function(xhr, status, error) {
+                    console.error('❌ AJAX error:', {xhr: xhr, status: status, error: error});
+                    console.error('Response text:', xhr.responseText);
+                    self.showNotification('AJAX Error: ' + (error || status), 'error');
                 }
             });
         },
@@ -843,6 +848,60 @@
                     $(this).remove();
                 });
             }, 2000);
+        },
+        
+        /**
+         * Show notification with type (success/error/info)
+         */
+        showNotification: function(message, type = 'info') {
+            const colors = {
+                'success': '#10b981',
+                'error': '#ef4444',
+                'info': '#3b82f6',
+                'warning': '#f59e0b'
+            };
+            
+            const icons = {
+                'success': '✓',
+                'error': '✕',
+                'info': 'ℹ',
+                'warning': '⚠'
+            };
+            
+            const bgColor = colors[type] || colors.info;
+            const icon = icons[type] || icons.info;
+            
+            const notification = $(`
+                <div class="probuilder-notification" style="
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: ${bgColor};
+                    color: white;
+                    padding: 14px 24px;
+                    border-radius: 8px;
+                    z-index: 99999;
+                    font-size: 14px;
+                    font-weight: 500;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                    animation: slideUp 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                ">
+                    <span style="font-size: 18px; line-height: 1;">${icon}</span>
+                    <span>${message}</span>
+                </div>
+            `);
+            
+            $('body').append(notification);
+            
+            setTimeout(() => {
+                notification.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 3000);
         },
         
         /**
@@ -1770,15 +1829,34 @@
                 const $handle = $(this);
                 const cellIndex = $handle.data('cell-index');
                 const direction = $handle.data('direction');
-                const $gridElement = $handle.closest('.probuilder-element');
-                const gridId = $gridElement.data('id');
                 
-                console.log('🎯 Global grid resize handler:', {gridId, cellIndex, direction});
+                // Try multiple ways to find the grid element ID
+                const $gridContainer = $handle.closest('.probuilder-grid-layout');
+                let gridId = null;
+                
+                if ($gridContainer.length) {
+                    // Get element ID from the grid container
+                    gridId = $gridContainer.data('element-id') || $gridContainer.data('grid-element-id');
+                }
+                
+                // Fallback: try to find via parent .probuilder-element
+                if (!gridId) {
+                    const $gridElement = $handle.closest('.probuilder-element');
+                    gridId = $gridElement.data('id');
+                }
+                
+                console.log('🎯 Global grid resize handler:', {gridId, cellIndex, direction, found: !!gridId});
+                
+                if (!gridId) {
+                    console.error('❌ Could not find grid element ID');
+                    return;
+                }
                 
                 // Find the grid element in our data
                 const gridElement = self.elements.find(e => e.id === gridId);
                 if (!gridElement) {
-                    console.error('❌ Grid element not found:', gridId);
+                    console.error('❌ Grid element not found in elements array:', gridId);
+                    console.log('Available elements:', self.elements.map(e => ({id: e.id, type: e.widgetType})));
                     return;
                 }
                 
@@ -5495,10 +5573,10 @@
                         rowsTemplate = gridTemplateData.rows;
                         
                         // Use custom template if available (from resize operations)
-                        if (element.settings.custom_template) {
-                            columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
-                            rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
-                            console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
+                    if (element.settings.custom_template) {
+                        columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
+                        rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
+                        console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
                         }
                     }
                     
@@ -5660,39 +5738,41 @@
                                 font-size: 11px;
                                 margin-left: 4px;
                             }
-                            /* Resize handles */
+                            /* Resize handles - Show on hover only */
                             #${gridId} .grid-resize-handle {
                                 position: absolute;
                                 background: #007cba;
                                 opacity: 0;
-                                transition: opacity 0.2s;
-                                z-index: 50;
+                                transition: all 0.2s;
+                                z-index: 999;
+                                pointer-events: auto;
                             }
                             #${gridId} .grid-cell:hover .grid-resize-handle {
-                                opacity: 0.6;
+                                opacity: 0.7;
                             }
                             #${gridId} .grid-resize-handle:hover {
                                 opacity: 1 !important;
                                 background: #005a87;
+                                transform: scale(1.2);
                             }
                             #${gridId} .grid-resize-handle-top {
                                 top: -${Math.floor(gridGap / 2)}px;
                                 left: 0;
                                 width: 100%;
-                                height: 4px;
+                                height: 6px;
                                 cursor: row-resize;
                             }
                             #${gridId} .grid-resize-handle-left {
                                 top: 0;
                                 left: -${Math.floor(gridGap / 2)}px;
-                                width: 4px;
+                                width: 6px;
                                 height: 100%;
                                 cursor: col-resize;
                             }
                             #${gridId} .grid-resize-handle-right {
                                 top: 0;
                                 right: -${Math.floor(gridGap / 2)}px;
-                                width: 4px;
+                                width: 6px;
                                 height: 100%;
                                 cursor: col-resize;
                             }
@@ -5700,16 +5780,18 @@
                                 bottom: -${Math.floor(gridGap / 2)}px;
                                 left: 0;
                                 width: 100%;
-                                height: 4px;
+                                height: 6px;
                                 cursor: row-resize;
                             }
                             #${gridId} .grid-resize-handle-corner {
                                 bottom: -${Math.floor(gridGap / 2)}px;
                                 right: -${Math.floor(gridGap / 2)}px;
-                                width: 12px;
-                                height: 12px;
+                                width: 16px;
+                                height: 16px;
                                 cursor: nwse-resize;
-                                border-radius: 2px;
+                                border-radius: 3px;
+                                background: #ffffff !important;
+                                border: 2px solid #007cba;
                             }
                             
                             /* Drag and Drop Styles for Grid Cells */
@@ -5829,7 +5911,7 @@
                                 border-color: #007cba;
                             }
                         </style>
-                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}">
+                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}" data-grid-element-id="${element.id}">
                     `;
                     
                     // Generate cells based on pattern
@@ -6290,11 +6372,25 @@
                     return flexboxHTML;
                     
                 case 'icon-box':
+                    const iconAlign = settings.alignment || settings.text_align || 'center';
+                    const iconSize = settings.icon_size || '48px';
+                    const iconColor = settings.icon_color || '#92003b';
+                    const iconTitle = settings.title || 'Icon Box Title';
+                    const iconTitleSize = settings.title_size || '18px';
+                    const iconDesc = settings.description || 'Description goes here';
+                    const iconDescSize = settings.description_size || '14px';
+                    const iconBg = settings.background_color || 'transparent';
+                    const iconPadding = settings.padding || '30px';
+                    const iconBorderRadius = settings.border_radius || '8px';
+                    const iconBoxShadow = settings.box_shadow === 'yes' ? '0 4px 12px rgba(0,0,0,0.1)' : 'none';
+                    
                     return `
-                        <div style="text-align: ${settings.text_align || 'center'}; padding: 20px;">
-                            <i class="${settings.icon || 'fa fa-star'}" style="font-size: ${settings.icon_size || 48}px; color: ${settings.icon_color || '#93003c'}; margin-bottom: 15px;"></i>
-                            <h3 style="margin: 0 0 10px 0; font-size: 20px;">${settings.title || 'Icon Box Title'}</h3>
-                            <p style="margin: 0; color: #666; font-size: 14px;">${settings.description || 'Description goes here'}</p>
+                        <div style="text-align: ${iconAlign}; padding: ${iconPadding}; background: ${iconBg}; border-radius: ${iconBorderRadius}; box-shadow: ${iconBoxShadow}; transition: all 0.3s;">
+                            <div style="width: ${iconSize}; height: ${iconSize}; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; background: ${iconColor}15; border-radius: 50%;">
+                                <i class="${settings.icon || 'fa fa-star'}" style="font-size: ${iconSize}; color: ${iconColor};"></i>
+                            </div>
+                            <h3 style="margin: 0 0 10px 0; font-size: ${iconTitleSize}; font-weight: 600; color: #1f2937;">${iconTitle}</h3>
+                            <p style="margin: 0; color: #6b7280; font-size: ${iconDescSize}; line-height: 1.6;">${iconDesc}</p>
                         </div>
                     `;
                     
@@ -8017,36 +8113,36 @@
                     return teamHTML;
                     
                 case 'testimonial':
-                    const testContent = settings.content || 'This is an amazing product! I highly recommend it to everyone.';
-                    const testImage = settings.image?.url || 'https://i.pravatar.cc/100?img=8';
-                    const testName = settings.name || 'Jane Smith';
-                    const testTitle = settings.title || 'Marketing Director';
-                    const testRating = settings.rating || 5;
-                    const testAlign = settings.align || 'center';
+                    const testContent = settings.testimonial || settings.content || 'This is an amazing product! I highly recommend it to everyone.';
+                    const testImage = settings.author_image || settings.image?.url || 'https://i.pravatar.cc/100?img=8';
+                    const testName = settings.author_name || settings.name || 'Jane Smith';
+                    const testTitle = settings.author_title || settings.title || 'Marketing Director';
+                    const testRating = parseInt(settings.rating) || 5;
+                    const testAlign = settings.alignment || settings.align || 'center';
                     
-                    let testHTML = `<div style="text-align: ${testAlign}; padding: 30px; border: 1px solid #e5e5e5; background: #f9f9f9; border-radius: 8px;">`;
+                    let testHTML = `<div style="text-align: ${testAlign}; padding: 40px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; transition: all 0.3s;">`;
                     
-                    // Quote icon
-                    testHTML += `<div style="font-size: 48px; color: #0073aa; opacity: 0.3; margin-bottom: 20px;"><i class="fa fa-quote-left"></i></div>`;
+                    // Quote icon with better styling
+                    testHTML += `<div style="font-size: 60px; color: #92003b; opacity: 0.15; margin-bottom: 20px; line-height: 1;"><i class="fa fa-quote-left"></i></div>`;
                     
                     // Content
-                    testHTML += `<div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px; font-style: italic;"><p style="margin: 0;">${testContent}</p></div>`;
+                    testHTML += `<div style="font-size: 16px; line-height: 1.8; margin-bottom: 25px; font-style: italic; color: #4b5563;"><p style="margin: 0;">${testContent}</p></div>`;
                     
-                    // Rating
+                    // Rating with stars
                     if (testRating > 0) {
-                        testHTML += `<div style="margin-bottom: 20px; color: #ffa500;">`;
+                        testHTML += `<div style="margin-bottom: 20px; color: #fbbf24; font-size: 18px;">`;
                         for (let i = 1; i <= 5; i++) {
-                            testHTML += `<i class="fa fa-star" style="opacity: ${i <= testRating ? '1' : '0.3'};"></i> `;
+                            testHTML += i <= testRating ? '★' : '☆';
                         }
                         testHTML += `</div>`;
                     }
                     
-                    // Author
-                    testHTML += `<div style="display: flex; align-items: center; justify-content: ${testAlign}; gap: 15px;">
-                        <img src="${testImage}" alt="${testName}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                    // Author with image
+                    testHTML += `<div style="display: flex; align-items: center; justify-content: ${testAlign}; gap: 15px; margin-top: 20px;">
+                        <img src="${testImage}" alt="${testName}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #f3f4f6;">
                         <div style="text-align: left;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">${testName}</div>
-                            <div style="color: #666; font-size: 14px;">${testTitle}</div>
+                            <div style="font-weight: 700; margin-bottom: 3px; font-size: 16px; color: #1f2937;">${testName}</div>
+                            <div style="color: #92003b; font-size: 14px; font-weight: 500;">${testTitle}</div>
                         </div>
                     </div>`;
                     
@@ -8059,19 +8155,44 @@
                     const ctaButtonText = settings.button_text || 'Get Started Now';
                     const ctaBgColor = settings.bg_color || '#92003b';
                     const ctaTextColor = settings.text_color || '#ffffff';
+                    const ctaTitleColor = settings.title_color || ctaTextColor;
+                    const ctaTitleSize = settings.title_size || '36px';
+                    const ctaDescColor = settings.description_color || ctaTextColor;
+                    const ctaDescSize = settings.description_size || '18px';
+                    const ctaBtnBg = settings.button_bg_color || '#ffffff';
+                    const ctaBtnText = settings.button_text_color || ctaBgColor;
+                    const ctaAlign = settings.alignment || 'center';
+                    const ctaMinHeight = settings._min_height || 'auto';
+                    const ctaPadding = settings._padding || '60px 40px';
                     
-                    let ctaHTML = `<div style="background: ${ctaBgColor}; color: ${ctaTextColor}; padding: 60px 40px; text-align: center; border-radius: 8px; position: relative; overflow: hidden;">`;
+                    // Background handling
+                    const ctaBgType = settings._background_type || 'color';
+                    const ctaBgImage = settings._background_image || '';
+                    const ctaBgOverlay = settings._background_overlay || 'rgba(0,0,0,0.3)';
                     
-                    // Background pattern
-                    ctaHTML += `<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.1; background: repeating-linear-gradient(45deg, transparent, transparent 10px, currentColor 10px, currentColor 20px);"></div>`;
+                    let ctaBgStyle = '';
+                    if (ctaBgType === 'image' && ctaBgImage) {
+                        ctaBgStyle = `background-image: url('${ctaBgImage}'); background-size: cover; background-position: center;`;
+                    } else {
+                        ctaBgStyle = `background: ${ctaBgColor};`;
+                    }
+                    
+                    let ctaHTML = `<div style="${ctaBgStyle} color: ${ctaTextColor}; padding: ${ctaPadding}; text-align: ${ctaAlign}; border-radius: 8px; position: relative; overflow: hidden; min-height: ${ctaMinHeight}; display: flex; align-items: center; justify-content: ${ctaAlign};">`;
+                    
+                    // Background overlay (for images)
+                    if (ctaBgType === 'image' && ctaBgImage) {
+                        ctaHTML += `<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: ${ctaBgOverlay}; z-index: 0;"></div>`;
+                    }
                     
                     // Content
-                    ctaHTML += `<div style="position: relative; z-index: 1;">`;
-                    ctaHTML += `<h2 style="margin: 0 0 15px 0; font-size: 36px; color: inherit; font-weight: 700;">${ctaTitle}</h2>`;
+                    ctaHTML += `<div style="position: relative; z-index: 1; max-width: 600px;">`;
+                    ctaHTML += `<h2 style="margin: 0 0 15px 0; font-size: ${ctaTitleSize}; color: ${ctaTitleColor}; font-weight: 700; line-height: 1.2;">${ctaTitle}</h2>`;
                     if (ctaDescription) {
-                        ctaHTML += `<p style="margin: 0 0 30px 0; font-size: 18px; opacity: 0.9;">${ctaDescription}</p>`;
+                        ctaHTML += `<p style="margin: 0 0 30px 0; font-size: ${ctaDescSize}; color: ${ctaDescColor}; opacity: 0.95; line-height: 1.6;">${ctaDescription}</p>`;
                     }
-                    ctaHTML += `<a href="#" style="background: #ffffff; color: ${ctaBgColor}; padding: 15px 40px; text-decoration: none; display: inline-block; border-radius: 4px; font-weight: 600; font-size: 16px; transition: all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">${ctaButtonText}</a>`;
+                    if (ctaButtonText) {
+                        ctaHTML += `<a href="#" style="background: ${ctaBtnBg}; color: ${ctaBtnText}; padding: 15px 40px; text-decoration: none; display: inline-block; border-radius: 6px; font-weight: 600; font-size: 16px; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';">${ctaButtonText}</a>`;
+                    }
                     ctaHTML += `</div>`;
                     
                     ctaHTML += `</div>`;
@@ -9128,52 +9249,52 @@
                         const slideDesc = slide.description || 'Slide description goes here...';
                         const slideButton = slide.button_text || 'Learn More';
                         const slidePosition = slide.content_position || 'center';
-                        const contentAlign = slidePosition === 'left' ? 'flex-start' : (slidePosition === 'right' ? 'flex-end' : 'center');
-                        
-                        // Overlay style
-                        let overlayStyle = '';
-                        if (slOverlayType === 'gradient') {
-                            overlayStyle = `background: linear-gradient(135deg, ${slOverlayGradStart}, ${slOverlayGradEnd});`;
-                        } else if (slOverlayType === 'color') {
-                            overlayStyle = `background-color: ${slOverlayColor};`;
+                    const contentAlign = slidePosition === 'left' ? 'flex-start' : (slidePosition === 'right' ? 'flex-end' : 'center');
+                    
+                    // Overlay style
+                    let overlayStyle = '';
+                    if (slOverlayType === 'gradient') {
+                        overlayStyle = `background: linear-gradient(135deg, ${slOverlayGradStart}, ${slOverlayGradEnd});`;
+                    } else if (slOverlayType === 'color') {
+                        overlayStyle = `background-color: ${slOverlayColor};`;
+                    }
+                    
+                    // Content container style
+                    let contentContainerStyle = `max-width: ${slContentMaxWidth}px; padding: 40px; text-align: ${slidePosition};`;
+                    if (slContentBgEnable) {
+                        contentContainerStyle += ` background-color: ${slContentBgColor}; border-radius: 12px;`;
+                        if (slContentBgBlur) {
+                            contentContainerStyle += ` backdrop-filter: blur(10px);`;
                         }
-                        
-                        // Content container style
-                        let contentContainerStyle = `max-width: ${slContentMaxWidth}px; padding: 40px; text-align: ${slidePosition};`;
-                        if (slContentBgEnable) {
-                            contentContainerStyle += ` background-color: ${slContentBgColor}; border-radius: 12px;`;
-                            if (slContentBgBlur) {
-                                contentContainerStyle += ` backdrop-filter: blur(10px);`;
-                            }
-                        }
-                        
+                    }
+                    
                         const isActive = index === 0;
                         const displayStyle = isActive ? 'flex' : 'none';
                         
                         slSliderHTML += `<div class="pb-slide" data-slide-index="${index}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('${slideImage}'); background-size: cover; background-position: center; display: ${displayStyle}; align-items: center; justify-content: ${contentAlign}; transition: opacity ${slTransitionSpeed}ms ease-in-out;">`;
-                        
-                        // Overlay
-                        if (slOverlayType !== 'none') {
-                            slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; ${overlayStyle}"></div>`;
-                        }
-                        
+                    
+                    // Overlay
+                    if (slOverlayType !== 'none') {
+                        slSliderHTML += `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; ${overlayStyle}"></div>`;
+                    }
+                    
                         // Content with animation
                         const animationClass = `pb-animate-${slContentAnimation}`;
                         const animationStyle = isActive ? `animation: ${animationClass} 0.8s ease-out ${slAnimationDelay}ms both;` : '';
                         slSliderHTML += `<div class="pb-slide-content ${animationClass}" data-animation="${slContentAnimation}" style="position: relative; z-index: 2; ${contentContainerStyle} ${animationStyle}">`;
-                        if (slideTitle) {
+                    if (slideTitle) {
                             const titleAnimDelay = isActive ? slAnimationDelay + 100 : 0;
                             slSliderHTML += `<h2 style="color: ${slTitleColor}; font-size: ${slTitleSize}px; font-weight: ${slTitleWeight}; margin: 0 0 20px 0; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); animation: ${animationClass} 0.8s ease-out ${titleAnimDelay}ms both;">${slideTitle}</h2>`;
-                        }
-                        if (slideDesc) {
+                    }
+                    if (slideDesc) {
                             const descAnimDelay = isActive ? slAnimationDelay + 200 : 0;
                             slSliderHTML += `<p style="color: ${slDescColor}; font-size: ${slDescSize}px; margin: 0 0 30px 0; line-height: 1.6; animation: ${animationClass} 0.8s ease-out ${descAnimDelay}ms both;">${slideDesc}</p>`;
-                        }
-                        if (slideButton) {
+                    }
+                    if (slideButton) {
                             const btnAnimDelay = isActive ? slAnimationDelay + 300 : 0;
                             slSliderHTML += `<a href="#" onclick="return false;" style="display: inline-block; background-color: ${slButtonBgColor}; color: ${slButtonTextColor}; padding: ${buttonPadding}; text-decoration: none; border-radius: ${slButtonRadius}px; font-weight: 600; font-size: ${buttonFontSize}; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: ${animationClass} 0.8s ease-out ${btnAnimDelay}ms both;">${slideButton}</a>`;
-                        }
-                        slSliderHTML += `</div>`;
+                    }
+                    slSliderHTML += `</div>`;
                         slSliderHTML += `</div>`;
                     });
                     
@@ -9764,11 +9885,11 @@
                     </div>`;
                 
                 case 'icon':
-                    const iconSize = settings.size || 50;
-                    const iconColor = settings.color || '#0073aa';
-                    const iconAlign = settings.align || 'center';
-                    const iconClass = settings.icon || 'fa fa-star';
-                    return `<div style="text-align:${iconAlign}"><i class="${iconClass}" style="font-size:${iconSize}px;color:${iconColor}"></i></div>`;
+                    const iconWidgetSize = settings.size || 50;
+                    const iconWidgetColor = settings.color || '#0073aa';
+                    const iconWidgetAlign = settings.align || 'center';
+                    const iconWidgetClass = settings.icon || 'fa fa-star';
+                    return `<div style="text-align:${iconWidgetAlign}"><i class="${iconWidgetClass}" style="font-size:${iconWidgetSize}px;color:${iconWidgetColor}"></i></div>`;
                 
                 case 'category-list':
                     const showCount = settings.show_count !== false;
@@ -15045,25 +15166,44 @@
                                 console.log('➕ Section template - adding to existing content');
                             }
                             
-                            // Insert template elements
+                            // Insert template elements WITH CHILDREN
                             if (Array.isArray(templateData)) {
                                 console.log('Inserting', templateData.length, 'elements...');
-                                templateData.forEach(function(element, index) {
-                                    console.log(`Inserting element ${index + 1}:`, element.widgetType);
-                                    if (element.widgetType) {
-                                        self.addElement(element.widgetType, element.settings || {});
+                                templateData.forEach(function(elementData, index) {
+                                    console.log(`Inserting element ${index + 1}:`, elementData.widgetType);
+                                    console.log('   Children count:', elementData.children ? elementData.children.length : 0);
+                                    if (elementData.children && elementData.children.length > 0) {
+                                        console.log('   First child:', elementData.children[0]);
+                                    }
+                                    
+                                    if (elementData.widgetType) {
+                                        // Clone element data to preserve children
+                                        const newElement = self.cloneElementData(elementData);
+                                        console.log('✅ Cloned element:', newElement.widgetType, 'with', newElement.children.length, 'children');
+                                        self.elements.push(newElement);
+                                        self.renderElement(newElement);
                                     }
                                 });
                             } else {
                                 console.log('Inserting single element...');
                                 if (templateData.widgetType) {
-                                    self.addElement(templateData.widgetType, templateData.settings || {});
+                                    const newElement = self.cloneElementData(templateData);
+                                    self.elements.push(newElement);
+                                    self.renderElement(newElement);
                                 }
                             }
+                            
+                            // Update UI
+                            self.updateEmptyState();
+                            self.makeContainersDroppable();
+                            self.saveHistory();
                             
                             // Show success message
                             const action = template.type === 'page' ? 'inserted' : 'added';
                             self.showToast('✓ Template ' + action + ': ' + template.name);
+                            
+                            // Switch back to widgets tab
+                            $('.probuilder-tab-btn[data-tab="widgets"]').click();
                         } else {
                             console.error('❌ Invalid template data response');
                             alert('Error: Could not load template data');

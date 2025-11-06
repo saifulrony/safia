@@ -206,10 +206,15 @@ class ProBuilder_Ajax {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('ProBuilder Save - Post ID: ' . $post_id);
             error_log('ProBuilder Save - Elements count: ' . count($elements));
+            error_log('ProBuilder Save - Post type: ' . $post->post_type);
         }
         
-        // If this content was created as a blog post by mistake, convert it to a Page
-        if ($post->post_type !== 'page') {
+        // Preserve custom post types (headers, footers, sliders, sidebars)
+        // Only convert to page if it's a generic 'post' type
+        $custom_part_types = ['pb_header', 'pb_footer', 'pb_slider', 'pb_sidebar', 'probuilder_part', 'pb_theme_template'];
+        
+        if ($post->post_type === 'post') {
+            // If this content was created as a blog post by mistake, convert it to a Page
             wp_update_post([
                 'ID' => $post_id,
                 'post_type' => 'page',
@@ -217,6 +222,8 @@ class ProBuilder_Ajax {
             // Refresh $post after type change
             $post = get_post($post_id);
         }
+        // If it's already page or a custom part type, keep it as is
+        // This preserves pb_header, pb_footer, pb_slider, pb_sidebar types
 
         // Save ProBuilder data (save as array, WordPress will serialize it)
         $updated = update_post_meta($post_id, '_probuilder_data', $elements);

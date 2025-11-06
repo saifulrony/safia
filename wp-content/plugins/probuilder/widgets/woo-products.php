@@ -856,9 +856,9 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
             </script>';
         }
         
-        // Add Quick View Modal & JavaScript
-        $this->render_quick_view_modal();
-        $this->render_action_scripts();
+        // Add Quick View Modal & JavaScript to footer (outside widget wrapper)
+        add_action('wp_footer', [$this, 'render_quick_view_modal'], 999);
+        add_action('wp_footer', [$this, 'render_action_scripts'], 999);
         
         echo '</div>'; // .probuilder-woo-products-wrapper
     }
@@ -866,11 +866,15 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
     /**
      * Render Quick View Modal
      */
-    private function render_quick_view_modal() {
+    public function render_quick_view_modal() {
+        // Only render once
+        static $rendered = false;
+        if ($rendered) return;
+        $rendered = true;
         ?>
         <!-- Quick View Modal -->
-        <div id="pb-quick-view-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 999999; align-items: center; justify-content: center;">
-            <div style="position: relative; background: white; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div id="pb-quick-view-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 99999999; align-items: center; justify-content: center;">
+            <div style="position: relative; background: white; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); z-index: 99999999;">
                 <button onclick="pbCloseQuickView()" style="position: absolute; top: 15px; right: 15px; background: #f3f4f6; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 24px; line-height: 1; z-index: 10; transition: all 0.3s;" onmouseover="this.style.background='#92003b'; this.style.color='white'" onmouseout="this.style.background='#f3f4f6'; this.style.color='#000'">×</button>
                 <div id="pb-quick-view-content" style="padding: 30px;">
                     <div style="text-align: center; padding: 60px 20px;">
@@ -885,8 +889,21 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
+            #pb-quick-view-modal {
+                z-index: 99999999 !important;
+            }
             #pb-quick-view-modal.active {
                 display: flex !important;
+                z-index: 99999999 !important;
+            }
+            #pb-quick-view-modal > div {
+                z-index: 99999999 !important;
+                position: relative;
+            }
+            /* Ensure notifications appear above modal */
+            .pb-notification,
+            .pb-cart-notification {
+                z-index: 999999999 !important;
             }
         </style>
         <?php
@@ -895,7 +912,11 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
     /**
      * Render Action Scripts
      */
-    private function render_action_scripts() {
+    public function render_action_scripts() {
+        // Only render once
+        static $rendered = false;
+        if ($rendered) return;
+        $rendered = true;
         ?>
         <script type="text/javascript">
         // Ensure jQuery is loaded
@@ -907,8 +928,12 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
             const modal = document.getElementById('pb-quick-view-modal');
             const content = document.getElementById('pb-quick-view-content');
             
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+            
             // Show modal
             modal.classList.add('active');
+            modal.style.display = 'flex';
             
             // Load product via AJAX
             fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=pb_quick_view&product_id=' + productId)
@@ -923,7 +948,12 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
         
         // Close Quick View (Global scope for onclick)
         window.pbCloseQuickView = function() {
-            document.getElementById('pb-quick-view-modal').classList.remove('active');
+            const modal = document.getElementById('pb-quick-view-modal');
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            
+            // Restore body scroll
+            document.body.style.overflow = '';
         };
         
         // Close on ESC key
@@ -1034,7 +1064,7 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
                 padding: 16px 24px;
                 border-radius: 8px;
                 box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                z-index: 1000000;
+                z-index: 999999999;
                 font-weight: 600;
                 animation: slideIn 0.3s ease;
             `;
@@ -1091,7 +1121,7 @@ class ProBuilder_Widget_Woo_Products extends ProBuilder_Base_Widget {
                 padding: 20px 24px;
                 border-radius: 12px;
                 box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
-                z-index: 1000000;
+                z-index: 999999999;
                 min-width: 350px;
                 max-width: 400px;
                 animation: slideIn 0.3s ease;
