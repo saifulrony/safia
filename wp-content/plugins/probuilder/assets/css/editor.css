@@ -928,9 +928,9 @@ body:not(.admin-bar) .probuilder-editor-main {
 /* Canvas Area - More space in middle */
 .probuilder-canvas {
     flex: 1;
-    padding: 20px;
+    padding: 40px; /* Extra padding for resize handles at edges */
     background: #f0f0f0;
-    overflow-x: visible; /* Allow resize handles to show outside horizontally */
+    overflow-x: auto; /* Enable horizontal scroll if content + handles exceed width */
     overflow-y: auto; /* Enable vertical scrolling */
     position: relative;
     /* This takes all remaining space between sidebars */
@@ -956,9 +956,10 @@ body:not(.admin-bar) .probuilder-editor-main {
 .probuilder-canvas-inner {
     max-width: 100%;
     margin: 0 auto;
+    padding: 20px; /* Padding inside to give handles space at edges */
     transition: max-width 0.3s ease, margin 0.3s ease;
     background: #ffffff;
-    min-height: 100%;
+    min-height: calc(100vh - 120px); /* Account for header and padding */
     overflow: visible; /* Allow resize handles to show */
 }
 
@@ -1175,13 +1176,13 @@ body:not(.admin-bar) .probuilder-editor-main {
 
 /* Hide the widget resize handles (blue dots) for grid layout - we use cell handles instead */
 .probuilder-element[data-widget="grid-layout"] .probuilder-element-resize-handles {
-    display: none !important;
+    display: block !important;
     pointer-events: none !important;
 }
 
 .probuilder-element[data-widget="grid-layout"] .probuilder-widget-resize-handle {
-    display: none !important;
-    pointer-events: none !important;
+    display: flex !important;
+    pointer-events: auto !important;
 }
 
 /* Ensure block content doesn't interfere with block operations */
@@ -1194,20 +1195,26 @@ body:not(.admin-bar) .probuilder-editor-main {
     height: 100%;
 }
 
-/* Grid Layout - Allow resize handles to be clickable */
+/* Grid Layout - Allow resize handles to be clickable but keep selection working */
 .probuilder-element[data-widget="grid-layout"] .probuilder-element-preview {
-    pointer-events: none !important; /* Disable pointer events on preview wrapper */
+    pointer-events: auto !important; /* Allow clicks for selection */
 }
 
+/* Make grid container itself selectable */
+.probuilder-element[data-widget="grid-layout"] .probuilder-grid-layout {
+    pointer-events: auto !important;
+    cursor: pointer; /* Show it's clickable */
+}
+
+/* Grid cells and content are clickable */
 .probuilder-element[data-widget="grid-layout"] .probuilder-element-preview * {
     pointer-events: auto !important; /* Re-enable for all child elements */
 }
 
 /* When grid layout is selected, ensure nothing blocks the handles */
-.probuilder-element[data-widget="grid-layout"].selected .probuilder-element-preview,
 .probuilder-element[data-widget="grid-layout"].selected .probuilder-element-controls,
 .probuilder-element[data-widget="grid-layout"].selected .probuilder-element-add-below {
-    pointer-events: none !important; /* Make everything transparent to clicks */
+    pointer-events: auto !important; /* Keep controls interactive */
 }
 
 .probuilder-element[data-widget="grid-layout"].selected .probuilder-element-controls *,

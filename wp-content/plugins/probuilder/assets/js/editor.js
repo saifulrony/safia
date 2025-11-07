@@ -1586,8 +1586,9 @@
                     $column.droppable({
                         accept: '.probuilder-widget',
                         tolerance: 'pointer',
-                        greedy: false, // Allow container to also handle drops
+                        greedy: true, // Prevent parent elements from also handling the drop
                         drop: function(event, ui) {
+                            event.preventDefault();
                             // Only handle if this is an empty drop zone
                             if (!$column.hasClass('probuilder-drop-zone')) {
                                 console.log('Column has content, letting container handle drop');
@@ -4239,8 +4240,10 @@
                                 accept: '.probuilder-widget',
                                 tolerance: 'pointer',
                                 hoverClass: 'probuilder-drop-hover',
+                                greedy: true, // Prevent parent elements from also handling the drop
                                 drop: function(event, ui) {
                                     event.stopPropagation();
+                                    event.preventDefault();
                                     const widgetName = ui.draggable.data('widget');
                                     console.log('✅ Widget dropped in grid cell:', widgetName, 'grid:', gridId, 'cell:', cellIndex);
                                     
@@ -4862,8 +4865,10 @@
                                 accept: '.probuilder-widget',
                                 tolerance: 'pointer',
                                 hoverClass: 'probuilder-drop-hover',
+                                greedy: true, // Prevent parent elements from also handling the drop
                                 drop: function(event, ui) {
                                     event.stopPropagation();
+                                    event.preventDefault();
                                     const widgetName = ui.draggable.data('widget');
                                     console.log('✅ Widget dropped in Container 2 cell:', widgetName, 'container:', gridId, 'cell:', cellIndex);
                                     
@@ -6637,17 +6642,26 @@
                     // Add interactive script after a short delay to ensure DOM is ready
                     setTimeout(function() {
                         const $tabsContainer = $(`[data-tabs-id="${uniqueId}"]`);
-                        if ($tabsContainer.length === 0) return;
+                        if ($tabsContainer.length === 0) {
+                            console.warn('Tabs container not found:', uniqueId);
+                            return;
+                        }
                         
-                        // Tab switching
-                        $tabsContainer.find('.probuilder-tab-header').off('click').on('click', function(e) {
+                        console.log('✅ Attaching tab switching handlers for:', uniqueId);
+                        
+                        // Tab switching - Use event delegation for reliability
+                        $tabsContainer.off('click.tabSwitch').on('click.tabSwitch', '.probuilder-tab-header', function(e) {
                             e.stopPropagation();
+                            e.preventDefault();
+                            
                             const $header = $(this);
                             const tabIndex = $header.data('tab-index');
                             const activeBg = $header.data('active-bg');
                             const activeColor = $header.data('active-color');
                             const inactiveBg = $header.data('inactive-bg');
                             const inactiveColor = $header.data('inactive-color');
+                            
+                            console.log('🔄 Switching to tab:', tabIndex);
                             
                             // Update all tab headers
                             $tabsContainer.find('.probuilder-tab-header').each(function() {
@@ -6666,7 +6680,9 @@
                             $tabsContainer.find('.probuilder-tabs-content').each(function() {
                                 const $content = $(this);
                                 const contentIndex = $content.data('tab-content');
-                                $content.css('display', contentIndex === tabIndex ? 'block' : 'none');
+                                const shouldShow = contentIndex === tabIndex;
+                                $content.css('display', shouldShow ? 'block' : 'none');
+                                console.log(`  Tab ${contentIndex}: ${shouldShow ? 'SHOW' : 'hide'}`);
                             });
                         });
                         
@@ -13491,7 +13507,10 @@
                     accept: '.probuilder-widget',
                     tolerance: 'pointer',
                     hoverClass: 'probuilder-drop-hover',
+                    greedy: true, // Prevent parent elements from also handling the drop
                     drop: function(event, ui) {
+                        event.stopPropagation();
+                        event.preventDefault();
                         const widgetName = ui.draggable.data('widget');
                         console.log('Widget dropped into tab:', widgetName, 'Tab index:', tabIndex);
                         
