@@ -1,0 +1,57 @@
+SITE OFFLINE - FIX INSTRUCTIONS
+================================
+
+ISSUE:
+------
+You're trying to access: http://192.168.10.203
+But the server's actual IP is: 192.168.177.129
+
+SOLUTION 1: Use the correct IP address
+---------------------------------------
+Access your site at: http://192.168.177.129
+
+The IP address changed because:
+- The server uses DHCP (automatic IP assignment)
+- The IP can change when the server restarts or network changes
+
+SOLUTION 2: Set a static IP address (if you need 192.168.10.203)
+-----------------------------------------------------------------
+If you must use 192.168.10.203, you need to configure a static IP:
+
+1. Edit network configuration (requires sudo):
+   sudo nano /etc/netplan/01-netcfg.yaml
+
+2. Change from DHCP to static:
+   network:
+     version: 2
+     renderer: NetworkManager
+     ethernets:
+       ens33:
+         dhcp4: no
+         addresses:
+           - 192.168.10.203/24
+         gateway4: 192.168.10.2
+         nameservers:
+           addresses: [8.8.8.8, 8.8.4.4]
+
+3. Apply the changes:
+   sudo netplan apply
+
+4. Restart networking:
+   sudo systemctl restart NetworkManager
+
+CURRENT STATUS:
+--------------
+✓ Apache web server: RUNNING
+✓ Server IP: 192.168.177.129
+✓ Apache listening on port 80
+✓ WordPress installed at: /home/saiful/wordpress
+
+QUICK ACCESS:
+-------------
+Your WordPress site should be accessible at:
+http://192.168.177.129
+
+If it still shows the default Apache page, the DocumentRoot needs to be updated.
+This requires sudo access to edit /etc/apache2/sites-available/000-default.conf
+

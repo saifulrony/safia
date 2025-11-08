@@ -161,6 +161,7 @@ This fix complements the earlier fixes:
 - ✅ Grid layout resize handles working
 - ✅ No duplicate widgets when dropping in containers
 - ✅ **Tabs switching works** (THIS FIX!)
+- ✅ **Resizing a grid cell no longer pops the widget modal**
 - ✅ Can now add content to any tab
 
 All container widgets (Grid, Tabs, Container) now work correctly! 🎉

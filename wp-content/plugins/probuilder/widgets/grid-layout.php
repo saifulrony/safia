@@ -155,6 +155,28 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         
         // Get grid template based on pattern
         $grid_template = $this->get_grid_template($pattern);
+
+        // Apply custom template overrides saved from editor (after resize)
+        $custom_template = $this->get_settings('custom_template', []);
+        if (is_array($custom_template) && !empty($custom_template)) {
+            if (!empty($custom_template['columns'])) {
+                $grid_template['columns'] = $custom_template['columns'];
+            }
+
+            if (!empty($custom_template['rows'])) {
+                $grid_template['rows'] = $custom_template['rows'];
+            }
+
+            if (!empty($custom_template['areas']) && is_array($custom_template['areas'])) {
+                $filtered_areas = array_values(array_filter($custom_template['areas'], function($area) {
+                    return !empty($area);
+                }));
+
+                if (!empty($filtered_areas)) {
+                    $grid_template['areas'] = $filtered_areas;
+                }
+            }
+        }
         
         ?>
         <style>
@@ -174,18 +196,29 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 background: <?php echo esc_attr($bg_color); ?>;
                 border: <?php echo esc_attr($border_width); ?>px solid <?php echo esc_attr($border_color); ?>;
                 border-radius: <?php echo esc_attr($border_radius); ?>px;
-                padding: 0;
+                padding: 40px 16px 16px;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
-                justify-content: center;
+                justify-content: flex-start;
                 transition: all 0.3s;
                 position: relative;
-                overflow: hidden;
+                overflow: visible;
+                gap: 12px;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell.has-content {
+                padding-top: 40px;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-toolbar,
+            #<?php echo $grid_id; ?> .grid-cell-toolbar * {
+                pointer-events: auto !important;
             }
             
             /* Add padding only for empty cells (editor placeholders) */
             #<?php echo $grid_id; ?> .grid-cell:not(:has(.probuilder-widget)) {
-                padding: 20px;
+                padding: 40px 16px 16px;
             }
             
             #<?php echo $grid_id; ?> .grid-cell:hover {
@@ -193,6 +226,52 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 border-color: #007cba;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-empty-content {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                padding: 16px 20px;
+                border: 1px dashed rgba(0, 124, 186, 0.4);
+                border-radius: 10px;
+                max-width: 220px;
+                pointer-events: auto;
+                cursor: pointer;
+                background: rgba(0, 124, 186, 0.05);
+                transition: border-color 0.2s, background 0.2s;
+                margin: 0 auto;
+                gap: 6px;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-empty-content:hover {
+                border-color: rgba(0, 124, 186, 0.8);
+                background: rgba(0, 124, 186, 0.1);
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-empty-content .dashicons {
+                opacity: 0.4 !important;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-add-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 10px 16px;
+                border-radius: 20px;
+                border: none;
+                background: #007cba;
+                color: #fff;
+                font-size: 12px;
+                cursor: pointer;
+                transition: background 0.2s ease, transform 0.2s ease;
+                pointer-events: auto;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-add-btn:hover {
+                background: #005a87;
+                transform: translateY(-1px);
             }
             
             <?php if ($enable_resize): ?>
@@ -283,6 +362,8 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 gap: 4px;
                 opacity: 0;
                 transition: opacity 0.2s;
+                z-index: 1000;
+                pointer-events: auto;
             }
             
             #<?php echo $grid_id; ?> .grid-cell:hover .grid-cell-toolbar {
@@ -298,10 +379,21 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 cursor: pointer;
                 font-size: 11px;
                 transition: background 0.2s;
+                pointer-events: auto;
+                position: relative;
+                z-index: 1001;
             }
             
             #<?php echo $grid_id; ?> .grid-cell-toolbar button:hover {
                 background: #005a87;
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-toolbar .grid-cell-delete-btn {
+                background: rgba(220, 38, 38, 0.9);
+            }
+            
+            #<?php echo $grid_id; ?> .grid-cell-toolbar .grid-cell-delete-btn:hover {
+                background: rgba(220, 38, 38, 1);
             }
         </style>
         
@@ -323,12 +415,15 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                     <?php endif; ?>
                     
                     <?php if ($is_editor): ?>
-                    <div class="grid-cell-toolbar">
-                        <button class="add-content-btn" title="Add Content">
+                    <div class="grid-cell-toolbar" data-grid-id="<?php echo esc_attr($grid_id); ?>">
+                        <button type="button" class="add-content-btn" title="Add Content" data-cell-index="<?php echo $i; ?>" data-grid-id="<?php echo esc_attr($grid_id); ?>">
                             <i class="dashicons dashicons-plus" style="font-size: 12px; width: 12px; height: 12px;"></i>
                         </button>
-                        <button class="settings-btn" title="Cell Settings">
+                        <button type="button" class="settings-btn" title="Cell Settings" data-cell-index="<?php echo $i; ?>" data-grid-id="<?php echo esc_attr($grid_id); ?>">
                             <i class="dashicons dashicons-admin-generic" style="font-size: 12px; width: 12px; height: 12px;"></i>
+                        </button>
+                        <button type="button" class="grid-cell-delete-btn" title="Delete Cell" data-cell-index="<?php echo $i; ?>" data-grid-id="<?php echo esc_attr($grid_id); ?>">
+                            <i class="dashicons dashicons-trash" style="font-size: 12px; width: 12px; height: 12px;"></i>
                         </button>
                     </div>
                     <?php endif; ?>
@@ -351,9 +446,12 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                             // Show placeholder ONLY in ProBuilder editor, not on frontend
                             if (isset($_GET['probuilder']) && $_GET['probuilder'] === 'true') {
                                 ?>
-                                <i class="dashicons dashicons-welcome-add-page" style="font-size: 32px; opacity: 0.3; color: #999;"></i>
-                                <div style="font-size: 12px; margin-top: 8px; color: #999;">Cell <?php echo $i + 1; ?></div>
-                                <div style="font-size: 11px; margin-top: 4px; color: #bbb;">Drop widgets here</div>
+                                <div class="grid-cell-empty-content">
+                                    <button type="button" class="grid-cell-add-btn" data-grid-id="<?php echo esc_attr($grid_id); ?>" data-cell-index="<?php echo $i; ?>">
+                                        <i class="dashicons dashicons-plus-alt2" style="font-size: 16px;"></i>
+                                        <span>Add Widget</span>
+                                    </button>
+                                </div>
                                 <?php
                             }
                             // On frontend: show nothing (empty cell)

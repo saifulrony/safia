@@ -1,0 +1,53 @@
+SERVER IP ADDRESS INFORMATION
+==============================
+
+Current Server IP: 192.168.177.129
+You are trying to access: 192.168.10.203
+
+SOLUTION OPTIONS:
+=================
+
+Option 1: Use the correct IP address
+------------------------------------
+Access your WordPress site at:
+http://192.168.177.129
+
+Option 2: Set a static IP address (if you need 192.168.10.203)
+---------------------------------------------------------------
+If you need to use 192.168.10.203, you'll need to configure a static IP:
+
+1. Edit network configuration:
+   sudo nano /etc/netplan/01-netcfg.yaml
+
+2. Add static IP configuration:
+   network:
+     version: 2
+     renderer: NetworkManager
+     ethernets:
+       ens33:
+         dhcp4: no
+         addresses:
+           - 192.168.10.203/24
+         gateway4: 192.168.10.2
+         nameservers:
+           addresses: [8.8.8.8, 8.8.4.4]
+
+3. Apply changes:
+   sudo netplan apply
+
+Option 3: Check your router/DNS
+--------------------------------
+The IP address might have changed due to DHCP.
+Check your router's DHCP settings or use a static IP.
+
+CURRENT STATUS:
+===============
+✓ Apache is running
+✓ Apache is listening on port 80
+✓ Server is accessible on 192.168.177.129
+✗ Server is NOT accessible on 192.168.10.203 (IP doesn't exist)
+
+QUICK FIX:
+==========
+Just use: http://192.168.177.129 in your browser
+

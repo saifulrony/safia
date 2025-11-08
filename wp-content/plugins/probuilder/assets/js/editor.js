@@ -14,6 +14,8 @@
         historyIndex: -1,
         maxHistorySize: 50,
         isPerformingHistoryAction: false,
+        isGridCellResizing: false,
+        isNestedDropInProgress: false,
         globalStyles: {
             colors: [
                 { id: 'primary', name: 'Primary', color: '#344047' },
@@ -1386,11 +1388,34 @@
                 tolerance: 'pointer',
                 greedy: false, // Allow both preview area and columns to receive events
                 drop: function(event, ui) {
+                    if (self.isNestedDropInProgress) {
+                        console.log('🎯 Nested drop in progress - skipping canvas drop handler');
+                        return;
+                    }
                     // Check if we're actually over a column (don't add if so)
                     const $target = $(event.target);
                     if ($target.hasClass('probuilder-column') || $target.closest('.probuilder-column').length > 0) {
                         console.log('🎯 Drop intercepted by column, skipping preview area handler');
                         return; // Column will handle it
+                    }
+
+                    // Detect actual element under pointer to avoid duplicates when dropping into nested zones
+                    const clientX = event.clientX || (event.originalEvent && event.originalEvent.clientX);
+                    const clientY = event.clientY || (event.originalEvent && event.originalEvent.clientY);
+                    if (typeof clientX === 'number' && typeof clientY === 'number') {
+                        const elementUnderPointer = document.elementFromPoint(clientX, clientY);
+                        if (elementUnderPointer) {
+                            const $realTarget = $(elementUnderPointer);
+                            if (
+                                $realTarget.closest('.grid-cell').length > 0 ||
+                                $realTarget.closest('.probuilder-grid-layout').length > 0 ||
+                                $realTarget.closest('.probuilder-tab-drop-zone').length > 0 ||
+                                $realTarget.closest('.probuilder-drop-zone').length > 0
+                            ) {
+                                console.log('🎯 Drop handled by nested zone, skipping canvas handler');
+                                return;
+                            }
+                        }
                     }
                     
                     const widgetName = ui.draggable.data('widget');
@@ -1500,6 +1525,12 @@
                         tolerance: 'pointer',
                         greedy: true, // Capture all drops inside container bounds
                         drop: function(event, ui) {
+                            self.isNestedDropInProgress = true;
+                            const finishNestedDrop = () => {
+                                setTimeout(() => {
+                                    self.isNestedDropInProgress = false;
+                                }, 0);
+                            };
                             const widgetName = ui.draggable.data('widget');
                             
                             // Remove overlay
@@ -1511,6 +1542,7 @@
                                 // Always add to end of container to create new row
                                 self.addElementToContainer(widgetName, containerId, null);
                             }
+                            finishNestedDrop();
                         },
                         over: function(event, ui) {
                             if (ui.draggable.hasClass('probuilder-widget')) {
@@ -1589,9 +1621,16 @@
                         greedy: true, // Prevent parent elements from also handling the drop
                         drop: function(event, ui) {
                             event.preventDefault();
+                            self.isNestedDropInProgress = true;
+                            const finishNestedDrop = () => {
+                                setTimeout(() => {
+                                    self.isNestedDropInProgress = false;
+                                }, 0);
+                            };
                             // Only handle if this is an empty drop zone
                             if (!$column.hasClass('probuilder-drop-zone')) {
                                 console.log('Column has content, letting container handle drop');
+                                finishNestedDrop();
                                 return;
                             }
                             
@@ -1605,6 +1644,7 @@
                             
                             // Reset background
                             $(this).css('background', '');
+                            finishNestedDrop();
                         },
                         over: function(event, ui) {
                             if (ui.draggable.hasClass('probuilder-widget')) {
@@ -1638,10 +1678,44 @@
             $('.probuilder-drop-zone').each(function() {
                 const $zone = $(this);
                 const containerId = $zone.data('container-id') || $zone.data('grid-id'); // Support both container and container-2
-                const columnIndex = $zone.data('column-index') || $zone.data('cell-index'); // Support both naming conventions
+                const columnIndex = $zone.data('column-index') ?? parseInt($zone.attr('data-cell-index'), 10); // Support both naming conventions
                 
                 $zone.off('click').on('click', function(e) {
                     e.stopPropagation();
+                    e.preventDefault();
+
+                    const $target = $(e.target);
+                    const isToolbar = $target.closest('.grid-cell-toolbar').length > 0;
+                    const isDelete = $target.closest('.grid-cell-delete-btn').length > 0;
+                    const isSettings = $target.closest('.settings-btn').length > 0;
+                    const isAddContent = $target.closest('.add-content-btn').length > 0;
+                    const isAddButton = $target.closest('.grid-cell-add-btn').length > 0;
+
+                    if (isToolbar || isDelete || isSettings || isAddContent) {
+                        console.log('⏭️ Drop zone click ignored - toolbar interaction');
+                        return false;
+                    }
+
+                    if ($zone.hasClass('has-content')) {
+                        console.log('⏭️ Drop zone click ignored - cell already has content');
+                        return false;
+                    }
+
+                    if (!isAddButton) {
+                        console.log('⏭️ Drop zone click ignored - outside add button');
+                        return false;
+                    }
+
+                    if (self.isGridCellDeleting) {
+                        console.log('⏸️ Drop zone click ignored - grid cell delete in progress');
+                        return false;
+                    }
+
+                    if (self.isGridCellResizing) {
+                        console.log('⏸️ Drop zone click ignored - grid cell resizing');
+                        return false;
+                    }
+
                     console.log('Drop zone clicked:', containerId, 'column/cell:', columnIndex);
                     self.showWidgetTemplateSelector(containerId, columnIndex);
                 });
@@ -1688,6 +1762,126 @@
                     console.log('✏️ Edit button clicked for:', elementId);
                     self.openSettings(element);
                 }
+                return false;
+            });
+
+            const resolveGridId = ($el) => {
+                return $el.attr('data-grid-id')
+                    || $el.data('grid-id')
+                    || $el.closest('.probuilder-grid-layout').attr('data-element-id')
+                    || $el.closest('.probuilder-grid-layout').data('element-id')
+                    || $el.closest('.probuilder-element').attr('data-id')
+                    || $el.closest('.probuilder-element').data('id')
+                    || null;
+            };
+
+            $('#probuilder-preview-area').on('click', '.grid-cell-add-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const $btn = $(this);
+                const gridId = resolveGridId($btn);
+                const cellIndexAttr = $btn.attr('data-cell-index');
+                const cellIndex = parseInt(cellIndexAttr, 10);
+
+                if (!gridId || Number.isNaN(cellIndex)) {
+                    console.error('❌ Add button: missing grid ID or invalid cell index', {gridId, cellIndexAttr});
+                    return false;
+                }
+
+                if (self.isGridCellDeleting || self.isGridCellResizing) {
+                    console.log('⏸️ Add button click ignored - grid busy', {
+                        deleting: self.isGridCellDeleting,
+                        resizing: self.isGridCellResizing
+                    });
+                    return false;
+                }
+
+                console.log('➕ Add button clicked for grid cell', {gridId, cellIndex});
+                self.showWidgetTemplateSelector(gridId, cellIndex, true);
+                return false;
+            });
+
+            // Global handler for grid cell delete buttons (safety net)
+            $('#probuilder-preview-area').on('click', '.grid-cell-delete-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                const $button = $(this);
+                const cellIndexAttr = $button.attr('data-cell-index');
+                const cellIndex = parseInt(cellIndexAttr, 10);
+                const gridIdAttr = resolveGridId($button);
+
+                if (Number.isNaN(cellIndex)) {
+                    console.error('❌ Global handler: invalid cell index on delete button:', cellIndexAttr);
+                    return false;
+                }
+
+                if (!gridIdAttr) {
+                    console.error('❌ Global handler: grid ID not found for delete button', {cellIndexAttr});
+                    return false;
+                }
+
+                const gridElement = self.elements.find(el => el && el.id === gridIdAttr);
+                if (!gridElement) {
+                    console.error('❌ Global handler: grid element not found', {gridIdAttr, cellIndex});
+                    return false;
+                }
+
+                console.log('🗑️ Global grid cell delete handler triggered', {gridIdAttr, cellIndex});
+
+                const deleted = self.handleGridCellDelete(gridElement, cellIndex, {
+                    triggerSource: 'global-handler',
+                    skipConfirm: false
+                });
+
+                if (!deleted) {
+                    console.warn('⚠️ Global handler: grid cell delete helper returned false', {gridIdAttr, cellIndex});
+                }
+
+                return false;
+            });
+
+            // Ultimate fallback to catch clicks even if element lives outside preview area container
+            $(document).off('click.probuilderGridDeleteFallback', '.grid-cell-delete-btn')
+                .on('click.probuilderGridDeleteFallback', '.grid-cell-delete-btn', function(e) {
+                console.log('🛑 Document-level delete handler invoked');
+                // Let the preview-area handler process it if we're inside
+                if ($(this).closest('#probuilder-preview-area').length > 0) {
+                    return; // already handled above
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const $button = $(this);
+                const cellIndexAttr = $button.attr('data-cell-index');
+                const cellIndex = parseInt(cellIndexAttr, 10);
+                const gridIdAttr = resolveGridId($button);
+
+                console.log('🔍 Document fallback handler details', {cellIndexAttr, gridIdAttr});
+
+                if (Number.isNaN(cellIndex) || !gridIdAttr) {
+                    console.error('❌ Document-level handler: missing cell index or grid id', {cellIndexAttr, gridIdAttr});
+                    return false;
+                }
+
+                const gridElement = self.elements.find(el => el && el.id === gridIdAttr);
+                if (!gridElement) {
+                    console.error('❌ Document-level handler: grid element not found', {gridIdAttr, cellIndex});
+                    return false;
+                }
+
+                const deleted = self.handleGridCellDelete(gridElement, cellIndex, {
+                    triggerSource: 'document-fallback',
+                    skipConfirm: false
+                });
+
+                if (!deleted) {
+                    console.warn('⚠️ Document-level handler: delete helper returned false', {gridIdAttr, cellIndex});
+                }
+
                 return false;
             });
             
@@ -1828,7 +2022,7 @@
                 e.preventDefault();
                 
                 const $handle = $(this);
-                const cellIndex = $handle.data('cell-index');
+                const cellIndex = parseInt($handle.attr('data-cell-index'), 10);
                 const direction = $handle.data('direction');
                 
                 // Try multiple ways to find the grid element ID
@@ -1910,7 +2104,7 @@
                 const $nestedEl = $button.closest('.probuilder-nested-element');
                 const childId = $nestedEl.data('id');
                 const $gridCell = $nestedEl.closest('.grid-cell');
-                const cellIndex = parseInt($gridCell.data('cell-index'));
+                const cellIndex = parseInt($gridCell.attr('data-cell-index'), 10);
                 const $gridElement = $nestedEl.closest('.probuilder-element');
                 const gridId = $gridElement.data('id');
                 
@@ -2980,6 +3174,9 @@
             
             console.log('🎯 Starting absolute resize VERSION 3.0.0:', gridElement.id, 'cell:', cellIndex, 'direction:', direction);
             console.log('📌 CODE VERSION: 3.0.0-responsive-2024-10-26 - WITH RESPONSIVE NEIGHBORS');
+
+            // Flag so we can ignore click events triggered at end of resize
+            this.isGridCellResizing = true;
             
             const $gridContainer = $(`.probuilder-element[data-id="${gridElement.id}"] .probuilder-grid-layout`);
             const $gridCell = $gridContainer.find(`.grid-cell[data-cell-index="${cellIndex}"]`);
@@ -3249,6 +3446,12 @@
                     finalHeight: Math.round(finalHeight),
                     isResizing: isResizing
                 });
+
+                // Allow other interactions again (next tick to avoid current click)
+                setTimeout(function() {
+                    self.isGridCellResizing = false;
+                    console.log('🟢 Grid cell resize completed - clicks enabled again');
+                }, 150);
             });
         },
         
@@ -3407,10 +3610,168 @@
             gridElement.settings.custom_template.columns = newColumnsTemplate;
             gridElement.settings.custom_template.rows = newRowsTemplate;
             
-            console.log('✅ Grid template updated for responsive behavior');
-        },
-        
-        /**
+        console.log('✅ Grid template updated for responsive behavior');
+    },
+
+    handleGridCellDelete: function(gridElement, cellIndex, options = {}) {
+        const self = this;
+        const settings = Object.assign({
+            skipConfirm: false,
+            triggerSource: 'unknown',
+            removeCell: true,
+            confirmMessage: null,
+            confirmCallback: null
+        }, options || {});
+
+        const normalizeToArray = (value) => {
+            if (Array.isArray(value)) {
+                return value.slice();
+            }
+            if (value && typeof value === 'object') {
+                const arr = [];
+                Object.keys(value).forEach(key => {
+                    const index = parseInt(key, 10);
+                    if (!Number.isNaN(index)) {
+                        arr[index] = value[key] || null;
+                    }
+                });
+                return arr;
+            }
+            return [];
+        };
+
+        if (!gridElement || !gridElement.id) {
+            console.error('❌ Cannot modify grid cell - grid element missing', {gridElement, cellIndex, settings});
+            return false;
+        }
+
+        if (!Number.isInteger(cellIndex) || cellIndex < 0) {
+            console.error('❌ Cannot modify grid cell - invalid cell index', {cellIndex, gridElement, settings});
+            return false;
+        }
+
+        gridElement.children = normalizeToArray(gridElement.children);
+
+        if (gridElement.children.length === 0 && gridElement.settings) {
+            const fallbackChildren = normalizeToArray(gridElement.settings._children);
+            if (fallbackChildren.length > 0) {
+                gridElement.children = fallbackChildren;
+            }
+        }
+
+        const confirmMessage = settings.confirmMessage || (settings.removeCell
+            ? `Delete Cell ${cellIndex + 1} (including its content)?`
+            : `Delete widget from Cell ${cellIndex + 1}?`);
+
+        if (!settings.skipConfirm) {
+            const confirmed = window.confirm(confirmMessage);
+            if (!confirmed) {
+                console.log('❌ Deletion cancelled by user');
+                return false;
+            }
+        }
+
+        if (typeof settings.confirmCallback === 'function') {
+            try {
+                settings.confirmCallback({
+                    gridId: gridElement.id,
+                    cellIndex,
+                    triggerSource: settings.triggerSource,
+                    mode: settings.removeCell ? 'remove-cell' : 'clear-content'
+                });
+            } catch (callbackError) {
+                console.warn('⚠️ Confirm callback threw error:', callbackError);
+            }
+        }
+
+        self.isGridCellDeleting = true;
+
+        const updateStructure = (key) => {
+            if (!gridElement.settings || typeof gridElement.settings !== 'object') {
+                return;
+            }
+            if (!gridElement.settings[key]) {
+                return;
+            }
+            const structureArray = normalizeToArray(gridElement.settings[key]);
+            if (settings.removeCell) {
+                if (cellIndex < structureArray.length) {
+                    structureArray.splice(cellIndex, 1);
+                }
+            } else {
+                structureArray[cellIndex] = null;
+            }
+            gridElement.settings[key] = structureArray;
+        };
+
+        const logContext = {
+            cellIndex,
+            triggerSource: settings.triggerSource,
+            mode: settings.removeCell ? 'remove-cell' : 'clear-content'
+        };
+
+        console.log('🗑️ Grid cell delete handler started', logContext);
+
+        if (settings.removeCell) {
+            if (cellIndex < gridElement.children.length) {
+                console.log('🔍 Before delete (children):', gridElement.children);
+                gridElement.children.splice(cellIndex, 1);
+                console.log('🔍 After delete (children):', gridElement.children);
+            }
+        } else {
+            if (gridElement.children[cellIndex]) {
+                console.log('🔍 Clearing widget only for cell', cellIndex);
+                gridElement.children[cellIndex] = null;
+            } else {
+                console.log('ℹ️ Grid cell already empty', logContext);
+            }
+        }
+
+        updateStructure('_children');
+        updateStructure('children');
+
+        if (settings.removeCell) {
+            if (!gridElement.settings) {
+                gridElement.settings = {};
+            }
+            if (!gridElement.settings.custom_template) {
+                gridElement.settings.custom_template = {};
+            }
+
+            let currentAreas = [];
+            if (Array.isArray(gridElement.settings.custom_template.areas) && gridElement.settings.custom_template.areas.length > 0) {
+                currentAreas = gridElement.settings.custom_template.areas.slice();
+            } else {
+                const pattern = gridElement.settings.grid_pattern || 'pattern-1';
+                const baseTemplate = this.getGridTemplateData(pattern) || {};
+                currentAreas = Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : [];
+            }
+
+            if (cellIndex < currentAreas.length) {
+                currentAreas.splice(cellIndex, 1);
+                gridElement.settings.custom_template.areas = currentAreas;
+                console.log('🧩 Updated custom areas after delete:', currentAreas);
+            } else {
+                console.warn('⚠️ Cell index exceeds current areas length', {cellIndex, areasLength: currentAreas.length});
+            }
+        }
+
+        const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
+        const insertBefore = $oldElement.next()[0];
+        $oldElement.remove();
+
+        self.renderElement(gridElement, insertBefore);
+        self.saveHistory();
+
+        setTimeout(() => {
+            self.isGridCellDeleting = false;
+        }, 0);
+
+        console.log('✅ Grid cell delete handler finished', logContext);
+        return true;
+    },
+
+    /**
          * Start container column resize - similar to grid cell resize
          * Allows resizing from all directions: top, left, right, bottom, and corners
          */
@@ -4016,7 +4377,7 @@
                     </div>
                 ` : '';
                 
-                const $element = $(`
+                        const $element = $(`
                     <div class="probuilder-element" data-id="${element.id}" data-widget="${element.widgetType}">
                         ${columnSelector}
                         <div class="probuilder-element-controls">
@@ -4174,6 +4535,10 @@
                             $zone.off('click').on('click', function(e) {
                                 e.stopPropagation();
                                 e.preventDefault();
+                                if (self.isGridCellResizing) {
+                                    console.log('⏸️ Initial drop zone click ignored - grid cell resizing');
+                                    return false;
+                                }
                                 console.log('✅ Initial drop zone clicked:', containerId, 'column:', columnIndex);
                                 self.showWidgetTemplateSelector(containerId, columnIndex);
                                 return false;
@@ -4231,9 +4596,22 @@
                         console.log('Found', $gridDropZones.length, 'grid cells');
                         
                         $gridDropZones.each(function() {
-                            const $zone = $(this);
-                            const gridId = $zone.data('grid-id');
-                            const cellIndex = $zone.data('cell-index');
+                                const $zone = $(this);
+                                const gridId = $zone.data('grid-id');
+                                const cellIndex = parseInt($zone.attr('data-cell-index'), 10);
+                            const $gridCell = $zone.closest('.grid-cell');
+                            const toolbarHeight = $gridCell.find('.grid-cell-toolbar').outerHeight(true) || 0;
+                            $gridCell.css('padding-top', toolbarHeight + 8);
+
+                                // Ignore clicks originating from toolbar buttons (delete/settings/add)
+                                const $target = $(e.target);
+                                if ($target.closest('.grid-cell-toolbar').length > 0 ||
+                                    $target.closest('.grid-cell-delete-btn').length > 0 ||
+                                    $target.closest('.add-content-btn').length > 0 ||
+                                    $target.closest('.settings-btn').length > 0) {
+                                    console.log('⏭️ Drop zone click ignored - toolbar interaction');
+                                    return false;
+                                }
                             
                             // Make grid cells droppable
                             $zone.droppable({
@@ -4244,6 +4622,12 @@
                                 drop: function(event, ui) {
                                     event.stopPropagation();
                                     event.preventDefault();
+                                    self.isNestedDropInProgress = true;
+                                    const finishNestedDrop = () => {
+                                        setTimeout(() => {
+                                            self.isNestedDropInProgress = false;
+                                        }, 0);
+                                    };
                                     const widgetName = ui.draggable.data('widget');
                                     console.log('✅ Widget dropped in grid cell:', widgetName, 'grid:', gridId, 'cell:', cellIndex);
                                     
@@ -4251,6 +4635,7 @@
                                     const gridElement = self.elements.find(e => e.id === gridId);
                                     if (!gridElement) {
                                         console.error('Grid element not found:', gridId);
+                                        finishNestedDrop();
                                         return;
                                     }
                                     
@@ -4282,6 +4667,7 @@
                                     
                                     // Save to history
                                     self.saveHistory();
+                                    finishNestedDrop();
                                 }
                             });
                             
@@ -4292,9 +4678,42 @@
                                 $zone.off('click');
                                 
                                 // Add click ONLY to the empty content area
-                                $zone.find('.grid-cell-empty-content').off('click').on('click', function(e) {
+                                const $emptyContent = $zone.find('.grid-cell-empty-content');
+                                const placeholderRect = this.getBoundingClientRect ? this.getBoundingClientRect() : null;
+
+                                if (placeholderRect) {
+                                    const toolbarEl = $zone.find('.grid-cell-toolbar')[0];
+                                    const toolbarRect = toolbarEl ? toolbarEl.getBoundingClientRect() : null;
+                                    if (toolbarRect) {
+                                        const overlapBuffer = 8;
+                                        const newWidth = Math.max(placeholderRect.width - (toolbarRect.width + overlapBuffer), 0);
+                                        const newHeight = Math.max(placeholderRect.height - (toolbarRect.height + overlapBuffer), 0);
+
+                                        $emptyContent.css({
+                                            maxWidth: newWidth + 'px',
+                                            maxHeight: newHeight + 'px',
+                                            overflow: 'hidden',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        });
+                                    }
+                                }
+
+                                $emptyContent.off('click').on('click', function(e) {
                                     e.stopPropagation();
                                     e.preventDefault();
+
+                                    if (self.isGridCellDeleting) {
+                                        console.log('⏸️ Skipping widget selector - grid cell delete in progress');
+                                        return false;
+                                    }
+
+                                    if (self.isGridCellResizing) {
+                                        console.log('⏸️ Skipping widget selector - grid cell resizing in progress');
+                                        return false;
+                                    }
+
                                     console.log('✅ VERSION 6.0.0 - Empty content area clicked:', gridId, 'cell:', cellIndex);
                                     self.showWidgetTemplateSelector(gridId, cellIndex, true); // true = isGrid
                                     return false;
@@ -4313,7 +4732,7 @@
                         $element.on('mousedown.gridResize', '.grid-resize-handle', function(e) {
                             e.stopPropagation();
                             e.preventDefault();
-                            const cellIndex = $(this).data('cell-index');
+                            const cellIndex = parseInt($(this).attr('data-cell-index'), 10);
                             const direction = $(this).data('direction');
                             console.log('🎯 Grid resize started:', cellIndex, direction);
                             
@@ -4340,69 +4759,72 @@
                         
                         const gridElement = self.elements.find(e => e.id === element.id);
                         
+                        // Grid Cell Toolbar Buttons - Handle all toolbar button clicks
+                        // Stop all toolbar button clicks from bubbling to cell
+                        $element.off('click.toolbarBtn', '.grid-cell-toolbar button')
+                            .on('click.toolbarBtn', '.grid-cell-toolbar button', function(e) {
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+                            });
+                        
+                        // Add Content Button - Open widget selector
+                        $element.off('click.addContent', '.grid-cell-toolbar .add-content-btn')
+                            .on('click.addContent', '.grid-cell-toolbar .add-content-btn', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                
+                                const cellIndexAttr = $(this).attr('data-cell-index');
+                                const cellIndex = parseInt(cellIndexAttr, 10);
+                                if (Number.isNaN(cellIndex)) {
+                                    console.error('❌ Invalid cell index on add button:', cellIndexAttr);
+                                    return false;
+                                }
+                                
+                                console.log('➕ Add content button clicked for cell:', cellIndex);
+                                self.showWidgetTemplateSelector(element.id, cellIndex, true); // true = isGrid
+                                return false;
+                            });
+                        
                         // Grid Cell Delete Button - Delete entire cell
-                        // VERSION: 6.0.0 - Enhanced debugging
+                        // VERSION: 7.0.0 - Enhanced debugging
                         console.log('🔧 Setting up cell delete button handlers for grid:', element.id);
                         
                         $element.off('click.cellDelete', '.grid-cell-delete-btn')
                             .on('click.cellDelete', '.grid-cell-delete-btn', function(e) {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                
-                                const cellIndex = parseInt($(this).data('cell-index'));
-                                console.log('🗑️ VERSION 7.0.0 - Cell delete button clicked:', cellIndex);
-                                console.log('🔍 Button element:', this);
-                                console.log('🔍 Grid element:', gridElement);
-                                
-                                if (!gridElement) {
-                                    console.error('❌ Grid element not found!');
-                                    return;
+                                e.stopImmediatePropagation();
+
+                                const cellIndexAttr = $(this).attr('data-cell-index');
+                                const cellIndex = parseInt(cellIndexAttr, 10);
+                                if (Number.isNaN(cellIndex)) {
+                                    console.error('❌ Invalid cell index on delete button:', cellIndexAttr);
+                                    return false;
                                 }
-                                
-                                // Confirm deletion
-                                if (confirm(`Delete widget from Cell ${cellIndex + 1}?`)) {
-                                    console.log('🗑️ Confirmed deletion for cell:', cellIndex);
-                                    
-                                    // Initialize children array if not exists
-                                    if (!gridElement.children) {
-                                        gridElement.children = [];
-                                    }
-                                    
-                                    // Set the cell to null instead of splicing (keep the array index)
-                                    if (gridElement.children[cellIndex]) {
-                                        console.log('🗑️ Removing widget from cell:', cellIndex);
-                                        console.log('🔍 Before delete:', gridElement.children);
-                                        gridElement.children[cellIndex] = null;
-                                        console.log('🔍 After delete:', gridElement.children);
-                                    } else {
-                                        console.log('ℹ️ Cell already empty:', cellIndex);
-                                    }
-                                    
-                                    // Re-render the entire grid
-                                    console.log('🔄 Re-rendering grid element...');
-                                    const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
-                                    const $parent = $oldElement.parent();
-                                    const insertBefore = $oldElement.next()[0];
-                                    
-                                    // Remove old element
-                                    $oldElement.remove();
-                                    
-                                    // Render new element
-                                    self.renderElement(gridElement, insertBefore);
-                                    
-                                    self.saveHistory();
-                                    
-                                    console.log('✅ Cell content deleted and grid refreshed');
-                                } else {
-                                    console.log('❌ Deletion cancelled by user');
+
+                                const gridIdAttr = $(this).attr('data-grid-id') || $(this).closest('.grid-cell-toolbar').attr('data-grid-id') || element.id;
+                                const activeGridElement = self.elements.find(el => el && el.id === gridIdAttr) || gridElement;
+
+                                console.log('🗑️ Grid cell delete requested', {cellIndex, gridIdAttr, triggerSource: 'toolbar-button'});
+
+                                const deleted = self.handleGridCellDelete(activeGridElement, cellIndex, {
+                                    triggerSource: 'toolbar-button',
+                                    skipConfirm: false
+                                });
+
+                                if (!deleted) {
+                                    console.warn('⚠️ Grid cell delete helper returned false', {cellIndex, gridIdAttr});
                                 }
+
+                                return false;
                             });
                         
                         // Debug: Check if delete buttons exist
                         const $deleteButtons = $element.find('.grid-cell-delete-btn');
                         console.log('🔍 Found', $deleteButtons.length, 'cell delete buttons');
                         $deleteButtons.each(function(i) {
-                            console.log('🔍 Delete button', i, ':', $(this).data('cell-index'));
+                            console.log('🔍 Delete button', i, ':', $(this).attr('data-cell-index'));
                         });
                         
                         // Make grid cells sortable - DRAG AND REORDER LIKE PUZZLE
@@ -4435,7 +4857,7 @@
                                     // Get new order of cells
                                     const newChildren = [];
                                     $gridContainer.find('.grid-cell').each(function(index) {
-                                        const oldIndex = parseInt($(this).data('cell-index'));
+                                        const oldIndex = parseInt($(this).attr('data-cell-index'), 10);
                                         const oldChild = gridElement.children ? gridElement.children[oldIndex] : null;
                                         newChildren.push(oldChild); // Can be null for empty cells
                                         
@@ -4497,55 +4919,30 @@
                         setTimeout(function() {
                             $element.off('click.nestedDelete', '.probuilder-nested-delete')
                                 .on('click.nestedDelete', '.probuilder-nested-delete', function(e) {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                
-                                const $nestedEl = $(this).closest('.probuilder-nested-element');
-                                const childId = $nestedEl.data('id');
-                                const cellIndex = parseInt($nestedEl.closest('.grid-cell').data('cell-index'));
-                                
-                                console.log('🗑️ VERSION 7.0.0 - Widget delete button clicked:', childId, 'in cell:', cellIndex);
-                                console.log('🔍 Delete button element:', this);
-                                console.log('🔍 Nested element:', $nestedEl);
-                                console.log('🔍 Grid element:', gridElement);
-                                
-                                if (!gridElement) {
-                                    console.error('❌ Grid element not found!');
-                                    return;
-                                }
-                                
-                                // Initialize children array if not exists
-                                if (!gridElement.children) {
-                                    gridElement.children = [];
-                                }
-                                
-                                if (gridElement.children[cellIndex]) {
-                                    console.log('🗑️ Removing widget from cell:', cellIndex);
-                                    console.log('🔍 Before delete:', gridElement.children);
-                                    // Set to null instead of splicing (keep the array index)
-                                    gridElement.children[cellIndex] = null;
-                                    console.log('🔍 After delete:', gridElement.children);
-                                    
-                                    // Re-render the entire grid
-                                    console.log('🔄 Re-rendering grid element...');
-                                    const $oldElement = $(`.probuilder-element[data-id="${gridElement.id}"]`);
-                                    const $parent = $oldElement.parent();
-                                    const insertBefore = $oldElement.next()[0];
-                                    
-                                    // Remove old element
-                                    $oldElement.remove();
-                                    
-                                    // Render new element
-                                    self.renderElement(gridElement, insertBefore);
-                                    
-                                    // Save to history
-                                    self.saveHistory();
-                                    
-                                    console.log('✅ Widget deleted from grid cell', cellIndex);
-                                } else {
-                                    console.warn('⚠️ No widget found in cell:', cellIndex);
-                                }
-                            });
+                                    e.stopPropagation();
+                                    e.preventDefault();
+
+                                    const $nestedEl = $(this).closest('.probuilder-nested-element');
+                                    const cellIndex = parseInt($nestedEl.closest('.grid-cell').attr('data-cell-index'), 10);
+                                    const triggerOptions = {
+                                        triggerSource: 'nested-widget-delete',
+                                        skipConfirm: true,
+                                        removeCell: false
+                                    };
+
+                                    if (!gridElement) {
+                                        console.error('❌ Grid element not found!');
+                                        return;
+                                    }
+
+                                    const deleted = self.handleGridCellDelete(gridElement, cellIndex, triggerOptions);
+
+                                    if (!deleted) {
+                                        console.warn('⚠️ Nested widget delete failed', {cellIndex, triggerOptions});
+                                    } else {
+                                        console.log('✅ Widget deleted from grid cell', cellIndex);
+                                    }
+                                });
                         
                         // Debug: Check if widget delete buttons exist
                         const $widgetDeleteButtons = $element.find('.probuilder-nested-delete');
@@ -4595,7 +4992,7 @@
                                 const direction = $handle.data('direction');
                                 const $widget = $handle.closest('.probuilder-resizable-widget');
                                 const widgetId = $widget.data('id');
-                                const cellIndex = parseInt($widget.data('cell-index'));
+                                const cellIndex = parseInt($widget.attr('data-cell-index'), 10);
                                 
                                 console.log('🎯 VERSION 9.0.0 - Widget resize start:', widgetId, 'direction:', direction);
                                 
@@ -4734,7 +5131,7 @@
                                 
                                 const $nestedEl = $(this);
                                 const childId = $nestedEl.data('id');
-                                const sourceCellIndex = parseInt($nestedEl.closest('.grid-cell').data('cell-index'));
+                                const sourceCellIndex = parseInt($nestedEl.closest('.grid-cell').attr('data-cell-index'), 10);
                                 const $gridContainer = $nestedEl.closest('.probuilder-grid-layout');
                                 
                                 console.log('🎯 VERSION 4.0.0 - Drag start:', childId, 'from cell:', sourceCellIndex);
@@ -4759,7 +5156,7 @@
                                 
                                 // Highlight all cells as drop targets except source
                                 $gridContainer.find('.grid-cell').each(function() {
-                                    const cellIndex = parseInt($(this).data('cell-index'));
+                                    const cellIndex = parseInt($(this).attr('data-cell-index'), 10);
                                     if (cellIndex !== sourceCellIndex) {
                                         $(this).addClass('probuilder-drop-target');
                                     }
@@ -4809,8 +5206,8 @@
                                     if (isDragging) {
                                         // Check if dropped on a valid cell
                                         const $droppedCell = $(upEvent.target).closest('.grid-cell');
-                                        if ($droppedCell.length && parseInt($droppedCell.data('cell-index')) !== sourceCellIndex) {
-                                            const targetCellIndex = parseInt($droppedCell.data('cell-index'));
+                                        if ($droppedCell.length && parseInt($droppedCell.attr('data-cell-index'), 10) !== sourceCellIndex) {
+                                            const targetCellIndex = parseInt($droppedCell.attr('data-cell-index'), 10);
                                             
                                             console.log('🎯 Moving widget from cell', sourceCellIndex, 'to cell', targetCellIndex);
                                             
@@ -4858,7 +5255,7 @@
                         $gridDropZones.each(function() {
                             const $zone = $(this);
                             const gridId = $zone.data('grid-id');
-                            const cellIndex = $zone.data('cell-index');
+                            const cellIndex = parseInt($zone.attr('data-cell-index'), 10);
                             
                             // Make cells droppable
                             $zone.droppable({
@@ -4869,6 +5266,12 @@
                                 drop: function(event, ui) {
                                     event.stopPropagation();
                                     event.preventDefault();
+                                    self.isNestedDropInProgress = true;
+                                    const finishNestedDrop = () => {
+                                        setTimeout(() => {
+                                            self.isNestedDropInProgress = false;
+                                        }, 0);
+                                    };
                                     const widgetName = ui.draggable.data('widget');
                                     console.log('✅ Widget dropped in Container 2 cell:', widgetName, 'container:', gridId, 'cell:', cellIndex);
                                     
@@ -4876,6 +5279,7 @@
                                     const containerElement = self.elements.find(e => e.id === gridId);
                                     if (!containerElement) {
                                         console.error('Container 2 element not found:', gridId);
+                                        finishNestedDrop();
                                         return;
                                     }
                                     
@@ -4900,6 +5304,7 @@
                                     // Re-render the container
                                     self.updateElementPreview(containerElement);
                                     self.saveData();
+                                    finishNestedDrop();
                                 }
                             });
                             
@@ -4922,7 +5327,7 @@
                         $element.on('mousedown.gridResize', '.grid-resize-handle', function(e) {
                             e.stopPropagation();
                             e.preventDefault();
-                            const cellIndex = $(this).data('cell-index');
+                            const cellIndex = parseInt($(this).attr('data-cell-index'), 10);
                             const direction = $(this).data('direction');
                             console.log('🎯 Container 2 resize started:', cellIndex, direction);
                             
@@ -4953,7 +5358,7 @@
                             if ($container2Element.length) {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                const cellIndex = $handle.data('cell-index');
+                                const cellIndex = parseInt($handle.attr('data-cell-index'), 10);
                                 const direction = $handle.data('direction');
                                 console.log('🎯 Global Container 2 resize handler:', element.id, 'cell:', cellIndex, 'direction:', direction);
                                 
@@ -5450,7 +5855,6 @@
                         letter-spacing: ${btnLetterSpacing}px;
                         padding: ${btnPadding.top}px ${btnPadding.right}px ${btnPadding.bottom}px ${btnPadding.left}px;
                         margin: ${btnMargin.top}px ${btnMargin.right}px ${btnMargin.bottom}px ${btnMargin.left}px;
-                        ${btnBorder}
                         border-radius: ${btnBorderRadius}px;
                         ${btnBoxShadow}
                         ${btnWidth}
@@ -5566,22 +5970,51 @@
                         gridTemplateData = {
                             columns: columnsTemplate,
                             rows: rowsTemplate,
-                            areas: areas
+                            areas: areas.slice()
                         };
                         
                         console.log('✅ Using dynamic grid template:', {columns: columnsCount, rows: numRows, areas: areas.length, children: childrenCount});
                     } else {
                         // Use pattern-based grid
                         const pattern = this.getGridPatterns().find(p => p.id === gridPattern) || this.getGridPatterns()[0];
-                        gridTemplateData = this.getGridTemplateData(gridPattern);
+                        const baseTemplate = this.getGridTemplateData(gridPattern);
+                        gridTemplateData = {
+                            columns: baseTemplate.columns,
+                            rows: baseTemplate.rows,
+                            areas: Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : []
+                        };
                         columnsTemplate = gridTemplateData.columns;
                         rowsTemplate = gridTemplateData.rows;
                         
-                        // Use custom template if available (from resize operations)
+                        // Use custom template if available (from resize operations or deletions)
+                        if (element.settings.custom_template) {
+                            if (element.settings.custom_template.columns) {
+                                columnsTemplate = element.settings.custom_template.columns;
+                            }
+                            if (element.settings.custom_template.rows) {
+                                rowsTemplate = element.settings.custom_template.rows;
+                            }
+                            if (Array.isArray(element.settings.custom_template.areas) && element.settings.custom_template.areas.length > 0) {
+                                gridTemplateData.areas = element.settings.custom_template.areas.slice();
+                            }
+                            console.log('Using custom template:', {
+                                columns: columnsTemplate,
+                                rows: rowsTemplate,
+                                areas: gridTemplateData.areas.length
+                            });
+                        }
+                    }
+
                     if (element.settings.custom_template) {
-                        columnsTemplate = element.settings.custom_template.columns || columnsTemplate;
-                        rowsTemplate = element.settings.custom_template.rows || rowsTemplate;
-                        console.log('Using custom template:', {columns: columnsTemplate, rows: rowsTemplate});
+                        const customTemplate = element.settings.custom_template;
+                        if (customTemplate.columns) {
+                            columnsTemplate = customTemplate.columns;
+                        }
+                        if (customTemplate.rows) {
+                            rowsTemplate = customTemplate.rows;
+                        }
+                        if (Array.isArray(customTemplate.areas) && customTemplate.areas.length > 0) {
+                            gridTemplateData.areas = customTemplate.areas.slice();
                         }
                     }
                     
@@ -5604,18 +6037,23 @@
                                 background: ${gridBgColor};
                                 border: ${gridBorderWidth}px solid ${gridBorderColor};
                                 border-radius: ${gridBorderRadius}px;
-                                padding: 10px;
+                                padding: 40px 16px 16px;
                                 position: relative;
                                 overflow: visible !important;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: flex-start;
+                                gap: 12px;
+                                transition: all 0.3s;
                             }
                             #${gridId} .grid-cell.has-content {
-                                padding: 0;
-                                overflow: visible !important; /* Changed from hidden to visible */
+                                padding-top: 40px;
                             }
                             #${gridId} .grid-cell.empty-cell {
                                 display: flex;
                                 align-items: center;
-                                justify-content: center;
+                                justify-content: flex-start;
                                 transition: all 0.3s;
                             }
                             #${gridId} .grid-cell.empty-cell:hover {
@@ -5659,35 +6097,7 @@
                                 cursor: grabbing;
                             }
                             
-                            /* Cell Delete Button - Shows on hover for each cell */
-                            #${gridId} .grid-cell-delete-btn {
-                                position: absolute;
-                                top: 5px;
-                                right: 5px;
-                                width: 28px;
-                                height: 28px;
-                                background: rgba(220, 38, 38, 0.9);
-                                border: none;
-                                border-radius: 4px;
-                                color: white;
-                                cursor: pointer;
-                                display: none;
-                                align-items: center;
-                                justify-content: center;
-                                z-index: 999;
-                                transition: all 0.2s ease;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                            }
-                            
-                            #${gridId} .grid-cell:hover .grid-cell-delete-btn {
-                                display: flex;
-                            }
-                            
-                            #${gridId} .grid-cell-delete-btn:hover {
-                                background: rgba(220, 38, 38, 1);
-                                transform: scale(1.1);
-                                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-                            }
+                            /* Cell Delete Button - Now part of toolbar, styled above */
                             
                             /* Dragging state for grid cells */
                             #${gridId} .grid-cell.ui-sortable-helper {
@@ -5704,23 +6114,57 @@
                                 opacity: 1 !important;
                             }
                             #${gridId} .grid-cell-empty-content {
-                                display: flex;
+                                display: inline-flex;
                                 align-items: center;
                                 justify-content: center;
-                                width: 100%;
-                                height: 100%;
-                                padding: 0;
+                                flex-direction: column;
+                                padding: 16px 20px;
+                                border: 1px dashed rgba(0, 124, 186, 0.4);
+                                border-radius: 10px;
+                                max-width: 220px;
                                 pointer-events: auto;
                                 cursor: pointer;
-                                transition: opacity 0.2s ease;
+                                background: rgba(0, 124, 186, 0.05);
+                                transition: border-color 0.2s ease, background 0.2s ease;
+                                margin: 0 auto;
+                                gap: 6px;
                             }
                             
                             #${gridId} .grid-cell-empty-content:hover {
-                                opacity: 1;
+                                border-color: rgba(0, 124, 186, 0.8);
+                                background: rgba(0, 124, 186, 0.1);
                             }
                             
-                            #${gridId} .grid-cell-empty-content:hover .dashicons {
+                            #${gridId} .grid-cell-empty-content .dashicons {
                                 opacity: 0.4 !important;
+                            }
+                            
+                            #${gridId} .grid-cell-add-btn {
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                padding: 10px 16px;
+                                border-radius: 20px;
+                                border: none;
+                                background: #007cba;
+                                color: #fff;
+                                font-size: 12px;
+                                cursor: pointer;
+                                transition: background 0.2s ease, transform 0.2s ease;
+                                pointer-events: auto;
+                            }
+                            
+                            #${gridId} .grid-cell-add-btn:hover {
+                                background: #005a87;
+                                transform: translateY(-1px);
+                            }
+                            
+                            /* Ensure toolbar buttons are always on top and clickable */
+                            #${gridId} .grid-cell-toolbar,
+                            #${gridId} .grid-cell-toolbar * {
+                                pointer-events: auto !important;
+                                position: relative;
+                                z-index: 1000 !important;
                             }
                             #${gridId} .grid-cell-toolbar {
                                 position: absolute;
@@ -5728,7 +6172,10 @@
                                 right: 8px;
                                 opacity: 0;
                                 transition: opacity 0.2s;
-                                z-index: 100;
+                                z-index: 1000;
+                                pointer-events: auto;
+                                display: flex;
+                                gap: 4px;
                             }
                             #${gridId} .grid-cell:hover .grid-cell-toolbar {
                                 opacity: 1;
@@ -5742,6 +6189,15 @@
                                 cursor: pointer;
                                 font-size: 11px;
                                 margin-left: 4px;
+                                pointer-events: auto;
+                                position: relative;
+                                z-index: 1001;
+                            }
+                            #${gridId} .grid-cell-toolbar .grid-cell-delete-btn {
+                                background: rgba(220, 38, 38, 0.9);
+                            }
+                            #${gridId} .grid-cell-toolbar .grid-cell-delete-btn:hover {
+                                background: rgba(220, 38, 38, 1);
                             }
                             /* Resize handles - Show on hover only */
                             #${gridId} .grid-resize-handle {
@@ -5927,7 +6383,7 @@
                         console.log(`Grid cell ${index}:`, {hasContent, child: child ? child.widgetType : 'none'});
                         
                         gridHTML += `
-                            <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} probuilder-drop-zone" 
+                            <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} ${hasContent ? '' : 'probuilder-drop-zone'}" 
                                  style="grid-area: ${area};" 
                                  data-cell-index="${index}"
                                  data-grid-id="${element.id}"
@@ -5935,9 +6391,17 @@
                                 <div class="grid-cell-drag-handle" data-cell-index="${index}" title="Drag to reorder">
                                     <i class="dashicons dashicons-move" style="font-size: 16px;"></i>
                                 </div>
-                                <button class="grid-cell-delete-btn" data-cell-index="${index}" title="Delete this cell">
-                                    <i class="dashicons dashicons-trash" style="font-size: 14px;"></i>
-                                </button>
+                                <div class="grid-cell-toolbar" data-grid-id="${element.id}">
+                                    <button type="button" class="add-content-btn" title="Add Content" data-grid-id="${element.id}" data-cell-index="${index}">
+                                        <i class="dashicons dashicons-plus" style="font-size: 12px; width: 12px; height: 12px;"></i>
+                                    </button>
+                                    <button type="button" class="settings-btn" title="Cell Settings" data-grid-id="${element.id}" data-cell-index="${index}">
+                                        <i class="dashicons dashicons-admin-generic" style="font-size: 12px; width: 12px; height: 12px;"></i>
+                                    </button>
+                                    <button type="button" class="grid-cell-delete-btn" title="Delete Cell" data-grid-id="${element.id}" data-cell-index="${index}">
+                                        <i class="dashicons dashicons-trash" style="font-size: 12px; width: 12px; height: 12px;"></i>
+                                    </button>
+                                </div>
                         `;
                         
                         if (hasContent) {
@@ -6021,10 +6485,13 @@
                                 </div>
                             `;
                         } else {
-                            // Empty drop zone - minimal icon only
+                            // Empty drop zone - compact add button
                             gridHTML += `
                                 <div class="grid-cell-empty-content">
-                                    <i class="dashicons dashicons-plus-alt2" style="font-size: 18px; opacity: 0.15; color: #999;"></i>
+                                    <button type="button" class="grid-cell-add-btn" data-grid-id="${element.id}" data-cell-index="${index}">
+                                        <i class="dashicons dashicons-plus-alt2" style="font-size: 16px;"></i>
+                                        <span>Add Widget</span>
+                                    </button>
                                 </div>
                             `;
                         }
@@ -13187,6 +13654,10 @@
                         $zone.off('click').on('click', function(e) {
                             e.stopPropagation();
                             e.preventDefault();
+                            if (self.isGridCellResizing) {
+                                console.log('⏸️ Reinitialized drop zone click ignored - grid cell resizing');
+                                return false;
+                            }
                             console.log('✅ Drop zone clicked in container:', containerId, 'column:', columnIndex);
                             self.showWidgetTemplateSelector(containerId, columnIndex);
                             return false;
@@ -13281,6 +13752,10 @@
                     e.stopPropagation();
                     const containerId = $(this).data('container-id');
                     const columnIndex = $(this).data('column-index');
+                    if (self.isGridCellResizing) {
+                        console.log('⏸️ Container drop zone click ignored - grid cell resizing');
+                        return false;
+                    }
                     console.log('Drop zone clicked in container:', containerId, 'column:', columnIndex);
                     self.showWidgetTemplateSelector(containerId, columnIndex);
                 });
@@ -13511,11 +13986,20 @@
                     drop: function(event, ui) {
                         event.stopPropagation();
                         event.preventDefault();
+                        self.isNestedDropInProgress = true;
+                        const finishNestedDrop = () => {
+                            setTimeout(() => {
+                                self.isNestedDropInProgress = false;
+                            }, 0);
+                        };
                         const widgetName = ui.draggable.data('widget');
                         console.log('Widget dropped into tab:', widgetName, 'Tab index:', tabIndex);
                         
                         const widget = self.widgets.find(w => w.name === widgetName);
-                        if (!widget) return;
+                        if (!widget) {
+                            finishNestedDrop();
+                            return;
+                        }
                         
                         // Create new element
                         const newElement = {
@@ -13547,6 +14031,7 @@
                         
                         // Re-render tabs
                         self.updateElementPreview(tabsElement);
+                        finishNestedDrop();
                     }
                 });
                 
@@ -17323,7 +17808,7 @@
                                        font-size: 14px;
                                        outline: none;
                                        transition: all 0.2s;
-                                       background: #fafafa url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%2371717a\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg>') no-repeat 12px center;
+                                       background: #fafafa url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM3MTcxN2EiIHN0cm9rZS13aWR0aD0iMiI+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iOCIvPjxwYXRoIGQ9Im0yMSAyMS00LjM1LTQuMzUiLz48L3N2Zz4=') no-repeat 12px center;
                                    ">
                         </div>
                         

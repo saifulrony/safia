@@ -32,7 +32,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin version
-define('PROBUILDER_VERSION', '1.0.0');
+define('PROBUILDER_VERSION', '3.0.1');
 define('PROBUILDER_PATH', plugin_dir_path(__FILE__));
 define('PROBUILDER_URL', plugin_dir_url(__FILE__));
 define('PROBUILDER_FILE', __FILE__);
