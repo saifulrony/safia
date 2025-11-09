@@ -411,15 +411,42 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             ?>
                 <?php
                 $override = $cell_overrides[$i] ?? null;
-                $override_styles = [
-                    'grid-area: ' . $grid_template['areas'][$i],
-                ];
+                $override_styles = [];
 
                 if (is_array($override) && !empty($override)) {
+                    $override_styles[] = 'grid-area: unset';
+                    $override_styles[] = 'position: absolute';
+
+                    if (isset($override['leftPercent']) && $override['leftPercent'] !== '') {
+                        $override_styles[] = 'left: ' . floatval($override['leftPercent']) . '%';
+                    } elseif (isset($override['left']) && $override['left'] !== '') {
+                        $override_styles[] = 'left: ' . intval($override['left']) . 'px';
+                    }
+
+                    if (isset($override['topPercent']) && $override['topPercent'] !== '') {
+                        $override_styles[] = 'top: ' . floatval($override['topPercent']) . '%';
+                    } elseif (isset($override['top']) && $override['top'] !== '') {
+                        $override_styles[] = 'top: ' . intval($override['top']) . 'px';
+                    }
+
+                    if (isset($override['widthPercent']) && $override['widthPercent'] !== '') {
+                        $override_styles[] = 'width: ' . floatval($override['widthPercent']) . '%';
+                    } elseif (isset($override['width']) && $override['width'] !== '') {
+                        $override_styles[] = 'width: ' . intval($override['width']) . 'px';
+                    }
+
+                    if (isset($override['heightPercent']) && $override['heightPercent'] !== '') {
+                        $override_styles[] = 'height: ' . floatval($override['heightPercent']) . '%';
+                    } elseif (isset($override['height']) && $override['height'] !== '') {
+                        $override_styles[] = 'height: ' . intval($override['height']) . 'px';
+                    }
+
                     if (isset($override['zIndex']) && $override['zIndex'] !== '') {
-                        $override_styles[] = 'position: relative';
                         $override_styles[] = 'z-index: ' . intval($override['zIndex']);
                     }
+                } else {
+                    $override_styles[] = 'grid-area: ' . $grid_template['areas'][$i];
+                    $override_styles[] = 'position: relative';
                 }
 
                 $style_attr = 'style="' . esc_attr(implode('; ', $override_styles)) . '"';

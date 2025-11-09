@@ -3640,6 +3640,12 @@
                     const computedStyles = window.getComputedStyle($gridContainer[0]);
                     const updatedColumns = computedStyles.getPropertyValue('grid-template-columns');
                     const updatedRows = computedStyles.getPropertyValue('grid-template-rows');
+                    const containerWidth = containerRect.width || 1;
+                    const containerHeight = containerRect.height || 1;
+                    const leftPercent = (finalLeft / containerWidth) * 100;
+                    const topPercent = (finalTop / containerHeight) * 100;
+                    const widthPercent = (exactWidth / containerWidth) * 100;
+                    const heightPercent = (exactHeight / containerHeight) * 100;
 
                     if (!gridElement.settings.custom_template || typeof gridElement.settings.custom_template !== 'object') {
                         gridElement.settings.custom_template = {};
@@ -3658,42 +3664,30 @@
                         height: exactHeight,
                         top: Math.round(finalTop),
                         left: Math.round(finalLeft),
-                        position: 'relative',
-                        zIndex: 1
+                        widthPercent: parseFloat(widthPercent.toFixed(4)),
+                        heightPercent: parseFloat(heightPercent.toFixed(4)),
+                        topPercent: parseFloat(topPercent.toFixed(4)),
+                        leftPercent: parseFloat(leftPercent.toFixed(4)),
+                        position: 'absolute',
+                        zIndex: 1,
+                        containerWidth: Math.round(containerWidth),
+                        containerHeight: Math.round(containerHeight)
                     };
+
+                    $gridCell.css({
+                        'position': 'absolute',
+                        'left': `${leftPercent}%`,
+                        'top': `${topPercent}%`,
+                        'width': `${widthPercent}%`,
+                        'height': `${heightPercent}%`,
+                        'grid-area': 'unset',
+                        'z-index': '1',
+                        'box-shadow': '',
+                        'border-color': '',
+                        'transition': ''
+                    });
                 }
 
-                try {
-                    self.adjustGridTemplateForResize(
-                        gridElement,
-                        cellIndex,
-                        direction,
-                        scaleX,
-                        scaleY,
-                        exactWidth,
-                        exactHeight
-                    );
-                } catch (adjustError) {
-                    console.error('❌ Failed to adjust grid template after resize', adjustError);
-                }
-                
-                // Revert cell back to grid flow with updated template applied
-                $gridCell.css({
-                    'position': '',
-                    'left': '',
-                    'top': '',
-                    'width': '',
-                    'height': '',
-                    'grid-area': finalArea,
-                    'z-index': '',
-                    'box-shadow': '',
-                    'border-color': '',
-                    'transition': ''
-                });
-                
-                // Force layout recalculation by triggering reflow
-                $gridCell[0].offsetHeight; // eslint-disable-line no-unused-expressions
-                
                 $('body').css('cursor', '');
                 
                 // Update stored area
@@ -6706,12 +6700,36 @@
                         
                         const cellOverrides = element.settings.custom_template?.cell_overrides || [];
                         const override = cellOverrides[index];
-                        const overrideStyles = [`grid-area: ${area}`];
+                        const overrideStyles = [];
                         if (override && typeof override === 'object') {
+                            overrideStyles.push('grid-area: unset');
+                            overrideStyles.push('position: absolute');
+                            if (typeof override.leftPercent === 'number') {
+                                overrideStyles.push(`left: ${override.leftPercent}%`);
+                            } else if (typeof override.left === 'number') {
+                                overrideStyles.push(`left: ${override.left}px`);
+                            }
+                            if (typeof override.topPercent === 'number') {
+                                overrideStyles.push(`top: ${override.topPercent}%`);
+                            } else if (typeof override.top === 'number') {
+                                overrideStyles.push(`top: ${override.top}px`);
+                            }
+                            if (typeof override.widthPercent === 'number') {
+                                overrideStyles.push(`width: ${override.widthPercent}%`);
+                            } else if (typeof override.width === 'number') {
+                                overrideStyles.push(`width: ${override.width}px`);
+                            }
+                            if (typeof override.heightPercent === 'number') {
+                                overrideStyles.push(`height: ${override.heightPercent}%`);
+                            } else if (typeof override.height === 'number') {
+                                overrideStyles.push(`height: ${override.height}px`);
+                            }
                             if (typeof override.zIndex !== 'undefined' && override.zIndex !== null) {
-                                overrideStyles.push(`position: relative`);
                                 overrideStyles.push(`z-index: ${override.zIndex}`);
                             }
+                        } else {
+                            overrideStyles.push(`grid-area: ${area}`);
+                            overrideStyles.push('position: relative');
                         }
                         const overrideStyle = `style="${overrideStyles.join('; ')}"`;
 
