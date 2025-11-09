@@ -35,6 +35,27 @@
                 outline: { bgColor: 'transparent', textColor: '#344047', borderRadius: 4, border: '2px solid #344047' }
             }
         },
+    /**
+     * Ensure color inputs receive valid hex values
+     */
+    sanitizeColorValue: function(value, fallback = '#000000') {
+        if (typeof value !== 'string') {
+            return fallback;
+        }
+        const trimmed = value.trim();
+        if (trimmed.toLowerCase() === 'transparent') {
+            return fallback;
+        }
+        const shortHexMatch = trimmed.match(/^#([0-9a-fA-F]{3})$/);
+        if (shortHexMatch) {
+            const [r, g, b] = shortHexMatch[1].split('');
+            return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+        }
+        if (/^#([0-9a-fA-F]{6})$/.test(trimmed)) {
+            return trimmed.toLowerCase();
+        }
+        return fallback;
+    },
         
         /**
          * Initialize
@@ -348,6 +369,8 @@
             
             Object.keys(this.globalStyles.buttons).forEach(type => {
                 const btn = this.globalStyles.buttons[type];
+                const bgColorInputValue = this.sanitizeColorValue(btn.bgColor, '#000000');
+                const textColorInputValue = this.sanitizeColorValue(btn.textColor, '#000000');
                 const $btnItem = $(`
                     <div class="probuilder-button-preset" data-type="${type}">
                         <div class="probuilder-button-preview">
@@ -365,11 +388,11 @@
                         <div class="probuilder-button-controls">
                             <label>
                                 <span>Background:</span>
-                                <input type="color" class="probuilder-btn-bgcolor" value="${btn.bgColor}" data-type="${type}">
+                                <input type="color" class="probuilder-btn-bgcolor" value="${bgColorInputValue}" data-type="${type}">
                             </label>
                             <label>
                                 <span>Text:</span>
-                                <input type="color" class="probuilder-btn-textcolor" value="${btn.textColor}" data-type="${type}">
+                                <input type="color" class="probuilder-btn-textcolor" value="${textColorInputValue}" data-type="${type}">
                             </label>
                             <label>
                                 <span>Border Radius:</span>
@@ -953,6 +976,194 @@
             }
             
             return newElement;
+        },
+
+        /**
+         * Normalize nested structure to array (handles objects with numeric keys)
+         */
+        normalizeStructureToArray: function(value) {
+            if (Array.isArray(value)) {
+                return value.slice();
+            }
+            if (value && typeof value === 'object') {
+                const arr = [];
+                Object.keys(value).forEach(key => {
+                    const index = parseInt(key, 10);
+                    if (!Number.isNaN(index)) {
+                        arr[index] = value[key];
+                    }
+                });
+                return arr;
+            }
+            return [];
+        },
+
+        /**
+         * Ensure grid layout elements have proper children/custom template populated
+         */
+        ensureGridElementStructure: function(element) {
+            if (!element || element.widgetType !== 'grid-layout') {
+                return;
+            }
+
+            if (!element.settings || typeof element.settings !== 'object') {
+                element.settings = {};
+            }
+
+            // Determine pattern and base template
+            const pattern = element.settings.grid_pattern || 'pattern-1';
+            const baseTemplate = this.getGridTemplateData(pattern) || {};
+
+            // Ensure custom template exists and has required fields
+            if (!element.settings.custom_template || typeof element.settings.custom_template !== 'object') {
+                element.settings.custom_template = {};
+            }
+
+            const customTemplate = element.settings.custom_template;
+            if (!customTemplate.columns && baseTemplate.columns) {
+                customTemplate.columns = baseTemplate.columns;
+            }
+            if (!customTemplate.rows && baseTemplate.rows) {
+                customTemplate.rows = baseTemplate.rows;
+            }
+            if (!Array.isArray(customTemplate.cell_overrides)) {
+                customTemplate.cell_overrides = [];
+            }
+
+            const baseAreas = Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : [];
+            let templateAreas = Array.isArray(customTemplate.areas) && customTemplate.areas.length > 0
+                ? customTemplate.areas.filter(area => area)
+                : baseAreas;
+
+            if (!Array.isArray(templateAreas)) {
+                templateAreas = [];
+            }
+
+            customTemplate.areas = templateAreas.slice();
+
+            // Normalize existing children and fallbacks stored in settings
+            const directChildren = this.normalizeStructureToArray(element.children);
+            const storedChildren = this.normalizeStructureToArray(element.settings._children);
+            const totalCells = templateAreas.length;
+            const finalChildren = new Array(totalCells);
+
+            for (let index = 0; index < totalCells; index++) {
+                let child = directChildren[index];
+
+                if (!child && storedChildren[index]) {
+                    // Deep clone to avoid mutating original stored structure
+                    try {
+                        child = JSON.parse(JSON.stringify(storedChildren[index]));
+                    } catch (error) {
+                        console.warn('⚠️ Failed to clone stored child structure', storedChildren[index], error);
+                        child = storedChildren[index];
+                    }
+                }
+
+                if (child && typeof child === 'object') {
+                    if (!child.id) {
+                        child.id = 'element-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    }
+                    if (!child.settings || typeof child.settings !== 'object') {
+                        child.settings = {};
+                    }
+                } else {
+                    child = null;
+                }
+
+                finalChildren[index] = child;
+
+            if (typeof customTemplate.cell_overrides[index] === 'undefined') {
+                customTemplate.cell_overrides[index] = null;
+            }
+            }
+
+        element.children = finalChildren;
+        try {
+            element.settings._children = JSON.parse(JSON.stringify(finalChildren));
+        } catch (error) {
+            console.warn('⚠️ Failed to serialize grid children for settings._children', error);
+            element.settings._children = finalChildren;
+        }
+        },
+
+        /**
+         * Prepare elements for saving (deep clone + normalize)
+         */
+        prepareElementsForSave: function(elements) {
+            const normalize = (element) => {
+                if (!element || typeof element !== 'object') {
+                    return null;
+                }
+
+                // Deep clone without references
+                const cloned = JSON.parse(JSON.stringify(element));
+
+                if (!cloned.settings || typeof cloned.settings !== 'object') {
+                    cloned.settings = {};
+                }
+
+                if (cloned.widgetType === 'grid-layout') {
+                    const pattern = cloned.settings.grid_pattern || 'pattern-1';
+                    const baseTemplate = this.getGridTemplateData(pattern) || {};
+
+                    if (!cloned.settings.custom_template || typeof cloned.settings.custom_template !== 'object') {
+                        cloned.settings.custom_template = {};
+                    }
+
+                    if (!cloned.settings.custom_template.columns && baseTemplate.columns) {
+                        cloned.settings.custom_template.columns = baseTemplate.columns;
+                    }
+
+                    if (!cloned.settings.custom_template.rows && baseTemplate.rows) {
+                        cloned.settings.custom_template.rows = baseTemplate.rows;
+                    }
+
+                    if (!Array.isArray(cloned.settings.custom_template.areas) || cloned.settings.custom_template.areas.length === 0) {
+                        cloned.settings.custom_template.areas = Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : [];
+                    } else {
+                        cloned.settings.custom_template.areas = cloned.settings.custom_template.areas.filter(area => area);
+                    }
+
+                    if (!cloned.settings.custom_template.columns && baseTemplate.columns) {
+                        cloned.settings.custom_template.columns = baseTemplate.columns;
+                    }
+
+                    if (!cloned.settings.custom_template.rows && baseTemplate.rows) {
+                        cloned.settings.custom_template.rows = baseTemplate.rows;
+                    }
+
+                    if (!Array.isArray(cloned.settings.custom_template.cell_overrides)) {
+                        cloned.settings.custom_template.cell_overrides = [];
+                    } else {
+                        cloned.settings.custom_template.cell_overrides = cloned.settings.custom_template.cell_overrides.map(override => {
+                            if (!override) {
+                                return null;
+                            }
+                            return Object.assign({}, override);
+                        });
+                    }
+
+                    if (!Array.isArray(cloned.children)) {
+                        cloned.children = [];
+                    }
+
+                    cloned.children = cloned.children.map(child => normalize(child));
+
+                    try {
+                        cloned.settings._children = JSON.parse(JSON.stringify(cloned.children));
+                    } catch (error) {
+                        console.warn('⚠️ Failed to clone children for _children during save prep', error);
+                        cloned.settings._children = cloned.children;
+                    }
+                } else if (Array.isArray(cloned.children) && cloned.children.length > 0) {
+                    cloned.children = cloned.children.map(child => normalize(child));
+                }
+
+                return cloned;
+            };
+
+            return (elements || []).map(el => normalize(el)).filter(el => el);
         },
         
         /**
@@ -1831,9 +2042,17 @@
 
                 console.log('🗑️ Global grid cell delete handler triggered', {gridIdAttr, cellIndex});
 
+                const $gridLayout = $button.closest('.probuilder-grid-layout');
+                const domPattern = $gridLayout.attr('data-grid-pattern') || null;
+                const domAreas = $gridLayout.find('.grid-cell').map(function() {
+                    return $(this).attr('data-original-area') || null;
+                }).get();
+
                 const deleted = self.handleGridCellDelete(gridElement, cellIndex, {
                     triggerSource: 'global-handler',
-                    skipConfirm: false
+                    skipConfirm: false,
+                    domPattern,
+                    domAreas
                 });
 
                 if (!deleted) {
@@ -1873,9 +2092,17 @@
                     return false;
                 }
 
+                const $gridLayout = $button.closest('.probuilder-grid-layout');
+                const domPattern = $gridLayout.attr('data-grid-pattern') || null;
+                const domAreas = $gridLayout.find('.grid-cell').map(function() {
+                    return $(this).attr('data-original-area') || null;
+                }).get();
+
                 const deleted = self.handleGridCellDelete(gridElement, cellIndex, {
                     triggerSource: 'document-fallback',
-                    skipConfirm: false
+                    skipConfirm: false,
+                    domPattern,
+                    domAreas
                 });
 
                 if (!deleted) {
@@ -3403,18 +3630,69 @@
                 // Apply final position and dimensions
                 // Cell stays in absolute positioning with exact tracked values from drag
                 // No recalculation = no jump or weird effects
+                // Persist custom grid template details so reload uses the resized dimensions
+                if (!gridElement.settings) {
+                    gridElement.settings = {};
+                }
+                if (!$gridContainer.length) {
+                    console.warn('⚠️ Grid container not found for persistence during resize');
+                } else {
+                    const computedStyles = window.getComputedStyle($gridContainer[0]);
+                    const updatedColumns = computedStyles.getPropertyValue('grid-template-columns');
+                    const updatedRows = computedStyles.getPropertyValue('grid-template-rows');
+
+                    if (!gridElement.settings.custom_template || typeof gridElement.settings.custom_template !== 'object') {
+                        gridElement.settings.custom_template = {};
+                    }
+
+                    gridElement.settings.custom_template.columns = (updatedColumns || '').trim();
+                    gridElement.settings.custom_template.rows = (updatedRows || '').trim();
+                    gridElement.settings.custom_template.areas = gridElement.settings.custom_template.areas || [];
+
+                    if (!Array.isArray(gridElement.settings.custom_template.cell_overrides)) {
+                        gridElement.settings.custom_template.cell_overrides = [];
+                    }
+
+                    gridElement.settings.custom_template.cell_overrides[cellIndex] = {
+                        width: exactWidth,
+                        height: exactHeight,
+                        top: Math.round(finalTop),
+                        left: Math.round(finalLeft),
+                        position: 'relative',
+                        zIndex: 1
+                    };
+                }
+
+                try {
+                    self.adjustGridTemplateForResize(
+                        gridElement,
+                        cellIndex,
+                        direction,
+                        scaleX,
+                        scaleY,
+                        exactWidth,
+                        exactHeight
+                    );
+                } catch (adjustError) {
+                    console.error('❌ Failed to adjust grid template after resize', adjustError);
+                }
+                
+                // Revert cell back to grid flow with updated template applied
                 $gridCell.css({
-                    'position': 'absolute',
-                    'left': Math.round(finalLeft) + 'px',
-                    'top': Math.round(finalTop) + 'px',
-                    'width': exactWidth + 'px',
-                    'height': exactHeight + 'px',
-                    'grid-area': 'unset',
-                    'z-index': '1',
+                    'position': '',
+                    'left': '',
+                    'top': '',
+                    'width': '',
+                    'height': '',
+                    'grid-area': finalArea,
+                    'z-index': '',
                     'box-shadow': '',
                     'border-color': '',
                     'transition': ''
                 });
+                
+                // Force layout recalculation by triggering reflow
+                $gridCell[0].offsetHeight; // eslint-disable-line no-unused-expressions
                 
                 $('body').css('cursor', '');
                 
@@ -3458,12 +3736,14 @@
         /**
          * Adjust grid template to make neighbors responsive
          */
-        adjustGridTemplateForResize: function(gridElement, resizedCellIndex, direction, scaleX, scaleY) {
+        adjustGridTemplateForResize: function(gridElement, resizedCellIndex, direction, scaleX, scaleY, exactWidth, exactHeight) {
             console.log('🔄 Adjusting grid template for responsive behavior:', {
                 cellIndex: resizedCellIndex,
                 direction: direction,
                 scaleX: scaleX.toFixed(2),
-                scaleY: scaleY.toFixed(2)
+                scaleY: scaleY.toFixed(2),
+                exactWidth,
+                exactHeight
             });
             
             const $gridContainer = $(`.probuilder-element[data-id="${gridElement.id}"] .probuilder-grid-layout`);
@@ -3476,124 +3756,133 @@
             
             console.log('Current template:', {columns: currentColumns, rows: currentRows});
             
-            // Parse the template to get fr values
+            // Parse the template to get values and preserve original units
             let columnValues = [];
+            let columnUnits = [];
             let rowValues = [];
+            let rowUnits = [];
             
-            // Extract fr values from template (e.g., "repeat(4, 1fr)" -> [1,1,1,1])
             if (currentColumns.includes('repeat')) {
-                const match = currentColumns.match(/repeat\((\d+),\s*(\d+(?:\.\d+)?)fr\)/);
-                if (match) {
-                    const count = parseInt(match[1]);
-                    const frValue = parseFloat(match[2]);
-                    columnValues = Array(count).fill(frValue);
+                const repeatMatch = currentColumns.match(/repeat\((\d+),\s*([\d.]+)([a-z%]*)\)/i);
+                if (repeatMatch) {
+                    const count = parseInt(repeatMatch[1], 10);
+                    const value = parseFloat(repeatMatch[2]);
+                    const unit = repeatMatch[3] || 'fr';
+                    columnValues = Array(count).fill(value);
+                    columnUnits = Array(count).fill(unit);
                 }
             } else {
-                // Handle individual fr values
-                columnValues = currentColumns.split(' ').map(v => parseFloat(v.replace('fr', '')));
+                currentColumns.split(/\s+/).forEach(rawValue => {
+                    const trimmed = rawValue.trim();
+                    if (!trimmed) {
+                        return;
+                    }
+                    const valueMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i);
+                    if (valueMatch) {
+                        columnValues.push(parseFloat(valueMatch[1]));
+                        const unit = valueMatch[2] || 'fr';
+                        columnUnits.push(unit);
+                    }
+                });
             }
             
             if (currentRows.includes('repeat')) {
-                const match = currentRows.match(/repeat\((\d+),\s*(\d+(?:\.\d+)?)px\)/);
-                if (match) {
-                    const count = parseInt(match[1]);
-                    const pxValue = parseFloat(match[2]);
-                    rowValues = Array(count).fill(pxValue);
+                const repeatMatch = currentRows.match(/repeat\((\d+),\s*([\d.]+)([a-z%]*)\)/i);
+                if (repeatMatch) {
+                    const count = parseInt(repeatMatch[1], 10);
+                    const value = parseFloat(repeatMatch[2]);
+                    const unit = repeatMatch[3] || 'px';
+                    rowValues = Array(count).fill(value);
+                    rowUnits = Array(count).fill(unit);
                 }
             } else {
-                // Handle individual px values
-                rowValues = currentRows.split(' ').map(v => parseFloat(v.replace('px', '')));
+                currentRows.split(/\s+/).forEach(rawValue => {
+                    const trimmed = rawValue.trim();
+                    if (!trimmed) {
+                        return;
+                    }
+                    const valueMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i);
+                    if (valueMatch) {
+                        rowValues.push(parseFloat(valueMatch[1]));
+                        const unit = valueMatch[2] || 'px';
+                        rowUnits.push(unit);
+                    }
+                });
+            }
+            
+            if (columnValues.length === 0) {
+                console.warn('⚠️ Unable to parse current grid-template-columns, aborting adjustment');
+                return;
+            }
+            if (rowValues.length === 0) {
+                rowValues = Array(columnValues.length).fill(150);
+                rowUnits = Array(columnValues.length).fill('px');
             }
             
             console.log('Parsed values:', {columns: columnValues, rows: rowValues});
             
-            // Adjust neighboring columns/rows
-            if (direction === 'right' || direction === 'both') {
-                // Find which columns the resized cell spans
-                const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
-                const parts = resizedArea.split('/').map(p => p.trim());
-                const [rowStart, colStart, rowEnd, colEnd] = parts.map(p => parseInt(p));
-                
-                // Calculate how much space the resized cell is taking
-                const resizedColSpan = colEnd - colStart;
-                const totalResizedSpace = columnValues.slice(colStart - 1, colEnd - 1).reduce((sum, val) => sum + val, 0);
-                const newResizedSpace = totalResizedSpace * scaleX;
-                const spaceDifference = newResizedSpace - totalResizedSpace;
-                
-                console.log('Column adjustment:', {
-                    resizedColSpan,
-                    totalResizedSpace,
-                    newResizedSpace,
-                    spaceDifference
-                });
-                
-                // Distribute the space difference among neighboring columns
-                if (spaceDifference !== 0) {
-                    // Find columns to adjust (not the resized ones)
-                    const adjustColumns = [];
-                    for (let i = 0; i < columnValues.length; i++) {
-                        if (i < colStart - 1 || i >= colEnd - 1) {
-                            adjustColumns.push(i);
-                        }
-                    }
-                    
-                    if (adjustColumns.length > 0) {
-                        // Distribute space proportionally
-                        const totalAdjustableSpace = adjustColumns.reduce((sum, idx) => sum + columnValues[idx], 0);
-                        const adjustmentRatio = -spaceDifference / totalAdjustableSpace; // Negative to shrink neighbors
-                        
-                        adjustColumns.forEach(idx => {
-                            columnValues[idx] = Math.max(0.1, columnValues[idx] * (1 + adjustmentRatio));
-                        });
-                        
-                        console.log('Adjusted columns:', columnValues);
-                    }
+            const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
+            if (!resizedArea) {
+                console.warn('⚠️ No grid-area data found for cell', resizedCellIndex);
+                return;
+            }
+            const [rowStart, colStart, rowEnd, colEnd] = resizedArea.split('/').map(p => parseInt(p.trim(), 10));
+            
+            const shouldAdjustColumns = direction === 'left' || direction === 'right' || direction === 'both';
+            const shouldAdjustRows = direction === 'top' || direction === 'bottom' || direction === 'both';
+            
+            if (shouldAdjustColumns && columnValues.length > 0) {
+                const scaledColumns = columnValues.slice();
+                for (let col = colStart - 1; col < colEnd - 1 && col < scaledColumns.length; col++) {
+                    scaledColumns[col] = Math.max(0.05, scaledColumns[col] * scaleX);
                 }
+                const minColumn = Math.min(...scaledColumns.filter(v => v > 0));
+                const normalizedColumns = scaledColumns.map(value => {
+                    const base = minColumn || 1;
+                    return Math.max(0.05, value / base);
+                });
+                const columnsTemplate = normalizedColumns.map(value => `${value.toFixed(3)}fr`).join(' ');
+                $gridContainer.css('grid-template-columns', columnsTemplate);
+                if (!gridElement.settings.custom_template) {
+                    gridElement.settings.custom_template = {};
+                }
+                gridElement.settings.custom_template.columns = columnsTemplate;
+                columnValues = normalizedColumns;
+                columnUnits = Array(columnValues.length).fill('fr');
             }
             
-            if (direction === 'bottom' || direction === 'both') {
-                // Similar logic for rows
-                const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
-                const parts = resizedArea.split('/').map(p => p.trim());
-                const [rowStart, colStart, rowEnd, colEnd] = parts.map(p => parseInt(p));
-                
-                const resizedRowSpan = rowEnd - rowStart;
-                const totalResizedSpace = rowValues.slice(rowStart - 1, rowEnd - 1).reduce((sum, val) => sum + val, 0);
-                const newResizedSpace = totalResizedSpace * scaleY;
-                const spaceDifference = newResizedSpace - totalResizedSpace;
-                
-                console.log('Row adjustment:', {
-                    resizedRowSpan,
-                    totalResizedSpace,
-                    newResizedSpace,
-                    spaceDifference
-                });
-                
-                // Adjust neighboring rows
-                if (spaceDifference !== 0) {
-                    const adjustRows = [];
-                    for (let i = 0; i < rowValues.length; i++) {
-                        if (i < rowStart - 1 || i >= rowEnd - 1) {
-                            adjustRows.push(i);
-                        }
-                    }
-                    
-                    if (adjustRows.length > 0) {
-                        const totalAdjustableSpace = adjustRows.reduce((sum, idx) => sum + rowValues[idx], 0);
-                        const adjustmentRatio = -spaceDifference / totalAdjustableSpace;
-                        
-                        adjustRows.forEach(idx => {
-                            rowValues[idx] = Math.max(20, rowValues[idx] * (1 + adjustmentRatio));
-                        });
-                        
-                        console.log('Adjusted rows:', rowValues);
-                    }
+            if (shouldAdjustRows && rowValues.length > 0) {
+                const scaledRows = rowValues.slice();
+                for (let row = rowStart - 1; row < rowEnd - 1 && row < scaledRows.length; row++) {
+                    scaledRows[row] = Math.max(10, scaledRows[row] * scaleY);
                 }
+                const minRow = Math.min(...scaledRows.filter(v => v > 0));
+                const normalizedRows = scaledRows.map(value => {
+                    const base = minRow || 1;
+                    return Math.max(1, value / base);
+                });
+                const rowsTemplate = normalizedRows.map(value => `${value.toFixed(3)}fr`).join(' ');
+                $gridContainer.css('grid-template-rows', rowsTemplate);
+                if (!gridElement.settings.custom_template) {
+                    gridElement.settings.custom_template = {};
+                }
+                gridElement.settings.custom_template.rows = rowsTemplate;
+                rowValues = normalizedRows;
+                rowUnits = Array(rowValues.length).fill('fr');
             }
             
             // Apply new template - use precise values without rounding for flexible sizing
-            const newColumnsTemplate = columnValues.map(v => v.toFixed(3) + 'fr').join(' ');
-            const newRowsTemplate = rowValues.map(v => v.toFixed(2) + 'px').join(' ');
+            const newColumnsTemplate = columnValues.map((v, idx) => {
+                const unit = columnUnits[idx] || 'fr';
+                if (unit === 'fr') {
+                    return v.toFixed(3) + unit;
+                }
+                return v.toFixed(2) + unit;
+            }).join(' ');
+            const newRowsTemplate = rowValues.map((v, idx) => {
+                const unit = rowUnits[idx] || 'px';
+                return v.toFixed(2) + unit;
+            }).join(' ');
             
             console.log('New template (flexible):', {columns: newColumnsTemplate, rows: newRowsTemplate});
             
@@ -3623,22 +3912,7 @@
             confirmCallback: null
         }, options || {});
 
-        const normalizeToArray = (value) => {
-            if (Array.isArray(value)) {
-                return value.slice();
-            }
-            if (value && typeof value === 'object') {
-                const arr = [];
-                Object.keys(value).forEach(key => {
-                    const index = parseInt(key, 10);
-                    if (!Number.isNaN(index)) {
-                        arr[index] = value[key] || null;
-                    }
-                });
-                return arr;
-            }
-            return [];
-        };
+        const normalizeToArray = (value) => self.normalizeStructureToArray(value);
 
         if (!gridElement || !gridElement.id) {
             console.error('❌ Cannot modify grid cell - grid element missing', {gridElement, cellIndex, settings});
@@ -3656,6 +3930,47 @@
             const fallbackChildren = normalizeToArray(gridElement.settings._children);
             if (fallbackChildren.length > 0) {
                 gridElement.children = fallbackChildren;
+            }
+        }
+
+        if (!gridElement.settings || typeof gridElement.settings !== 'object') {
+            gridElement.settings = {};
+        }
+
+        const patternHint = settings.domPattern || null;
+        const patternKey = patternHint || gridElement.settings.grid_pattern || 'pattern-1';
+        gridElement.settings.grid_pattern = patternKey;
+
+        if (!gridElement.settings.custom_template || typeof gridElement.settings.custom_template !== 'object') {
+            gridElement.settings.custom_template = {};
+        }
+
+        const baseTemplate = self.getGridTemplateData(patternKey) || {};
+
+        if (!gridElement.settings.custom_template.columns && baseTemplate.columns) {
+            gridElement.settings.custom_template.columns = baseTemplate.columns;
+        }
+
+        if (!gridElement.settings.custom_template.rows && baseTemplate.rows) {
+            gridElement.settings.custom_template.rows = baseTemplate.rows;
+        }
+
+        const domAreas = Array.isArray(settings.domAreas) && settings.domAreas.length > 0
+            ? settings.domAreas.filter(area => area)
+            : null;
+
+        if (domAreas && domAreas.length > 0) {
+            gridElement.settings.custom_template.areas = domAreas.slice();
+        } else if (!Array.isArray(gridElement.settings.custom_template.areas) || gridElement.settings.custom_template.areas.length === 0) {
+            gridElement.settings.custom_template.areas = Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : [];
+        } else {
+            gridElement.settings.custom_template.areas = gridElement.settings.custom_template.areas.slice();
+        }
+
+        const targetAreasLength = gridElement.settings.custom_template.areas.length;
+        for (let i = 0; i < targetAreasLength; i++) {
+            if (typeof gridElement.children[i] === 'undefined') {
+                gridElement.children[i] = null;
             }
         }
 
@@ -3731,20 +4046,11 @@
         updateStructure('children');
 
         if (settings.removeCell) {
-            if (!gridElement.settings) {
-                gridElement.settings = {};
-            }
-            if (!gridElement.settings.custom_template) {
-                gridElement.settings.custom_template = {};
-            }
-
             let currentAreas = [];
             if (Array.isArray(gridElement.settings.custom_template.areas) && gridElement.settings.custom_template.areas.length > 0) {
                 currentAreas = gridElement.settings.custom_template.areas.slice();
             } else {
-                const pattern = gridElement.settings.grid_pattern || 'pattern-1';
-                const baseTemplate = this.getGridTemplateData(pattern) || {};
-                currentAreas = Array.isArray(baseTemplate.areas) ? baseTemplate.areas.slice() : [];
+                currentAreas = [];
             }
 
             if (cellIndex < currentAreas.length) {
@@ -4345,6 +4651,10 @@
                     return;
                 }
                 
+                if (element.widgetType === 'grid-layout') {
+                    this.ensureGridElementStructure(element);
+                }
+
                 const preview = this.generatePreview(element);
                 console.log('Preview generated for:', element.id);
                 
@@ -4803,14 +5113,21 @@
                                     return false;
                                 }
 
+                                const $gridLayout = $(this).closest('.probuilder-grid-layout');
                                 const gridIdAttr = $(this).attr('data-grid-id') || $(this).closest('.grid-cell-toolbar').attr('data-grid-id') || element.id;
+                                const domPattern = $gridLayout.attr('data-grid-pattern') || null;
+                                const domAreas = $gridLayout.find('.grid-cell').map(function() {
+                                    return $(this).attr('data-original-area') || null;
+                                }).get();
                                 const activeGridElement = self.elements.find(el => el && el.id === gridIdAttr) || gridElement;
 
                                 console.log('🗑️ Grid cell delete requested', {cellIndex, gridIdAttr, triggerSource: 'toolbar-button'});
 
                                 const deleted = self.handleGridCellDelete(activeGridElement, cellIndex, {
                                     triggerSource: 'toolbar-button',
-                                    skipConfirm: false
+                                    skipConfirm: false,
+                                    domPattern,
+                                    domAreas
                                 });
 
                                 if (!deleted) {
@@ -4924,10 +5241,15 @@
 
                                     const $nestedEl = $(this).closest('.probuilder-nested-element');
                                     const cellIndex = parseInt($nestedEl.closest('.grid-cell').attr('data-cell-index'), 10);
+                                    const $gridLayout = $nestedEl.closest('.probuilder-grid-layout');
                                     const triggerOptions = {
                                         triggerSource: 'nested-widget-delete',
                                         skipConfirm: true,
-                                        removeCell: false
+                                        removeCell: false,
+                                        domPattern: $gridLayout.attr('data-grid-pattern') || null,
+                                        domAreas: $gridLayout.find('.grid-cell').map(function() {
+                                            return $(this).attr('data-original-area') || null;
+                                        }).get()
                                     };
 
                                     if (!gridElement) {
@@ -6372,7 +6694,7 @@
                                 border-color: #007cba;
                             }
                         </style>
-                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}" data-grid-element-id="${element.id}">
+                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}" data-grid-element-id="${element.id}" data-grid-pattern="${gridPattern}">
                     `;
                     
                     // Generate cells based on pattern
@@ -6382,9 +6704,20 @@
                         
                         console.log(`Grid cell ${index}:`, {hasContent, child: child ? child.widgetType : 'none'});
                         
+                        const cellOverrides = element.settings.custom_template?.cell_overrides || [];
+                        const override = cellOverrides[index];
+                        const overrideStyles = [`grid-area: ${area}`];
+                        if (override && typeof override === 'object') {
+                            if (typeof override.zIndex !== 'undefined' && override.zIndex !== null) {
+                                overrideStyles.push(`position: relative`);
+                                overrideStyles.push(`z-index: ${override.zIndex}`);
+                            }
+                        }
+                        const overrideStyle = `style="${overrideStyles.join('; ')}"`;
+
                         gridHTML += `
                             <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} ${hasContent ? '' : 'probuilder-drop-zone'}" 
-                                 style="grid-area: ${area};" 
+                                 ${overrideStyle}
                                  data-cell-index="${index}"
                                  data-grid-id="${element.id}"
                                  data-original-area="${area}">
@@ -18432,7 +18765,9 @@
                 return;
             }
             
-            const elementsJSON = JSON.stringify(this.elements);
+            const elementsForSave = this.prepareElementsForSave(this.elements);
+
+            const elementsJSON = JSON.stringify(elementsForSave);
             console.log('JSON length:', elementsJSON.length);
             console.log('JSON preview:', elementsJSON.substring(0, 200));
             

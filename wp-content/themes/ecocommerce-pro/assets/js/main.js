@@ -216,7 +216,7 @@
      * Scroll to Top Button
      */
     function initScrollToTop() {
-        const backToTopBtn = $('.back-to-top, #back-to-top');
+        let backToTopBtn = $('.back-to-top, #back-to-top');
         
         // If no button exists, create one
         if (backToTopBtn.length === 0) {

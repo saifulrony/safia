@@ -158,6 +158,7 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
 
         // Apply custom template overrides saved from editor (after resize)
         $custom_template = $this->get_settings('custom_template', []);
+        $cell_overrides = [];
         if (is_array($custom_template) && !empty($custom_template)) {
             if (!empty($custom_template['columns'])) {
                 $grid_template['columns'] = $custom_template['columns'];
@@ -175,6 +176,10 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 if (!empty($filtered_areas)) {
                     $grid_template['areas'] = $filtered_areas;
                 }
+            }
+
+            if (!empty($custom_template['cell_overrides']) && is_array($custom_template['cell_overrides'])) {
+                $cell_overrides = $custom_template['cell_overrides'];
             }
         }
         
@@ -397,14 +402,29 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             }
         </style>
         
-        <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo esc_attr($inline_styles); ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>">
+        <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo esc_attr($inline_styles); ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>" data-grid-pattern="<?php echo esc_attr($pattern); ?>">
             <?php 
             // Always render in editor context (AJAX calls don't have $_GET)
             // We'll hide handles with CSS on frontend instead
             $is_editor = !is_admin() || (isset($_GET['probuilder']) && $_GET['probuilder'] === 'true') || (defined('DOING_AJAX') && DOING_AJAX);
             for ($i = 0; $i < count($grid_template['areas']); $i++): 
             ?>
-                <div class="grid-cell grid-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>" data-original-area="<?php echo esc_attr($grid_template['areas'][$i]); ?>">
+                <?php
+                $override = $cell_overrides[$i] ?? null;
+                $override_styles = [
+                    'grid-area: ' . $grid_template['areas'][$i],
+                ];
+
+                if (is_array($override) && !empty($override)) {
+                    if (isset($override['zIndex']) && $override['zIndex'] !== '') {
+                        $override_styles[] = 'position: relative';
+                        $override_styles[] = 'z-index: ' . intval($override['zIndex']);
+                    }
+                }
+
+                $style_attr = 'style="' . esc_attr(implode('; ', $override_styles)) . '"';
+                ?>
+                <div class="grid-cell grid-cell-<?php echo $i + 1; ?>" data-cell-index="<?php echo $i; ?>" data-original-area="<?php echo esc_attr($grid_template['areas'][$i]); ?>" <?php echo $style_attr; ?>>
                     <?php if ($enable_resize): ?>
                     <!-- Resize handles - always render, hide with CSS on frontend -->
                     <div class="grid-resize-handle grid-resize-handle-top" data-cell-index="<?php echo $i; ?>" data-direction="top" data-editor-only="true"></div>

@@ -157,13 +157,26 @@ class ProBuilder_Editor {
         wp_dequeue_style('wp-block-library-theme');
         wp_dequeue_style('wc-block-style');
         
-        // Enqueue our styles - Use plugin version for caching
-        wp_enqueue_style('probuilder-editor', PROBUILDER_URL . 'assets/css/editor.css', [], PROBUILDER_VERSION);
-        wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], PROBUILDER_VERSION);
-        wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], PROBUILDER_VERSION);
-        wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], PROBUILDER_VERSION);
-        wp_enqueue_style('probuilder-navigator', PROBUILDER_URL . 'assets/css/navigator.css', ['probuilder-editor'], PROBUILDER_VERSION);
-        wp_enqueue_style('probuilder-history-panel', PROBUILDER_URL . 'assets/css/history-panel.css', ['probuilder-editor'], PROBUILDER_VERSION);
+        // Calculate dynamic versions for cache busting
+        $editor_css_version = PROBUILDER_VERSION;
+        $editor_css_path = PROBUILDER_PATH . 'assets/css/editor.css';
+        if (file_exists($editor_css_path)) {
+            $editor_css_version .= '.' . filemtime($editor_css_path);
+        }
+
+        $editor_js_version = PROBUILDER_VERSION;
+        $editor_js_path = PROBUILDER_PATH . 'assets/js/editor.js';
+        if (file_exists($editor_js_path)) {
+            $editor_js_version .= '.' . filemtime($editor_js_path);
+        }
+
+        // Enqueue our styles - Use dynamic version for caching
+        wp_enqueue_style('probuilder-editor', PROBUILDER_URL . 'assets/css/editor.css', [], $editor_css_version);
+        wp_enqueue_style('probuilder-sidebar-toggle', PROBUILDER_URL . 'assets/css/sidebar-toggle.css', ['probuilder-editor'], $editor_css_version);
+        wp_enqueue_style('probuilder-container-columns', PROBUILDER_URL . 'assets/css/container-column-selector.css', ['probuilder-editor'], $editor_css_version);
+        wp_enqueue_style('probuilder-templates', PROBUILDER_URL . 'assets/css/templates.css', ['probuilder-editor'], $editor_css_version);
+        wp_enqueue_style('probuilder-navigator', PROBUILDER_URL . 'assets/css/navigator.css', ['probuilder-editor'], $editor_css_version);
+        wp_enqueue_style('probuilder-history-panel', PROBUILDER_URL . 'assets/css/history-panel.css', ['probuilder-editor'], $editor_css_version);
         wp_enqueue_style('probuilder-icons', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', [], '6.4.0');
         wp_enqueue_style('animate-css', 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css', [], '4.1.1');
         
@@ -174,10 +187,10 @@ class ProBuilder_Editor {
         wp_enqueue_script('jquery-ui-draggable');
         wp_enqueue_script('jquery-ui-droppable');
         wp_enqueue_script('jquery-ui-sortable');
-        wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], PROBUILDER_VERSION, true);
-        wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
-        wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
-        wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], PROBUILDER_VERSION, true);
+        wp_enqueue_script('probuilder-editor-js', PROBUILDER_URL . 'assets/js/editor.js', ['jquery', 'jquery-ui-sortable'], $editor_js_version, true);
+        wp_enqueue_script('probuilder-templates-js', PROBUILDER_URL . 'assets/js/templates.js', ['jquery', 'probuilder-editor-js'], $editor_js_version, true);
+        wp_enqueue_script('probuilder-navigator-js', PROBUILDER_URL . 'assets/js/navigator.js', ['jquery', 'probuilder-editor-js'], $editor_js_version, true);
+        wp_enqueue_script('probuilder-history-js', PROBUILDER_URL . 'assets/js/history-panel.js', ['jquery', 'probuilder-editor-js'], $editor_js_version, true);
         
         // Get saved ProBuilder data for this page
         $saved_elements = get_post_meta($post_id, '_probuilder_data', true);
