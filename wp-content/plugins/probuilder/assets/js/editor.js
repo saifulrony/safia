@@ -3627,66 +3627,113 @@
                     startTop
                 });
                 
-                // Apply final position and dimensions
-                // Cell stays in absolute positioning with exact tracked values from drag
-                // No recalculation = no jump or weird effects
                 // Persist custom grid template details so reload uses the resized dimensions
                 if (!gridElement.settings) {
                     gridElement.settings = {};
                 }
-                if (!$gridContainer.length) {
-                    console.warn('⚠️ Grid container not found for persistence during resize');
-                } else {
+                if (!gridElement.settings.custom_template || typeof gridElement.settings.custom_template !== 'object') {
+                    gridElement.settings.custom_template = {};
+                }
+                gridElement.settings.custom_template.areas = gridElement.settings.custom_template.areas || [];
+                gridElement.settings.custom_template.areas[cellIndex] = finalArea;
+
+                if ($gridContainer.length) {
                     const computedStyles = window.getComputedStyle($gridContainer[0]);
-                    const updatedColumns = computedStyles.getPropertyValue('grid-template-columns');
-                    const updatedRows = computedStyles.getPropertyValue('grid-template-rows');
-                    const containerWidth = containerRect.width || 1;
-                    const containerHeight = containerRect.height || 1;
-                    const leftPercent = (finalLeft / containerWidth) * 100;
-                    const topPercent = (finalTop / containerHeight) * 100;
-                    const widthPercent = (exactWidth / containerWidth) * 100;
-                    const heightPercent = (exactHeight / containerHeight) * 100;
+                    gridElement.settings.custom_template.columns = (computedStyles.getPropertyValue('grid-template-columns') || '').trim();
+                    gridElement.settings.custom_template.rows = (computedStyles.getPropertyValue('grid-template-rows') || '').trim();
+                }
 
-                    if (!gridElement.settings.custom_template || typeof gridElement.settings.custom_template !== 'object') {
-                        gridElement.settings.custom_template = {};
+                if (!Array.isArray(gridElement.settings.custom_template.cell_overrides)) {
+                    gridElement.settings.custom_template.cell_overrides = [];
+                }
+
+                const containerWidth = containerRect.width || 1;
+                const containerHeight = containerRect.height || 1;
+
+                const overrides = gridElement.settings.custom_template.cell_overrides;
+                const $allCells = $gridContainer.find('.grid-cell');
+                let maxRight = 0;
+                let maxBottom = 0;
+
+                $gridContainer.css({
+                    'position': 'relative'
+                });
+
+                $allCells.each(function(idx) {
+                    const $cell = $(this);
+                    const cellEl = $cell[0];
+                    const cellRect = (idx === cellIndex)
+                        ? {
+                            left: containerRect.left + finalLeft,
+                            top: containerRect.top + finalTop,
+                            width: finalWidth,
+                            height: finalHeight
+                        }
+                        : cellEl.getBoundingClientRect();
+
+                    const relativeLeft = Math.round(cellRect.left - containerRect.left);
+                    const relativeTop = Math.round(cellRect.top - containerRect.top);
+                    const exactCellWidth = Math.round(cellRect.width);
+                    const exactCellHeight = Math.round(cellRect.height);
+
+                    const leftPercent = parseFloat(((relativeLeft / containerWidth) * 100).toFixed(4));
+                    const topPercent = parseFloat(((relativeTop / containerHeight) * 100).toFixed(4));
+                    const widthPercent = parseFloat(((exactCellWidth / containerWidth) * 100).toFixed(4));
+                    const heightPercent = parseFloat(((exactCellHeight / containerHeight) * 100).toFixed(4));
+
+                    const existingOverride = overrides[idx] || {};
+                    const computedStyle = window.getComputedStyle(cellEl);
+                    let zIndex = existingOverride.zIndex;
+                    if (typeof zIndex === 'undefined' || zIndex === null) {
+                        const computedZ = parseInt(computedStyle.zIndex, 10);
+                        zIndex = Number.isFinite(computedZ) ? computedZ : (idx === cellIndex ? 2 : 1);
                     }
 
-                    gridElement.settings.custom_template.columns = (updatedColumns || '').trim();
-                    gridElement.settings.custom_template.rows = (updatedRows || '').trim();
-                    gridElement.settings.custom_template.areas = gridElement.settings.custom_template.areas || [];
-
-                    if (!Array.isArray(gridElement.settings.custom_template.cell_overrides)) {
-                        gridElement.settings.custom_template.cell_overrides = [];
-                    }
-
-                    gridElement.settings.custom_template.cell_overrides[cellIndex] = {
-                        width: exactWidth,
-                        height: exactHeight,
-                        top: Math.round(finalTop),
-                        left: Math.round(finalLeft),
-                        widthPercent: parseFloat(widthPercent.toFixed(4)),
-                        heightPercent: parseFloat(heightPercent.toFixed(4)),
-                        topPercent: parseFloat(topPercent.toFixed(4)),
-                        leftPercent: parseFloat(leftPercent.toFixed(4)),
+                    overrides[idx] = {
+                        left: relativeLeft,
+                        top: relativeTop,
+                        width: exactCellWidth,
+                        height: exactCellHeight,
+                        leftPercent,
+                        topPercent,
+                        widthPercent,
+                        heightPercent,
                         position: 'absolute',
-                        zIndex: 1,
-                        containerWidth: Math.round(containerWidth),
-                        containerHeight: Math.round(containerHeight)
+                        zIndex
                     };
 
-                    $gridCell.css({
+                    $cell.css({
                         'position': 'absolute',
-                        'left': `${leftPercent}%`,
-                        'top': `${topPercent}%`,
-                        'width': `${widthPercent}%`,
-                        'height': `${heightPercent}%`,
+                        'left': `${relativeLeft}px`,
+                        'top': `${relativeTop}px`,
+                        'width': `${exactCellWidth}px`,
+                        'height': `${exactCellHeight}px`,
                         'grid-area': 'unset',
-                        'z-index': '1',
+                        'z-index': zIndex || '',
                         'box-shadow': '',
                         'border-color': '',
                         'transition': ''
                     });
-                }
+
+                    const cellBottom = relativeTop + exactCellHeight;
+                    const cellRight = relativeLeft + exactCellWidth;
+                    if (cellBottom > maxBottom) {
+                        maxBottom = cellBottom;
+                    }
+                    if (cellRight > maxRight) {
+                        maxRight = cellRight;
+                    }
+                });
+
+                const adjustedHeight = Math.max(containerRect.height, maxBottom);
+                gridElement.settings.custom_template.container_height = Math.round(adjustedHeight);
+                gridElement.settings.custom_template.container_width = Math.round(Math.max(containerRect.width, maxRight));
+                gridElement.settings.custom_template.layout_mode = 'absolute';
+
+                $gridContainer.css({
+                    'height': `${Math.round(adjustedHeight)}px`,
+                    'min-height': `${Math.round(adjustedHeight)}px`
+                });
 
                 $('body').css('cursor', '');
                 
@@ -3727,175 +3774,6 @@
             });
         },
         
-        /**
-         * Adjust grid template to make neighbors responsive
-         */
-        adjustGridTemplateForResize: function(gridElement, resizedCellIndex, direction, scaleX, scaleY, exactWidth, exactHeight) {
-            console.log('🔄 Adjusting grid template for responsive behavior:', {
-                cellIndex: resizedCellIndex,
-                direction: direction,
-                scaleX: scaleX.toFixed(2),
-                scaleY: scaleY.toFixed(2),
-                exactWidth,
-                exactHeight
-            });
-            
-            const $gridContainer = $(`.probuilder-element[data-id="${gridElement.id}"] .probuilder-grid-layout`);
-            const pattern = gridElement.settings.grid_pattern || 'pattern-1';
-            const gridTemplateData = this.getGridTemplateData(pattern);
-            
-            // Get current grid template
-            const currentColumns = $gridContainer.css('grid-template-columns');
-            const currentRows = $gridContainer.css('grid-template-rows');
-            
-            console.log('Current template:', {columns: currentColumns, rows: currentRows});
-            
-            // Parse the template to get values and preserve original units
-            let columnValues = [];
-            let columnUnits = [];
-            let rowValues = [];
-            let rowUnits = [];
-            
-            if (currentColumns.includes('repeat')) {
-                const repeatMatch = currentColumns.match(/repeat\((\d+),\s*([\d.]+)([a-z%]*)\)/i);
-                if (repeatMatch) {
-                    const count = parseInt(repeatMatch[1], 10);
-                    const value = parseFloat(repeatMatch[2]);
-                    const unit = repeatMatch[3] || 'fr';
-                    columnValues = Array(count).fill(value);
-                    columnUnits = Array(count).fill(unit);
-                }
-            } else {
-                currentColumns.split(/\s+/).forEach(rawValue => {
-                    const trimmed = rawValue.trim();
-                    if (!trimmed) {
-                        return;
-                    }
-                    const valueMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i);
-                    if (valueMatch) {
-                        columnValues.push(parseFloat(valueMatch[1]));
-                        const unit = valueMatch[2] || 'fr';
-                        columnUnits.push(unit);
-                    }
-                });
-            }
-            
-            if (currentRows.includes('repeat')) {
-                const repeatMatch = currentRows.match(/repeat\((\d+),\s*([\d.]+)([a-z%]*)\)/i);
-                if (repeatMatch) {
-                    const count = parseInt(repeatMatch[1], 10);
-                    const value = parseFloat(repeatMatch[2]);
-                    const unit = repeatMatch[3] || 'px';
-                    rowValues = Array(count).fill(value);
-                    rowUnits = Array(count).fill(unit);
-                }
-            } else {
-                currentRows.split(/\s+/).forEach(rawValue => {
-                    const trimmed = rawValue.trim();
-                    if (!trimmed) {
-                        return;
-                    }
-                    const valueMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i);
-                    if (valueMatch) {
-                        rowValues.push(parseFloat(valueMatch[1]));
-                        const unit = valueMatch[2] || 'px';
-                        rowUnits.push(unit);
-                    }
-                });
-            }
-            
-            if (columnValues.length === 0) {
-                console.warn('⚠️ Unable to parse current grid-template-columns, aborting adjustment');
-                return;
-            }
-            if (rowValues.length === 0) {
-                rowValues = Array(columnValues.length).fill(150);
-                rowUnits = Array(columnValues.length).fill('px');
-            }
-            
-            console.log('Parsed values:', {columns: columnValues, rows: rowValues});
-            
-            const resizedArea = $gridContainer.find(`.grid-cell[data-cell-index="${resizedCellIndex}"]`).data('original-area');
-            if (!resizedArea) {
-                console.warn('⚠️ No grid-area data found for cell', resizedCellIndex);
-                return;
-            }
-            const [rowStart, colStart, rowEnd, colEnd] = resizedArea.split('/').map(p => parseInt(p.trim(), 10));
-            
-            const shouldAdjustColumns = direction === 'left' || direction === 'right' || direction === 'both';
-            const shouldAdjustRows = direction === 'top' || direction === 'bottom' || direction === 'both';
-            
-            if (shouldAdjustColumns && columnValues.length > 0) {
-                const scaledColumns = columnValues.slice();
-                for (let col = colStart - 1; col < colEnd - 1 && col < scaledColumns.length; col++) {
-                    scaledColumns[col] = Math.max(0.05, scaledColumns[col] * scaleX);
-                }
-                const minColumn = Math.min(...scaledColumns.filter(v => v > 0));
-                const normalizedColumns = scaledColumns.map(value => {
-                    const base = minColumn || 1;
-                    return Math.max(0.05, value / base);
-                });
-                const columnsTemplate = normalizedColumns.map(value => `${value.toFixed(3)}fr`).join(' ');
-                $gridContainer.css('grid-template-columns', columnsTemplate);
-                if (!gridElement.settings.custom_template) {
-                    gridElement.settings.custom_template = {};
-                }
-                gridElement.settings.custom_template.columns = columnsTemplate;
-                columnValues = normalizedColumns;
-                columnUnits = Array(columnValues.length).fill('fr');
-            }
-            
-            if (shouldAdjustRows && rowValues.length > 0) {
-                const scaledRows = rowValues.slice();
-                for (let row = rowStart - 1; row < rowEnd - 1 && row < scaledRows.length; row++) {
-                    scaledRows[row] = Math.max(10, scaledRows[row] * scaleY);
-                }
-                const minRow = Math.min(...scaledRows.filter(v => v > 0));
-                const normalizedRows = scaledRows.map(value => {
-                    const base = minRow || 1;
-                    return Math.max(1, value / base);
-                });
-                const rowsTemplate = normalizedRows.map(value => `${value.toFixed(3)}fr`).join(' ');
-                $gridContainer.css('grid-template-rows', rowsTemplate);
-                if (!gridElement.settings.custom_template) {
-                    gridElement.settings.custom_template = {};
-                }
-                gridElement.settings.custom_template.rows = rowsTemplate;
-                rowValues = normalizedRows;
-                rowUnits = Array(rowValues.length).fill('fr');
-            }
-            
-            // Apply new template - use precise values without rounding for flexible sizing
-            const newColumnsTemplate = columnValues.map((v, idx) => {
-                const unit = columnUnits[idx] || 'fr';
-                if (unit === 'fr') {
-                    return v.toFixed(3) + unit;
-                }
-                return v.toFixed(2) + unit;
-            }).join(' ');
-            const newRowsTemplate = rowValues.map((v, idx) => {
-                const unit = rowUnits[idx] || 'px';
-                return v.toFixed(2) + unit;
-            }).join(' ');
-            
-            console.log('New template (flexible):', {columns: newColumnsTemplate, rows: newRowsTemplate});
-            
-            // Update the grid container
-            $gridContainer.css({
-                'grid-template-columns': newColumnsTemplate,
-                'grid-template-rows': newRowsTemplate
-            });
-            
-            // Store the new template in element settings for persistence
-            if (!gridElement.settings.custom_template) {
-                gridElement.settings.custom_template = {};
-            }
-            gridElement.settings.custom_template.columns = newColumnsTemplate;
-            gridElement.settings.custom_template.rows = newRowsTemplate;
-            
-        console.log('✅ Grid template updated for responsive behavior');
-    },
-
     handleGridCellDelete: function(gridElement, cellIndex, options = {}) {
         const self = this;
         const settings = Object.assign({
@@ -4648,7 +4526,7 @@
                 if (element.widgetType === 'grid-layout') {
                     this.ensureGridElementStructure(element);
                 }
-
+                
                 const preview = this.generatePreview(element);
                 console.log('Preview generated for:', element.id);
                 
@@ -6688,7 +6566,25 @@
                                 border-color: #007cba;
                             }
                         </style>
-                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}" data-grid-element-id="${element.id}" data-grid-pattern="${gridPattern}">
+                    `;
+                    const layoutMode = element.settings.custom_template?.layout_mode || 'grid';
+                    const containerHeight = element.settings.custom_template?.container_height;
+                    const containerWidth = element.settings.custom_template?.container_width;
+                    const containerStyleParts = ['position: relative'];
+                    if (layoutMode === 'absolute') {
+                        containerStyleParts.push('display: block');
+                        if (containerWidth) {
+                            containerStyleParts.push(`min-width: ${containerWidth}px`);
+                        }
+                        if (containerHeight) {
+                            containerStyleParts.push(`min-height: ${containerHeight}px`);
+                            containerStyleParts.push(`height: ${containerHeight}px`);
+                        }
+                    }
+                    const containerStyleAttr = containerStyleParts.length ? ` style="${containerStyleParts.join('; ')}"` : '';
+
+                    gridHTML += `
+                        <div id="${gridId}" class="probuilder-grid-layout" data-element-id="${element.id}" data-grid-element-id="${element.id}" data-grid-pattern="${gridPattern}"${containerStyleAttr}>
                     `;
                     
                     // Generate cells based on pattern
@@ -6700,39 +6596,45 @@
                         
                         const cellOverrides = element.settings.custom_template?.cell_overrides || [];
                         const override = cellOverrides[index];
+                        const useAbsolute = override && typeof override === 'object' && override.position === 'absolute';
                         const overrideStyles = [];
-                        if (override && typeof override === 'object') {
-                            overrideStyles.push('grid-area: unset');
+                        if (useAbsolute) {
+                            const resolveValue = (percent, px) => {
+                                if (typeof percent === 'number' && !Number.isNaN(percent)) {
+                                    return `${percent}%`;
+                                }
+                                if (typeof px === 'number' && !Number.isNaN(px)) {
+                                    return `${px}px`;
+                                }
+                                return null;
+                            };
                             overrideStyles.push('position: absolute');
-                            if (typeof override.leftPercent === 'number') {
-                                overrideStyles.push(`left: ${override.leftPercent}%`);
-                            } else if (typeof override.left === 'number') {
-                                overrideStyles.push(`left: ${override.left}px`);
+                            overrideStyles.push('grid-area: unset');
+                            const leftValue = resolveValue(override.leftPercent, override.left);
+                            const topValue = resolveValue(override.topPercent, override.top);
+                            const widthValue = resolveValue(override.widthPercent, override.width);
+                            const heightValue = resolveValue(override.heightPercent, override.height);
+                            if (leftValue !== null) {
+                                overrideStyles.push(`left: ${leftValue}`);
                             }
-                            if (typeof override.topPercent === 'number') {
-                                overrideStyles.push(`top: ${override.topPercent}%`);
-                            } else if (typeof override.top === 'number') {
-                                overrideStyles.push(`top: ${override.top}px`);
+                            if (topValue !== null) {
+                                overrideStyles.push(`top: ${topValue}`);
                             }
-                            if (typeof override.widthPercent === 'number') {
-                                overrideStyles.push(`width: ${override.widthPercent}%`);
-                            } else if (typeof override.width === 'number') {
-                                overrideStyles.push(`width: ${override.width}px`);
+                            if (widthValue !== null) {
+                                overrideStyles.push(`width: ${widthValue}`);
                             }
-                            if (typeof override.heightPercent === 'number') {
-                                overrideStyles.push(`height: ${override.heightPercent}%`);
-                            } else if (typeof override.height === 'number') {
-                                overrideStyles.push(`height: ${override.height}px`);
+                            if (heightValue !== null) {
+                                overrideStyles.push(`height: ${heightValue}`);
                             }
-                            if (typeof override.zIndex !== 'undefined' && override.zIndex !== null) {
+                            if (typeof override.zIndex !== 'undefined' && override.zIndex !== null && override.zIndex !== '') {
                                 overrideStyles.push(`z-index: ${override.zIndex}`);
                             }
                         } else {
                             overrideStyles.push(`grid-area: ${area}`);
                             overrideStyles.push('position: relative');
                         }
-                        const overrideStyle = `style="${overrideStyles.join('; ')}"`;
-
+                        const overrideStyle = overrideStyles.length ? `style="${overrideStyles.join('; ')}"` : '';
+                        
                         gridHTML += `
                             <div class="grid-cell ${hasContent ? 'has-content' : 'empty-cell'} ${hasContent ? '' : 'probuilder-drop-zone'}" 
                                  ${overrideStyle}

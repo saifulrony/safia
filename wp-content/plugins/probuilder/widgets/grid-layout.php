@@ -159,6 +159,10 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
         // Apply custom template overrides saved from editor (after resize)
         $custom_template = $this->get_settings('custom_template', []);
         $cell_overrides = [];
+        $layout_mode = 'grid';
+        $container_height = null;
+        $container_width = null;
+
         if (is_array($custom_template) && !empty($custom_template)) {
             if (!empty($custom_template['columns'])) {
                 $grid_template['columns'] = $custom_template['columns'];
@@ -181,7 +185,36 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             if (!empty($custom_template['cell_overrides']) && is_array($custom_template['cell_overrides'])) {
                 $cell_overrides = $custom_template['cell_overrides'];
             }
+
+            if (!empty($custom_template['layout_mode'])) {
+                $layout_mode = $custom_template['layout_mode'];
+            }
+
+            if (isset($custom_template['container_height'])) {
+                $container_height = intval($custom_template['container_height']);
+            }
+
+            if (isset($custom_template['container_width'])) {
+                $container_width = intval($custom_template['container_width']);
+            }
         }
+        
+        $container_style_parts = [];
+        if (!empty($inline_styles)) {
+            $container_style_parts[] = rtrim($inline_styles, '; ');
+        }
+        if ($layout_mode === 'absolute') {
+            $container_style_parts[] = 'position: relative';
+            $container_style_parts[] = 'display: block';
+            if ($container_width) {
+                $container_style_parts[] = 'min-width: ' . $container_width . 'px';
+            }
+            if ($container_height) {
+                $container_style_parts[] = 'min-height: ' . $container_height . 'px';
+                $container_style_parts[] = 'height: ' . $container_height . 'px';
+            }
+        }
+        $container_style_attr = esc_attr(implode('; ', array_filter($container_style_parts)));
         
         ?>
         <style>
@@ -402,7 +435,7 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
             }
         </style>
         
-        <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo esc_attr($inline_styles); ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>" data-grid-pattern="<?php echo esc_attr($pattern); ?>">
+        <div id="<?php echo $grid_id; ?>" class="<?php echo esc_attr($wrapper_classes); ?> probuilder-grid-layout" <?php echo $wrapper_attributes; ?> style="<?php echo $container_style_attr; ?>" data-resizable="<?php echo $enable_resize ? '1' : '0'; ?>" data-grid-pattern="<?php echo esc_attr($pattern); ?>" data-layout-mode="<?php echo esc_attr($layout_mode); ?>">
             <?php 
             // Always render in editor context (AJAX calls don't have $_GET)
             // We'll hide handles with CSS on frontend instead
@@ -413,32 +446,49 @@ class ProBuilder_Widget_Grid_Layout extends ProBuilder_Base_Widget {
                 $override = $cell_overrides[$i] ?? null;
                 $override_styles = [];
 
-                if (is_array($override) && !empty($override)) {
-                    $override_styles[] = 'grid-area: unset';
+                if (is_array($override) && !empty($override) && isset($override['position']) && $override['position'] === 'absolute') {
                     $override_styles[] = 'position: absolute';
+                    $override_styles[] = 'grid-area: unset';
 
+                    $left_value = null;
                     if (isset($override['leftPercent']) && $override['leftPercent'] !== '') {
-                        $override_styles[] = 'left: ' . floatval($override['leftPercent']) . '%';
+                        $left_value = floatval($override['leftPercent']) . '%';
                     } elseif (isset($override['left']) && $override['left'] !== '') {
-                        $override_styles[] = 'left: ' . intval($override['left']) . 'px';
+                        $left_value = intval($override['left']) . 'px';
                     }
 
+                    $top_value = null;
                     if (isset($override['topPercent']) && $override['topPercent'] !== '') {
-                        $override_styles[] = 'top: ' . floatval($override['topPercent']) . '%';
+                        $top_value = floatval($override['topPercent']) . '%';
                     } elseif (isset($override['top']) && $override['top'] !== '') {
-                        $override_styles[] = 'top: ' . intval($override['top']) . 'px';
+                        $top_value = intval($override['top']) . 'px';
                     }
 
+                    $width_value = null;
                     if (isset($override['widthPercent']) && $override['widthPercent'] !== '') {
-                        $override_styles[] = 'width: ' . floatval($override['widthPercent']) . '%';
+                        $width_value = floatval($override['widthPercent']) . '%';
                     } elseif (isset($override['width']) && $override['width'] !== '') {
-                        $override_styles[] = 'width: ' . intval($override['width']) . 'px';
+                        $width_value = intval($override['width']) . 'px';
                     }
 
+                    $height_value = null;
                     if (isset($override['heightPercent']) && $override['heightPercent'] !== '') {
-                        $override_styles[] = 'height: ' . floatval($override['heightPercent']) . '%';
+                        $height_value = floatval($override['heightPercent']) . '%';
                     } elseif (isset($override['height']) && $override['height'] !== '') {
-                        $override_styles[] = 'height: ' . intval($override['height']) . 'px';
+                        $height_value = intval($override['height']) . 'px';
+                    }
+
+                    if ($left_value !== null) {
+                        $override_styles[] = 'left: ' . $left_value;
+                    }
+                    if ($top_value !== null) {
+                        $override_styles[] = 'top: ' . $top_value;
+                    }
+                    if ($width_value !== null) {
+                        $override_styles[] = 'width: ' . $width_value;
+                    }
+                    if ($height_value !== null) {
+                        $override_styles[] = 'height: ' . $height_value;
                     }
 
                     if (isset($override['zIndex']) && $override['zIndex'] !== '') {
