@@ -53,3 +53,6 @@ Thumbs.db
 # Node modules (if any)
 node_modules/
 
+# Build artifacts
+wp-content/plugins/probuilder/assets/js/editor.js.map
+
