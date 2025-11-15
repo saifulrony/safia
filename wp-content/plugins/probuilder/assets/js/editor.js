@@ -4784,16 +4784,6 @@
                             const $gridCell = $zone.closest('.grid-cell');
                             const toolbarHeight = $gridCell.find('.grid-cell-toolbar').outerHeight(true) || 0;
                             $gridCell.css('padding-top', toolbarHeight + 8);
-
-                                // Ignore clicks originating from toolbar buttons (delete/settings/add)
-                                const $target = $(e.target);
-                                if ($target.closest('.grid-cell-toolbar').length > 0 ||
-                                    $target.closest('.grid-cell-delete-btn').length > 0 ||
-                                    $target.closest('.add-content-btn').length > 0 ||
-                                    $target.closest('.settings-btn').length > 0) {
-                                    console.log('⏭️ Drop zone click ignored - toolbar interaction');
-                                    return false;
-                                }
                             
                             // Make grid cells droppable
                             $zone.droppable({
@@ -13882,6 +13872,15 @@
             this.historyDebounceTimer = setTimeout(() => {
                 this.saveHistory();
             }, 1000); // Save 1 second after last change
+            
+            // Grid-based elements need a full re-render to restore drag/drop bindings
+            if (element.widgetType === 'grid-layout' || element.widgetType === 'container-2') {
+                console.log('🔁 Re-rendering grid-based element to refresh interactions:', element.id);
+                const insertBefore = $element.next()[0];
+                $element.remove();
+                this.renderElement(element, insertBefore);
+                return;
+            }
             
             // Re-initialize drop zones if it's a container
             if (element.widgetType === 'container') {
